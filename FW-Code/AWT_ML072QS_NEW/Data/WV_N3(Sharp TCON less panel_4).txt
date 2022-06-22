@@ -1,0 +1,183 @@
+/*===========================================================================*/
+/*                    Register Setting for TW8804C    02/17/05               */
+/*===========================================================================*/
+//	Input	: NTSC
+//	Panel	: WVGA SHARP T-CON LESS PANEL
+//-----------------------------------------------------------------------------
+//	Below listed registers should not be set.
+//	0x02, 0x06, 
+//
+//
+
+TW88I2CAddress, 120,
+0xff, 0x01,
+0xc1, 0x25, //// ADC PLL=27Mhz 
+
+0xff, 0x00,
+//------------ Decoder (23) ---------------------------------------------------
+
+0x1c, 0x07,				// Standard, shadow 		** N/P
+0x04, 0x00,				// Luminance Gamma
+0x07, 0x12,				// Cropping H				** N/P, panel
+0x08, 0x15,				// V delay L				** N/P, panel
+0x09, 0xf0,				// V active L				** N/P, panel?
+0x0a, 0x28,				// H delay L				** N/P, panel
+0x0b, 0xd0,				// H active L				** N/P, panel?
+0x0c, 0xcd,				// Control Reg 1
+0x10, 0x00,				// Brightness
+0x11, 0x5a,				// Contrast
+0x12, 0x61,				// Sharpness Ctrl 1
+0x13, 0x80,				// Chroma(U) gain
+0x14, 0x80,				// chroma(V) gain
+0x15, 0x00,				// Hue
+0x16, 0xc3,				// Sharpness Ctrl 2
+0x17, 0x30,				// V peaking Ctrl 1			
+0x18, 0x44,				// Coring Ctrl				
+0x20, 0x50,
+0x21, 0x44,				// AGC gain
+0x23, 0xd8,				// White Peak Threshold
+0x27, 0x2A, // Default Changed from 0x32
+0x35, 0x02,
+0x37, 0x28,				// QCLAMP
+
+//---------- Input/Output (4 )-----------------------------------------------------
+
+0x40, 0x00,				// Input
+0x41, 0x20,				// Output
+0x43, 0x04,				// Input routing
+0x44, 0x08,				// Input control
+
+//------------ Zoom ( 7 )-----------------------------------------------------------
+
+0x63, 0x00,				// H/V scale up/dn H		** N/P panel
+0x60, 0xdb,				// H-scale up L				** N/P panel
+0x61, 0x80,				// H-scale dn L				** N/P panel
+0x62, 0x79,				// V-scale up L				** N/P panel
+0x64, 0xff,				// H-scale up offset, remove error
+0x65, 0x80,				// V-scale up offset
+0x66, 0x00,				// H non-display area
+
+//--------- Image Adjust ( 18 )------------------------------------------------------
+
+0x70, 0x60,				// YCbCr/ Hue
+0x71, 0x80,				// Y  contrast
+0x72, 0x80,				// Cb contrast
+0x73, 0x80,				// Cr contrast
+0x74, 0x80,				// Y  brightness
+0x75, 0x80,				// Cb brightness
+0x76, 0x80,				// Cr brightness
+
+0x70, 0x20,				// RGB/ Hue
+0x71, 0x80,				// R contrast
+0x72, 0x80,				// G contrast
+0x73, 0x80,				// B contrast
+0x74, 0x80,				// R brightness
+0x75, 0x80,				// G brightness
+0x76, 0x80,				// B brightness
+
+0x77, 0x30,				// Sharpness=0
+//0x78, 0x85,				// Sharpness freq. Filter
+0x79, 0x00,				// Edge Enhancement=enable
+0x7B, 0x00,				// should be 0x00
+
+//---------- BW/Blue Stretch ( 0 )--------------------------------------------------
+
+//0x84, 0x67,				// BW Stretch Black Tilt
+//0x85, 0x94,				// BW Stretch White Tilt
+//0x86, 0x20,				// BW Stretch Black Gain, for Disable=00 
+//0x87, 0xe0,				// BW Stretch White Gain, for Disable=FF
+
+//0x8a, 0x08,				// Blue Stretch, for Disable=00
+
+//--------- Display control ( 15 )---------------------------------------------------
+
+0xb6, 0x34,				// PHR-H, PHP-H				** N/P panel
+0xb0, 0x40,				// Output Signal Config.
+0xb1, 0xc0,				// clock delay, en coast	** panel
+0xb2, 0x58,				// PHP-L					** N/P panel
+0xb3, 0x03,				// H sync					**
+0xb4, 0x1e,				// H back porch				**     panel
+0xb5, 0x48,				// PHR-L					**     panel
+
+0xbb, 0x11,				//							**     panel
+0xb7, 0xe0,				//							**     panel
+0xb8, 0x06,				//							**     panel
+0xb9, 0x35,				//							** N/P panel
+0xba, 0xF6,				//							**     panel
+
+0xbd, 0x04,
+0xbc, 0x21,				// Dithering
+0xbe, 0x02,				// Auto Calc.
+
+//--------- Misc. Input ( 3 )-------------------------------------------------------
+
+0xc0, 0x00,				// Initial Counter			** N/P panel
+0xc1, 0x00,				//							** N/P panel
+0xc2, 0x00,				//							** N/P panel
+
+//--------- PLL ( 5 )---------------------------------------------------------------
+
+0xfa, 0x82,				// 34.000MHz				** N/P panel
+0xfb, 0x00,				//							** N/P panel
+0xfd, 0x20,				//							** N/P panel
+0xfc, 0x28,				//							** N/P panel
+0xfe, 0x1d,				//							** N/P panel
+
+//0xff, 0x10,				// disable I2C auto increase mode
+
+//--------- TCON ASIC Register (24) ---------------------------------------
+//0xb1, 0xC0,
+0xff, 0x01,
+
+0x8A,0x07,
+
+0x8B,0x04,
+
+0x80,0x26,
+
+0x81,0x00,
+
+0x84,0x6f,
+
+0x82,0x0,
+
+
+
+0xa5,0x33,
+
+0xa7, 0x35,
+
+//Verical Active Period
+0x8d,0x3b,
+
+0x8e,0x02,
+
+0x8f,0x1b,
+
+0x83,0x0B,
+
+//--------- Latch Pulse (21) ------------------------------------------------
+0x92,0x03,
+
+0x93,0xe0,
+
+0x94,0x00,
+
+0x95,0x10,
+
+0x9b,0x1e,
+
+0x9d,0x20,
+
+0xA0,0x00,
+
+0xA1,0x0E,
+
+0xA2,0x63,
+
+0xA3,0x8D,
+
+0xff, 0x10,				// disable I2C auto increase mode
+
+0xff, 0xff
+

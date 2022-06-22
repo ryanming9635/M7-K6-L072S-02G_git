@@ -1,0 +1,123 @@
+c 8a
+
+w ff 00
+
+//Decoder cropping setting
+w 02 40
+w 09 F0
+w 0B D0
+
+//Vertical delay register
+w 0a 15
+
+//Scalar input control
+w 40 00
+w 41 20
+w 42 04
+w 44 08
+
+//Zoom control
+w 60 E6
+w 61 80
+w 62 80
+w 63 00
+
+
+//Set TCON function of GPIO
+w 4e 66
+
+//Panel control
+w B0 48
+w B1 80
+w B2 40
+w B3 48
+w B4 80
+w B5 20
+w B6 35
+w B7 0D
+w B8 02
+w B9 16
+w BA E0
+w BB 12
+w BC 00
+w BD 08
+w BE C2
+
+//FPCLK control
+w F9 00
+w FA BE
+w FB 32
+w FC 40
+w FD 30
+w FE 11
+
+//Page 1
+w ff 01
+
+//TCON
+w 7b 0a
+w 80 20
+w 81 00
+w 82 02
+w 83 1F
+w 84 4e
+w 85 00
+w 8A 02
+w 8B 4D
+w 8C 00
+w 8D 00
+w 8E 02
+w 8F 0D
+w 90 00
+w 91 C2
+w 92 00
+w 93 C2
+w 94 00
+w 95 02
+w 9A 00
+w 9B C7
+w 9C 00
+w 9D 01
+w 9E 00
+w 9F 00
+w A0 00
+w A1 25
+w A2 00
+w A3 1C
+w A4 00
+w A5 15
+w A6 00
+w A7 01
+w AC 03
+w AD F6
+w AE 00
+w AF 6A
+w B0 02
+w B1 30
+w B2 87
+w B3 00
+w B4 02
+
+//Select 27MHz
+w c0 01
+
+//Display ON
+w ff 00
+W d5 f
+
+//Example of optimization.
+W ff 00
+w 0a 20
+W 60 DB
+W 61 80
+W 62 7C
+W 63 00
+W b9 32
+
+W ff 01
+W a4 00
+W a5 35
+W 8e 02
+W 8f 15
+
+//Done

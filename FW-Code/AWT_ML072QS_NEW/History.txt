@@ -1,0 +1,42 @@
+*******************************************************************
+AWT-ML073G Monitor Firmware History and Release Notice
+
+2012					by William Wu
+*******************************************************************
+
+Version 0.3.1.0
+	增加 DOOR DETECT選項
+Version 0.3.1.1	//20120413
+	修改av熱插拔 畫面異常
+	GPS ICON 更變
+	PANEL clock 調整 0x63-->0x85
+
+Version 1.3.1.0	//20120502
+	取消NTSC PAL 系統 protocol
+	調整 video畫質 brightness 41 contrast 26
+	修改CAM D&AV 下 調整mirror無動作
+	修改TRIGGER C 預設值錯誤
+
+Version 1.3.1.1	//20120514
+	修改SHERPNESS 調整 原調整0x78改調整0x12
+	PANEL clock 調整 0x85-->0x8c
+		//20120519
+	修改POWER 底下 TRIGGER R OSD卡住
+	修改CAM D與AV 切換成R時 不會顯示到車線
+
+Version 1.3.1.2	//20120522
+	POWER always ON
+
+Version 1.3.1.3	//20120522
+	修改FORMT FAIL訊息錯誤
+
+Version 1.3.1.4	//20120522
+	修改tw2835 ch contrast 
+	修改SD CARD ERROR 顯示錯誤
+
+Version 1.4.1.0	//20120524
+	修改 進入menu 後繼續收PROTOCOL
+	修改 進入menu 後不跟DVR要時間
+	修改 收PROTOCOL時不DELAY 200ms
+	修改 跟DVR要時間 會一次要3次
+	連送20次COMMAND 沒回應判定SDCARD ERROR

@@ -1,0 +1,51 @@
+C51 COMPILER V8.16   UDFONT1                                                               01/18/2011 16:22:01 PAGE 1   
+
+
+C51 COMPILER V8.16, COMPILATION OF MODULE UDFONT1
+OBJECT MODULE PLACED IN .\Output\udfont1.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE udfont1.c COMPACT OPTIMIZE(9,SIZE) BROWSE INCDIR(.\Include\) DEBUG OBJECTEX
+                    -TEND CODE LISTINCLUDE SYMBOLS PRINT(.\Source\udfont1.lst) OBJECT(.\Output\udfont1.obj)
+
+line level    source
+
+   1          /****************************************************************/
+   2          /*                      TW88xx RAM FONT                         */
+   3          /****************************************************************/
+   4          /* <FILE TYPE>=TW8804 */
+   5          /* <NUMBER OF FONTS>=0xE2(226) */
+   6          /* <COLOR START>=0xB1 */
+   7          
+   8          
+   9          
+  10          /* <FONT DATA> */
+  11          code unsigned char RAMFONTDATA[][27] = {
+  12            /*0x00(  0)*/ {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+             -,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00},
+  13             
+  14          };
+C51 COMPILER V8.16   UDFONT1                                                               01/18/2011 16:22:01 PAGE 2   
+
+ASSEMBLY LISTING OF GENERATED OBJECT CODE
+
+
+C51 COMPILER V8.16   UDFONT1                                                               01/18/2011 16:22:01 PAGE 3   
+
+NAME                                    CLASS   MSPACE  TYPE    OFFSET  SIZE
+====                                    =====   ======  ====    ======  ====
+
+
+RAMFONTDATA. . . . . . . . . . . . . .  PUBLIC   CODE   ARRAY    0000H  27
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =     27    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,6 @@
+TW8816 HTRV ML072Q R channel出貨時一上電源會自動判斷NTSC或是PAL系統。
+因為HTRV ML072Q default是PAL系統，如果用NTSC系統時，當source切換到R雙
+分割時會導致變成3分割錯誤的顯示。
+
+
+

@@ -1,0 +1,13 @@
+---- InitVideoData Matches (12 in 3 files) ----
+Cpu.c (awt_ml072qs_new):348:	////	InitVideoData(VInputStd);
+Cpu.c (awt_ml072qs_new):371:////	InitVideoData(VInputStd);
+Main.c (awt_ml072qs_new):92:BYTE InitVideoDataSrc =0;
+Main.c (awt_ml072qs_new):421:void InitVideoData(BYTE src)
+Main.c (awt_ml072qs_new):424:	Printf("\r\n++(InitVideoData)src:%02x", (WORD)src);
+Main.c (awt_ml072qs_new):610:	//InitVideoData(NTSC);
+Main.c (awt_ml072qs_new):663:			InitVideoData(NTSC);	
+Main.c (awt_ml072qs_new):767:		InitVideoData(std);
+Main.c (awt_ml072qs_new):841:						InitVideoData(std);		//WILLIAM-20120502
+Main.c (awt_ml072qs_new):856:						InitVideoData(std);	
+Main.c (awt_ml072qs_new):1087:		InitVideoData(VInputStd);
+Main.h (awt_ml072qs_new\include):168:void InitVideoData(BYTE src);

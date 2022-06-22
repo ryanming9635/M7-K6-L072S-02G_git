@@ -1,0 +1,3757 @@
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 1   
+
+
+C51 COMPILER V8.16, COMPILATION OF MODULE ETC_EEP
+OBJECT MODULE PLACED IN .\Output\etc_eep.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE etc_eep.c COMPACT OPTIMIZE(9,SIZE) BROWSE INCDIR(.\Include\) DEBUG OBJECTEX
+                    -TEND CODE LISTINCLUDE SYMBOLS PRINT(.\Source\etc_eep.lst) OBJECT(.\Output\etc_eep.obj)
+
+line level    source
+
+   1          //eeprom.c
+   2          #include "Config.h"
+   1      =1  /*****************************************************************************/
+   2      =1  /*                           System Configurations                           */
+   3      =1  /*                                                      rev 0.10 include auto test                                               */
+   4      =1  // 0.11 change DTV, PC input initial download data correct for Charge Pump
+   5      =1  // 0.12 correct phase measurement routine '>>3'
+   6      =1  // 0.13 enable function for SPI control... only EXT MCU case
+   7      =1  // 0.14 corrected PC measurement......
+   8      =1  // 0.0a test function only for CVBS, SVIDEO
+   9      =1  // 0.15 corrected DTV scaler setting for panel resolutions
+  10      =1  // 0.0b panel for AND 640x480 TICON panel
+  11      =1  // 0.16 corrected COMPONENT scaler setting for panel resolutions        11/21/2007
+  12      =1  // 0.0c automatic chip test
+  13      =1  // 0.17 add monitor function, osd grid for writing grid
+  14      =1  // 0.18 add component, dtv pc for analogpanel, 12/06/2007
+  15      =1  // 0.19 correct pal input for CES, 12/20/2007
+  16      =1  // 0.1a CCFL control, 12/28/2007
+  17      =1  // 0.19 Multi Grid for Banking on Internal MCU  01/17/2008
+  18      =1  // 0.20 CCFL contol for backlight brightness    01/21/2008
+  19      =1  // 0.21 CCFL contol for backlight brightness    01/25/2008
+  20      =1  // 0.22 phase setting 02/07/2008
+  21      =1  // 0.221 display input correction 04/03/2008
+  22      =1  // 0.23 PC, DTV mode, no signal display
+  23      =1  // 0.24 PC Auto Color adjustment
+  24      =1  // 0.25 revised PC Auto Clock adjustment - find divide number and phase
+  25      =1  // 0.26 Digital RGB for TW8826
+  26      =1  // 0.27 Correct LVDS control                                    08/22/2008
+  27      =1  // 0.28 Add WSVGA resolution                                    10/23/2008
+  28      =1  // 0.29 Add NEW GRID                                                    11/14/2008
+  29      =1  // 0.30 Fix DTV input                                                   12/10/2008
+  30      =1  // 0.31 Add 1080i23, 24, 25A, 25B                               01/20/2009
+  31      =1  // 0.32 TCON setting FIX all mode                               01/22/2009
+  32      =1  // 0.33 autodetect is auto on/off by dip sw1    02/02/2009
+  33      =1  // 0.34 Fix autocolor function and clamp position 02/08/2009
+  34      =1  /*****************************************************************************/
+  35      =1  #ifndef __CONFIG_H__
+  36      =1  #define __CONFIG_H__
+  37      =1  
+  38      =1  //#define INTERNAL_MCU -- defined by Project Compiler session
+  39      =1  
+  40      =1  
+  41      =1  //-----------------------------------------------------------------------------
+  42      =1  //              Firmware Version
+  43      =1  //-----------------------------------------------------------------------------
+  44      =1  #define FWVER                   0x140                   // Rev 0.14
+  45      =1  //-----------------------------------------------------------------------------
+  46      =1  //              Compiler
+  47      =1  //-----------------------------------------------------------------------------
+  48      =1  #define KEILC                                           // Keil C 5.0
+  49      =1  //-----------------------------------------------------------------------------
+  50      =1  //              MPU Clock
+  51      =1  //-----------------------------------------------------------------------------
+  52      =1  #ifndef INTERNAL_MCU
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 2   
+
+  53      =1  //#define CLOCK_11M                                     // 11.0592MHz
+  54      =1  #define CLOCK_22M                                       // 22.1184MHz
+  55      =1  #else                                                           // INTERNAL_MCU
+           =1 #define CLOCK_27M                                       // 27MHz
+           =1 #define REG_START_ADDRESS       0xc000          // register start 0xc000, for page0, 0xc100-page1 
+           =1 #endif
+  59      =1  //-----------------------------------------------------------------------------
+  60      =1  //              TW88 Version
+  61      =1  //-----------------------------------------------------------------------------
+  62      =1  #define TW8816
+  63      =1  //-----------------------------------------------------------------------------
+  64      =1  //              Options for Backlight control
+  65      =1  //-----------------------------------------------------------------------------
+  66      =1  //#define       BACKLIGHT_CCFL
+  67      =1  //#define       BACKLIGHT_LED
+  68      =1  #define BACKLIGHT_PWM
+  69      =1  
+  70      =1  //-----------------------------------------------------------------------------
+  71      =1  //              Panel Resolution
+  72      =1  //-----------------------------------------------------------------------------
+  73      =1  // ---- Select Default Panel
+  74      =1  //
+  75      =1  //#define UXGA                                          // 1600 x 1200
+  76      =1  //#define SXGA                                          // 1280 x 1024
+  77      =1  //#define XGA  // 1024 x 768
+  78      =1  #ifdef XGA
+           =1         #define LVDS                                    
+           =1         #define PWIDTH  1024
+           =1         #define PHEIGHT 768
+           =1 #endif
+  83      =1  //#define SVGA                                          //  800 x 600
+  84      =1  //#define VGA                                           //  640 x 480
+  85      =1  #ifdef VGA
+           =1         #define PWIDTH  640
+           =1         #define PHEIGHT 480
+           =1         //#define       HITACHI_640_B_160               //--> 640 x 160
+           =1         #define AND_640_480
+           =1 #endif
+  91      =1  //#define WXGA                                          // 1280 x 768 (15:9) // 1366 x 768 (16:9)
+  92      =1  #ifdef WXGA
+           =1     //#define WX_SHARP_LQ106K1LA
+           =1         #define PWIDTH  1280
+           =1         #define PHEIGHT 768
+           =1 #endif
+  97      =1  //#define WSVGA                                         // 1024 x 600   *** only video mode
+  98      =1  #ifdef WSVGA
+           =1         #define PWIDTH  1024
+           =1         #define PHEIGHT 600
+           =1         #define UNIDEN_1024_600
+           =1 #endif
+ 103      =1  #define WVGA                                            //  800 x 480
+ 104      =1  #ifdef WVGA
+ 105      =1          #define PWIDTH  800
+ 106      =1          #define PHEIGHT 600//480
+ 107      =1          // If WVGA, you have to select panel.
+ 108      =1          //#define AU_10INCH
+ 109      =1          //#define WVGA_TPO
+ 110      =1          //#define SAMSUNG_10INCH
+ 111      =1          //#define SAMSUNG_TICONLESS_10INCH
+ 112      =1          //#define SHARP_TICONLESS_7INCH
+ 113      =1          #define AU_TICONLESS_7INCH
+ 114      =1          //#define INNOLUX_AT080TN03
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 3   
+
+ 115      =1          //#define AU_TICONLESS_7INCH_CCFL
+ 116      =1          //#define CMO                   // CHIMEI panel
+ 117      =1          //#define AU_TICONLESS_10INCH
+ 118      =1          //#define HITACHI_T01
+ 119      =1          //#define HITACHI_TX23D12
+ 120      =1          //#define HITACHI_TX18D24
+ 121      =1          //#define HITACHI_TX18D16
+ 122      =1          //#define TMD_LTA070A320F
+ 123      =1          //#define TMD_LTA080B
+ 124      =1  #endif  //WVGA
+ 125      =1  //#define HVGA                                          //  480 x 320
+ 126      =1  //#define QVGA                                          //  320 x 240   *** only video mode
+ 127      =1  #ifdef QVGA
+           =1         #define PWIDTH  320
+           =1         #define PHEIGHT 240
+           =1         //#define HITACHI_TX09D73
+           =1         //#define AU_DELTARGB
+           =1         //#define SHARP_LQ050Q5DR01
+           =1         //#define SHARP_LQ035
+           =1         //#define       TMD
+           =1 #endif
+ 136      =1  
+ 137      =1  //#define WQVGA                                         //  480 x 234   *** only video mode
+ 138      =1  #ifdef WQVGA
+           =1         #define PWIDTH  480
+           =1         #define PHEIGHT 240
+           =1         // If WQVGA, you have to select panel   
+           =1     #define ANALOG_7INCH
+           =1         //#define       PWIDTH  400
+           =1         //#define PHEIGHT       240
+           =1         //#define SHARP_LQ043T3DX02             //  400 x 237
+           =1         //#define LG_ANALOG
+           =1         //#define TMD_ANALOG                            //TMD_LTA05B352A
+           =1         //#define       T_51945GD                               // Optorex Panel
+           =1 #endif  // WQVGA
+ 150      =1  
+ 151      =1  //if LVDS pannel disable TICONLESS
+ 152      =1  
+ 153      =1  //-----------------------------------------------------------------------------
+ 154      =1  //---- Add Support One more panel with DIPSW#1
+ 155      =1  //---- Ex. Add Analog AU 7" Panel with Default Panel for evalution
+ 156      =1  //#define ADD_ANALOGPANEL               // Added Analog panel(AU7") from default set panel(expect WQVGA) with DIP #1 sw
+             -itch.(DIP#1=L:ANALOG, H:DEFAULT)
+ 157      =1                                                          // It can't support WQVGA and ADD_ANALOGPANEL same time!!
+ 158      =1          //#define ADD_ANALOG_7INCH
+ 159      =1          //#define ADD_TMD_LTA05B352A
+ 160      =1                                                                          
+ 161      =1  //---- Support Wide panel function
+ 162      =1  #if (defined WXGA) || (defined WSVGA) || (defined WVGA) || (defined WQVGA)
+ 163      =1  #define WIDE_SCREEN                             // Can support 4 display mode, i.e. Normal, Wide, Full, Zoom
+ 164      =1  #endif                                                          // Tested panasonic WVGA panel.
+ 165      =1  
+ 166      =1  //-----------------------------------------------------------------------------
+ 167      =1  //              Panel Vendor Specific
+ 168      =1  //-----------------------------------------------------------------------------
+ 169      =1  
+ 170      =1  //-----------------------------------------------------------------------------
+ 171      =1  //              TV Tuner
+ 172      =1  //-----------------------------------------------------------------------------
+ 173      =1  #define PHILIPS                         0
+ 174      =1  #define ALPS                            1               // ALPS, LG
+ 175      =1  #define TEMIC                           2
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 4   
+
+ 176      =1  #define TVAVA                           3
+ 177      =1  #define LGTUNER                         4
+ 178      =1  #define SAMSUNGMUTITUNER        5
+ 179      =1  
+ 180      =1  #define TVTunerDevice           4
+ 181      =1  //-----------------------------------------------------------------------------
+ 182      =1  //              IR Remote Controller Type
+ 183      =1  //-----------------------------------------------------------------------------
+ 184      =1  //#define REMO_RC5                                      // RC5 style
+ 185      =1  #define TECHWELL_REMOCON
+ 186      =1  //#define REMO_NEC                                      // NEC style
+ 187      =1  //#define PHILIPS_REMOCON // New remocon 
+ 188      =1  
+ 189      =1  
+ 190      =1  //-----------------------------------------------------------------------------
+ 191      =1  //              I2C Device Access Address Mapping
+ 192      =1  //-----------------------------------------------------------------------------
+ 193      =1  
+ 194      =1  #define EEPROMI2CAddress        0xa0    // EEPROM (24C16)
+ 195      =1  #define TW88I2CAddress          0x8a    // TW880x
+ 196      =1  
+ 197      =1  #define MSPI2CAddress           0x80    // MSP
+ 198      =1  
+ 199      =1  //-----------------------------------------------------------------------------
+ 200      =1  //              Options for Possible Inputs
+ 201      =1  //-----------------------------------------------------------------------------
+ 202      =1  #define         AWT
+ 203      =1  //#define       E_Wintek 
+ 204      =1  //#define SUPPORT_SVIDEO                     //andy Awt 20090914
+ 205      =1  //#define SUPPORT_COMPONENT                     // support component analog to decoder//andy Awt 20090914
+ 206      =1  
+ 207      =1  //#define SUPPORT_DTV                           // support DTV input through component( to ADC ).//andy Awt 20090914
+ 208      =1  #define SUPPORT_PC                              // support PC function
+ 209      =1  //#define SUPPORT_DVI                           // support DVI input
+ 210      =1  #define SUPPORT_SDCARD
+ 211      =1  
+ 212      =1  //#define SUPPORT_RS485
+ 213      =1  
+ 214      =1  //-----------------------------------------------------------------------------
+ 215      =1  //              Options for Possible Standards
+ 216      =1  //              Default:NTSC
+ 217      =1  //-----------------------------------------------------------------------------
+ 218      =1  #define SUPPORT_PAL                     
+ 219      =1  #define SUPPORT_SECAM
+ 220      =1  #define SUPPORT_NTSC4           
+ 221      =1  #define SUPPORT_PALM    
+ 222      =1  #define SUPPORT_PALN            
+ 223      =1  #define SUPPORT_PAL60           
+ 224      =1  
+ 225      =1  
+ 226      =1  //#define ID_CHECK_BY_FW                        // in Video mode, check input system ID by firmware
+ 227      =1  
+ 228      =1  //-----------------------------------------------------------------------------
+ 229      =1  //              Options for Debugging/Release
+ 230      =1  //-----------------------------------------------------------------------------
+ 231      =1  //#define SUPPORT_PATTERN                       // support LCD test pattern
+ 232      =1  
+ 233      =1  
+ 234      =1  #ifndef WQVGA
+ 235      =1          #ifndef QVGA
+ 236      =1  #define SUPPORT_OSDPOSITIONMOVE
+ 237      =1          #endif
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 5   
+
+ 238      =1  #endif
+ 239      =1  
+ 240      =1  #define SERIAL                                  // include serial communication routines
+ 241      =1  
+ 242      =1  //#define SUPPORT_DEBUG                         // Support to use Read & Write in debug OSD Window by remocon.
+ 243      =1  
+ 244      =1  //#define DEBUG                                         // include debug information
+ 245      =1  #ifdef DEBUG
+           =1         //#define DEBUG_MAIN
+           =1         //#define DEBUG_TIME
+           =1         //#define DEBUG_KEYREMO
+           =1         //#define DEBUG_TW88
+           =1         //#define DEBUG_DECODER
+           =1         //#define DEBUG_I2C
+           =1         //#define DEBUG_EEP
+           =1         //#define DEBUG_OSD
+           =1         //#define DEBUG_AUDIO
+           =1         //#define DEBUG_SETPANEL
+           =1         //#define DEBUG_DTV
+           =1         #define DEBUG_PC
+           =1         //#define DEBUG_PC_MEAS
+           =1         #define DEBUG_PC_COLOR
+           =1         //#define DEBUG_COMPONENT
+           =1         //#define DEBUG_BANK
+           =1         //#define DEBUG_PAUSE
+           =1         //#define DEBUG_MCU
+           =1 #endif
+ 265      =1  
+ 266      =1  #define AUTOCALC_PC                                     // in PC mode, Enable Auto Calcuration
+ 267      =1  //#define SUPPORT_USERCOLORFROMTXT      // Use color setting of text file in Color mode=USER MODE which is as B
+             -rightness(Reg10), Contast(Reg11),
+ 268      =1                                                                          //    Sat_U(Reg13),Sat_V(Reg14),Sharpness(Reg12,Reg78)                                                                  
+ 269      =1  //#define SUPPORT_GAMMA
+ 270      =1  
+ 271      =1  //#define CHIP_MANUAL_TEST                      // DIPSW#1
+ 272      =1  
+ 273      =1  #ifndef INTERNAL_MCU
+ 274      =1  //#define NO_INITIALIZE                         // After Power switch turn on with DIP SW4 Enable(Low), or pressed MENU button 
+             -for internal MCU
+ 275      =1                                      //     micom works to access only I2C bus by serial command.
+ 276      =1  #endif
+ 277      =1  
+ 278      =1  //#define SUPPORT_KRS_OSDDEMO           // For KRS Company Demo 
+ 279      =1  //#define SUPPORT_LINE_OSDDEMO
+ 280      =1  
+ 281      =1  //-----------------------------------------------------------------------------
+ 282      =1  //              Special Features
+ 283      =1  //-----------------------------------------------------------------------------
+ 284      =1  
+ 285      =1  #ifndef INTERNAL_MCU
+ 286      =1  //#define       SUPPORT_DELTA_RGB
+ 287      =1  #endif
+ 288      =1  #define SUPPORT_SELECTKEY                       // choose the keymap of using select key or left,right key.
+ 289      =1  //-----------------------------------------------------------------------------
+ 290      =1  #endif  //__CONFIG_H__
+   3          
+   4          #include "typedefs.h"
+   1      =1  #ifndef __TYPEDEFS__
+   2      =1  #define __TYPEDEFS__
+   3      =1  
+   4      =1  
+   5      =1  #define DATA            data
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 6   
+
+   6      =1  #define PDATA           pdata
+   7      =1  #define IDATA           data
+   8      =1  #define CODE            code
+   9      =1  #define CODE_P
+  10      =1  #define PDATA_P
+  11      =1  #define IDATA_P
+  12      =1  #define DATA_P
+  13      =1  
+  14      =1  #define INTERRUPT( num, name ) name() interrupt num
+  15      =1  
+  16      =1  #define _between(x, a, b)       (a<=x && x<=b)
+  17      =1  #define _swap(a, b)                     { a^=b; b^=a; a^=b; }
+  18      =1  
+  19      =1  typedef unsigned char   Register;
+  20      =1  typedef unsigned char   BYTE;
+  21      =1  typedef unsigned short  WORD;
+  22      =1  typedef unsigned long   DWORD;
+  23      =1  
+  24      =1  #define TRUE    1
+  25      =1  #define FALSE   0
+  26      =1  
+  27      =1  //VInputStdDetectMode
+  28      =1  #define AUTO    0
+  29      =1  
+  30      =1  //VInputStd
+  31      =1  #define NTSC    1                       
+  32      =1  #define PAL             2
+  33      =1  #define SECAM   3
+  34      =1  #define NTSC4   4
+  35      =1  #define PALM    5
+  36      =1  #define PALN    6
+  37      =1  #define PAL60   7
+  38      =1  
+  39      =1  #define MAXINPUTSTD     PAL60+1 // 
+  40      =1  
+  41      =1  #define UNKNOWN 0xfe
+  42      =1  #define NOINPUT 0       //0xff
+  43      =1  
+  44      =1  
+  45      =1  
+  46      =1  
+  47      =1  #define NIL                     0xff
+  48      =1  
+  49      =1  enum SourceModeTypeEnum
+  50      =1  {       
+  51      =1          AVMode,            // 0
+  52      =1          VGAMode,       // 1
+  53      =1          CAM_D,         // 2
+  54      =1          CAM_A,         // 3
+  55      =1          CAM_B,         // 4
+  56      =1          CAM_C,         // 5
+  57      =1          CAM_R,         // 6
+  58      =1          CAM_AB,        // 7
+  59      =1          CAM_CR,        // 8
+  60      =1          CAM_AR,        // 9
+  61      =1          CAM_RB,        // 10
+  62      =1          CAM_AC,        // 11
+  63      =1          CAM_CB,        // 12
+  64      =1          CAM_RAB_T,     // 13
+  65      =1          CAM_RAB_H,     // 14
+  66      =1  
+  67      =1          CAM_QUAD,      // 15
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 7   
+
+  68      =1          CAM_ABR_T3,    // 16
+  69      =1          CAM_ABR_T4,    // 17
+  70      =1          SEQ,           // 18
+  71      =1          CAM_BA,                 //19
+  72      =1          
+  73      =1          CAM_BC,
+  74      =1          CAM_BR,
+  75      =1          CAM_CA,
+  76      =1          CAM_ABC,
+  77      =1          CAM_ABR,
+  78      =1          CAM_ACR,
+  79      =1          CAM_BAC,
+  80      =1          CAM_BAR,
+  81      =1          CAM_BCR,
+  82      =1          CAM_CAB,
+  83      =1          CAM_CAR,
+  84      =1          CAM_CBR,        
+  85      =1          CAM_NUM
+  86      =1  };
+  87      =1  
+  88      =1  typedef unsigned char SourceModeType;
+  89      =1  
+  90      =1  #endif  /* __TYPEDEFS__ */
+   5          #include "main.h"
+   1      =1  #ifndef __MAIN__
+   2      =1  #define __MAIN__
+   3      =1  
+   4      =1  #define ON                                      1
+   5      =1  #define OFF                                     0
+   6      =1  //#define Hs_debug
+   7      =1  //#define       DVR
+   8      =1  
+   9      =1  //================= DIP SW Definition =========================================
+  10      =1  ///#define PIXEL_SINGLE         P0_0
+  11      =1  #define DIP_PANEL_SWITCH        P0_0    // Samsung(0) // Sharp-Noticon(1)
+  12      =1  #define DIP_AUTO_DETECT         P0_1
+  13      =1  #define DIP_EDGE_ENHANCE        P0_2
+  14      =1  #define DIP_BW_STRETCH          P0_3
+  15      =1  
+  16      =1  #define Panel_Enable()          P4=P4|0x08 //andy 980908
+  17      =1  #define Panel_Disable()                 P4=P4&0xf7
+  18      =1  
+  19      =1  #define SetBacklight()      P4=P4|0x04
+  20      =1  #define clrBacklight()      P4=P4&0xfb
+  21      =1  
+  22      =1  
+  23      =1  //InputSelection
+  24      =1  struct struct_IdName {
+  25      =1          BYTE    Id;
+  26      =1          BYTE    Name[16];
+  27      =1  };
+  28      =1  
+  29      =1  #define CH_TW2835              1
+  30      =1  #define CH_CAMD                2
+  31      =1  #define CH_AV                  3
+  32      =1  #define PC                                         7
+  33      =1  #define ChineseDefaultMenu   8
+  34      =1  
+  35      =1  #define SVIDEO                          2
+  36      =1  #define COMPONENT                       3
+  37      =1  //#define ANALOGDTV                     4
+  38      =1  #define DTV                                     4
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 8   
+
+  39      =1  #define TV                                      5
+  40      =1  #define SCART                           6
+  41      =1  
+  42      =1  #define DIGITALVGA                      8
+  43      =1  
+  44      =1  #define AIRTV                           0 //9
+  45      =1  #define CABLETV                         1 //0xa
+  46      =1  
+  47      =1  
+  48      =1  #define TVTUNER                         0xd             //10
+  49      =1  #define MUTE                            1       
+  50      =1  #define MENU                            2       
+  51      =1  #define TVVOL                           4       
+  52      =1  #define CC                                      8       
+  53      =1  #define INPUTINFO                       0x10
+  54      =1  #define PCINFO                          0x20
+  55      =1  #define GAUGEINFO           0x40
+  56      =1  //#define RATINGINFO                    0x40
+  57      =1  #define TVCHN                           0x80
+  58      =1  //#define MUTE                          0x40
+  59      =1  
+  60      =1  #define YPBPR_480i                      0
+  61      =1  #define YPBPR_576i                      1
+  62      =1  #define YPBPR_480p                      2
+  63      =1  #define YPBPR_576p                      3
+  64      =1  #define YPBPR_1080i                     4
+  65      =1  #define YPBPR_720p                      5
+  66      =1  #define YPBPR_720p50            6
+  67      =1  
+  68      =1  
+  69      =1  //--------------------------- P0 Define -----------------------------
+  70      =1  #define SEL_MIX                 P0_6    // 
+  71      =1  //--------------------------- P1 Define -----------------------------
+  72      =1  #define SEL_DVI                 P3_5    //LJY062001             
+  73      =1  
+  74      =1  #define TW88HWReset                     P3_4    //LJY001010 //LJY000721
+  75      =1  #define PowerUp             P1_4
+  76      =1  //======================= CDS Control ================================= 
+  77      =1  #define CDS_CTRL           P1_5
+  78      =1  extern BYTE     SelectModeType;
+  79      =1  extern BYTE InputSelection;
+  80      =1  extern BYTE SEQTime;
+  81      =1  extern BYTE     Priority;
+  82      =1  extern BYTE AutoDayNight;
+  83      =1  extern BYTE PowerFlag;
+  84      =1  
+  85      =1  BYTE keyIn(void);
+  86      =1  void TimerForRemocon(void);
+  87      =1  void TimerForTick(void);
+  88      =1  void DisableRemoconInt(void);
+  89      =1  BYTE SetSupport_remocon(BYTE newd);
+  90      =1  
+  91      =1  void delay(BYTE cnt);
+  92      =1  
+  93      =1  BYTE RS_ready(void);
+  94      =1  BYTE RS_rx(void);
+  95      =1  void RS_tx(BYTE tx_buf);
+  96      =1  
+  97      =1  BYTE RS2_rx(void);
+  98      =1  void RS2_tx(BYTE tx_buf);
+  99      =1  
+ 100      =1  void NewLine(void);
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 9   
+
+ 101      =1  void PutsP(PDATA_P BYTE *ptr);
+ 102      =1  #ifdef Hs_debug
+           =1 void MonWriteI2C(BYTE addr, BYTE index, BYTE val);
+           =1 BYTE MonReadI2C(BYTE addr, BYTE index);
+           =1 #endif
+ 106      =1  BYTE Asc1Bin(BYTE asc);
+ 107      =1  BYTE Asc2Bin(PDATA_P BYTE *s);
+ 108      =1  
+ 109      =1  void I2CDeviceInitialize( CODE_P BYTE *RegSet);
+ 110      =1  
+ 111      =1  //void RestartSystemClock(WORD clock_hm);
+ 112      =1  WORD GetTime_ms(void);
+ 113      =1  BYTE GetTime_H(void);
+ 114      =1  BYTE GetTime_M(void);
+ 115      =1  void ChangeTime_H( char add );
+ 116      =1  void ChangeTime_M( char add );
+ 117      =1  //WORD GetWakeupTime(void);
+ 118      =1  //void SetWakeupTime(WORD wtime);
+ 119      =1  
+ 120      =1  
+ 121      =1  //WORD GetOffTime(void);
+ 122      =1  //void SetOffTime(WORD wtime);
+ 123      =1  //BYTE GetSleepTimer(void);
+ 124      =1  //void SetSleepTimer(BYTE stime);
+ 125      =1  WORD DiffTime_ms( WORD stime, WORD etime );
+ 126      =1  //void SetLastBlockedTime(void);
+ 127      =1  void SetLastCCTime(void);                               //ljy010904...CC_FIX_CLEAR_ON_TIME
+ 128      =1  
+ 129      =1  void SetOSDLastKeyInTime(void);
+ 130      =1  WORD GetOSDLastKeyInTime(void);
+ 131      =1  WORD GetIVF(void);
+ 132      =1  DWORD GetIHF(void);
+ 133      =1  BYTE ReadVInputSTD(void);
+ 134      =1  void SetVInputStd(BYTE newd);
+ 135      =1  BYTE GetVInputStd(void);
+ 136      =1  BYTE GetInputSelection(void);
+ 137      =1  #ifdef ADD_ANALOGPANEL
+           =1 BYTE IsAnalogOn(void);
+           =1 #endif
+ 140      =1  void InitVideoData(BYTE src);
+ 141      =1  void ChangeVInputStdDetectMode(BYTE val);
+ 142      =1  BYTE GetVInputStdInx(void);
+ 143      =1  
+ 144      =1  void MonWriteI2Cn_(BYTE addr, BYTE *val, BYTE cnt) ;
+ 145      =1  
+ 146      =1  ///void Usage(void);
+ 147      =1  #ifdef Hs_debug
+           =1         void Prompt(void);
+           =1 #endif
+ 150      =1  void DebugKeyIn(BYTE ikey);
+ 151      =1  void DVIPowerDown(bit flag);
+ 152      =1  void PowerDown_XTAL(bit flag);
+ 153      =1  
+ 154      =1  void ChangeInput(BYTE newsel);
+ 155      =1  
+ 156      =1  
+ 157      =1  void WaitPowerOn(void);
+ 158      =1  void PowerOff(void);
+ 159      =1  BYTE GetNextInputSelection(void);
+ 160      =1  
+ 161      =1  BYTE WantToStopTVScan(void);
+ 162      =1  
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 10  
+
+ 163      =1  //BYTE IsTW8801(void);
+ 164      =1  //BYTE IsTW8803(void);
+ 165      =1  //BYTE ConvertVideoVSAT(BYTE reg);
+ 166      =1  
+ 167      =1  BYTE IsNoInput(void);
+ 168      =1  void LoadEEPROM (void);
+ 169      =1  void Hs_InitVars(void);
+ 170      =1  void AdjustAutoDayNight(BYTE val);
+ 171      =1  void ACCPowerControl(void);
+ 172      =1  struct RegisterInfo
+ 173      =1  {
+ 174      =1     int  Min;
+ 175      =1     int  Max;
+ 176      =1     int  Default;
+ 177      =1  };
+ 178      =1  struct LongRegisterInfo
+ 179      =1  {
+ 180      =1     WORD Min;
+ 181      =1     WORD Max;
+ 182      =1     WORD Default;
+ 183      =1  };
+ 184      =1  
+ 185      =1  #endif  // __MAIN__
+   6          #include "i2c.h"
+   1      =1  #ifndef __I2C_H__
+   2      =1  #define __I2C_H__
+   3      =1  
+   4      =1  
+   5      =1  void I2CReadByte3(BYTE *);
+   6      =1  void I2CRead8Byte(BYTE *);
+   7      =1  #if 0
+           =1 void I2CReadByteMSP(BYTE addr, BYTE index, BYTE *pd, BYTE cnt);
+           =1 #endif
+  10      =1  BYTE I2CWriteByte2(BYTE);
+  11      =1  BYTE I2CWriteByte3(BYTE*);
+  12      =1  BYTE I2CWrite8Byte(BYTE *);
+  13      =1  
+  14      =1  void I2CStart(void);
+  15      =1  void I2CWriteData(BYTE value);
+  16      =1  BYTE I2CReadData(void);
+  17      =1  #if 0
+           =1 BYTE I2CReadDataWithACK(void);
+           =1 #endif
+  20      =1  void I2CStop(void);
+  21      =1  void I2Cdelay(void);
+  22      =1  
+  23      =1  
+  24      =1  #define WriteTW88(a,b)          WriteI2C(TW88I2CAddress, a, b)
+  25      =1  #define ReadTW88(a)                     ReadI2C(TW88I2CAddress, a)
+  26      =1  
+  27      =1  BYTE WriteTW88_Wait     (BYTE, BYTE);
+  28      =1  void WriteADC           (BYTE, BYTE);
+  29      =1  BYTE ReadADC            (BYTE);
+  30      =1  BYTE ReadADC_TW88(BYTE index);
+  31      =1  void WriteADC_TW88(BYTE index, BYTE dat);
+  32      =1  
+  33      =1  void WriteEEP           (WORD, BYTE);
+  34      =1  BYTE ReadEEP            (WORD);
+  35      =1  
+  36      =1  
+  37      =1  BYTE ReadI2C            (BYTE addr, BYTE index);
+  38      =1  void WriteI2C           (BYTE addr, BYTE index, BYTE val);
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 11  
+
+  39      =1  
+  40      =1  void WriteI2Cn_(BYTE addr, BYTE *val, BYTE cnt);
+  41      =1  void WriteI2Cn (BYTE addr, BYTE index, BYTE *val, BYTE cnt);
+  42      =1  void WriteI2CnD(BYTE addr, BYTE index, BYTE val, BYTE cnt);
+  43      =1  
+  44      =1  void ReadI2Cmn(BYTE addr, BYTE wcnt, BYTE rcnt, BYTE *rwdata);
+  45      =1  
+  46      =1  #define         WriteADC(a,b)   WriteADC_TW88(a,b)
+  47      =1  #define         ReadADC(a)              ReadADC_TW88(a)
+  48      =1  
+  49      =1  #endif  /* __I2C_H__ */
+   7          #include "debug.h"
+   1      =1  #ifndef __DEBUG__
+   2      =1  #define __DEBUG__
+   3      =1  
+   4      =1  #define DEBUG_ERR       1
+   5      =1  #define DEBUG_WARN      2
+   6      =1  #define DEBUG_INFO      3
+   7      =1  #define DEBUG_BREAK     4
+   8      =1  
+   9      =1  #define Pause(a)        { Printf("\r\n"); Printf(a); while(!RS_ready()); RS_rx(); }
+  10      =1  
+  11      =1  //#define BURSTLOCK     7
+  12      =1  
+  13      =1  void DebugWindowControl (void) ;
+  14      =1  void Draw_Debug_Char(void);
+  15      =1  void DebugWindowCursor( BYTE flag ) ;
+  16      =1  void DebugWindowData( BYTE flag ) ;
+  17      =1  void Debug_Write(void);
+  18      =1  void Debug_Read(void);
+  19      =1  
+  20      =1  
+  21      =1  
+  22      =1  #endif  // __DEBUG__
+  23      =1  
+  24      =1  #ifdef CHIP_MANUAL_TEST
+           =1 BYTE DelaynCheck(void);
+           =1 void ChipManualTest(void);
+           =1 
+           =1 #endif
+   8          #include "printf.h"
+   1      =1  #ifndef __PRINTF__
+   2      =1  #define __PRINTF__
+   3      =1  
+   4      =1  #define _outchar(c) while(1) { if( !RS_Xbusy ) { SBUF = c; RS_Xbusy=1; break; } }
+   5      =1  #define Putch(c) _outchar(c)
+   6      =1  
+   7      =1  #ifdef SERIAL
+   8      =1  
+   9      =1   void Printf ( const char CODE_P *fmt, ... );
+  10      =1   void Puts ( CODE_P char *ptr );
+  11      =1  
+  12      =1  #define TW2835Cmd(a)   Puts ( a )
+  13      =1  
+  14      =1  #else
+           =1 
+           =1  #undef  DEBUG
+           =1  #define Printf(a,b)    //
+           =1  #define Puts(a)                //
+           =1 
+           =1 #endif
+  21      =1  
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 12  
+
+  22      =1  
+  23      =1  #ifndef DEBUG
+  24      =1  
+  25      =1   #define dPuts(a)               //
+  26      =1   #define wPuts(a)               //
+  27      =1   #define ePuts(a)               //
+  28      =1  
+  29      =1  #else
+           =1 
+           =1  void dPrintf( const char CODE_P *fmt, ... );
+           =1  void wPrintf( const char CODE_P *fmt, ... );
+           =1  void ePrintf( const char CODE_P *fmt, ... );
+           =1 
+           =1  void dPuts( CODE_P char *ptr );
+           =1  void wPuts( CODE_P char *ptr );
+           =1  void ePuts( CODE_P char *ptr );
+           =1 
+           =1 #endif  // DEBUG
+  40      =1  
+  41      =1  BYTE Getch(void);
+  42      =1  BYTE Getche(void);
+  43      =1  
+  44      =1  
+  45      =1  #endif  //__PRINTF__
+   9          #include "TW88.h"
+   1      =1  #ifndef __TW88__
+   2      =1  #define __TW88__
+   3      =1  
+   4      =1  #include "main.h"
+   1      =2  #ifndef __MAIN__
+           =2 #define __MAIN__
+           =2 
+           =2 #define ON                                      1
+           =2 #define OFF                                     0
+           =2 //#define Hs_debug
+           =2 //#define       DVR
+           =2 
+           =2 //================= DIP SW Definition =========================================
+           =2 ///#define PIXEL_SINGLE         P0_0
+           =2 #define DIP_PANEL_SWITCH        P0_0    // Samsung(0) // Sharp-Noticon(1)
+           =2 #define DIP_AUTO_DETECT         P0_1
+           =2 #define DIP_EDGE_ENHANCE        P0_2
+           =2 #define DIP_BW_STRETCH          P0_3
+           =2 
+           =2 #define Panel_Enable()          P4=P4|0x08 //andy 980908
+           =2 #define Panel_Disable()                 P4=P4&0xf7
+           =2 
+           =2 #define SetBacklight()      P4=P4|0x04
+           =2 #define clrBacklight()      P4=P4&0xfb
+           =2 
+           =2 
+           =2 //InputSelection
+           =2 struct struct_IdName {
+           =2         BYTE    Id;
+           =2         BYTE    Name[16];
+           =2 };
+           =2 
+           =2 #define CH_TW2835              1
+           =2 #define CH_CAMD                2
+           =2 #define CH_AV                  3
+           =2 #define PC                                         7
+           =2 #define ChineseDefaultMenu   8
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 13  
+
+           =2 
+           =2 #define SVIDEO                          2
+           =2 #define COMPONENT                       3
+           =2 //#define ANALOGDTV                     4
+           =2 #define DTV                                     4
+           =2 #define TV                                      5
+           =2 #define SCART                           6
+           =2 
+           =2 #define DIGITALVGA                      8
+           =2 
+           =2 #define AIRTV                           0 //9
+           =2 #define CABLETV                         1 //0xa
+           =2 
+           =2 
+           =2 #define TVTUNER                         0xd             //10
+           =2 #define MUTE                            1       
+           =2 #define MENU                            2       
+           =2 #define TVVOL                           4       
+           =2 #define CC                                      8       
+           =2 #define INPUTINFO                       0x10
+           =2 #define PCINFO                          0x20
+           =2 #define GAUGEINFO           0x40
+           =2 //#define RATINGINFO                    0x40
+           =2 #define TVCHN                           0x80
+           =2 //#define MUTE                          0x40
+           =2 
+           =2 #define YPBPR_480i                      0
+           =2 #define YPBPR_576i                      1
+           =2 #define YPBPR_480p                      2
+           =2 #define YPBPR_576p                      3
+           =2 #define YPBPR_1080i                     4
+           =2 #define YPBPR_720p                      5
+           =2 #define YPBPR_720p50            6
+           =2 
+           =2 
+           =2 //--------------------------- P0 Define -----------------------------
+           =2 #define SEL_MIX                 P0_6    // 
+           =2 //--------------------------- P1 Define -----------------------------
+           =2 #define SEL_DVI                 P3_5    //LJY062001             
+           =2 
+           =2 #define TW88HWReset                     P3_4    //LJY001010 //LJY000721
+           =2 #define PowerUp             P1_4
+           =2 //======================= CDS Control ================================= 
+           =2 #define CDS_CTRL           P1_5
+           =2 extern BYTE     SelectModeType;
+           =2 extern BYTE InputSelection;
+           =2 extern BYTE SEQTime;
+           =2 extern BYTE     Priority;
+           =2 extern BYTE AutoDayNight;
+           =2 extern BYTE PowerFlag;
+           =2 
+           =2 BYTE keyIn(void);
+           =2 void TimerForRemocon(void);
+           =2 void TimerForTick(void);
+           =2 void DisableRemoconInt(void);
+           =2 BYTE SetSupport_remocon(BYTE newd);
+           =2 
+           =2 void delay(BYTE cnt);
+           =2 
+           =2 BYTE RS_ready(void);
+           =2 BYTE RS_rx(void);
+           =2 void RS_tx(BYTE tx_buf);
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 14  
+
+           =2 
+           =2 BYTE RS2_rx(void);
+           =2 void RS2_tx(BYTE tx_buf);
+           =2 
+           =2 void NewLine(void);
+           =2 void PutsP(PDATA_P BYTE *ptr);
+           =2 #ifdef Hs_debug
+           =2 void MonWriteI2C(BYTE addr, BYTE index, BYTE val);
+           =2 BYTE MonReadI2C(BYTE addr, BYTE index);
+           =2 #endif
+           =2 BYTE Asc1Bin(BYTE asc);
+           =2 BYTE Asc2Bin(PDATA_P BYTE *s);
+           =2 
+           =2 void I2CDeviceInitialize( CODE_P BYTE *RegSet);
+           =2 
+           =2 //void RestartSystemClock(WORD clock_hm);
+           =2 WORD GetTime_ms(void);
+           =2 BYTE GetTime_H(void);
+           =2 BYTE GetTime_M(void);
+           =2 void ChangeTime_H( char add );
+           =2 void ChangeTime_M( char add );
+           =2 //WORD GetWakeupTime(void);
+           =2 //void SetWakeupTime(WORD wtime);
+           =2 
+           =2 
+           =2 //WORD GetOffTime(void);
+           =2 //void SetOffTime(WORD wtime);
+           =2 //BYTE GetSleepTimer(void);
+           =2 //void SetSleepTimer(BYTE stime);
+           =2 WORD DiffTime_ms( WORD stime, WORD etime );
+           =2 //void SetLastBlockedTime(void);
+           =2 void SetLastCCTime(void);                               //ljy010904...CC_FIX_CLEAR_ON_TIME
+           =2 
+           =2 void SetOSDLastKeyInTime(void);
+           =2 WORD GetOSDLastKeyInTime(void);
+           =2 WORD GetIVF(void);
+           =2 DWORD GetIHF(void);
+           =2 BYTE ReadVInputSTD(void);
+           =2 void SetVInputStd(BYTE newd);
+           =2 BYTE GetVInputStd(void);
+           =2 BYTE GetInputSelection(void);
+           =2 #ifdef ADD_ANALOGPANEL
+           =2 BYTE IsAnalogOn(void);
+           =2 #endif
+           =2 void InitVideoData(BYTE src);
+           =2 void ChangeVInputStdDetectMode(BYTE val);
+           =2 BYTE GetVInputStdInx(void);
+           =2 
+           =2 void MonWriteI2Cn_(BYTE addr, BYTE *val, BYTE cnt) ;
+           =2 
+           =2 ///void Usage(void);
+           =2 #ifdef Hs_debug
+           =2         void Prompt(void);
+           =2 #endif
+           =2 void DebugKeyIn(BYTE ikey);
+           =2 void DVIPowerDown(bit flag);
+           =2 void PowerDown_XTAL(bit flag);
+           =2 
+           =2 void ChangeInput(BYTE newsel);
+           =2 
+           =2 
+           =2 void WaitPowerOn(void);
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 15  
+
+           =2 void PowerOff(void);
+           =2 BYTE GetNextInputSelection(void);
+           =2 
+           =2 BYTE WantToStopTVScan(void);
+           =2 
+           =2 //BYTE IsTW8801(void);
+           =2 //BYTE IsTW8803(void);
+           =2 //BYTE ConvertVideoVSAT(BYTE reg);
+           =2 
+           =2 BYTE IsNoInput(void);
+           =2 void LoadEEPROM (void);
+           =2 void Hs_InitVars(void);
+           =2 void AdjustAutoDayNight(BYTE val);
+           =2 void ACCPowerControl(void);
+           =2 struct RegisterInfo
+           =2 {
+           =2    int  Min;
+           =2    int  Max;
+           =2    int  Default;
+           =2 };
+           =2 struct LongRegisterInfo
+           =2 {
+           =2    WORD Min;
+           =2    WORD Max;
+           =2    WORD Default;
+           =2 };
+           =2 
+           =2 #endif  // __MAIN__
+   5      =1  
+   6      =1  //Value for register 0x44
+   7      =1  //#define DECODER_YCbCr         0x08            //xxxx bbxx
+   8      =1  //#define RGB_RGB                               0x0C
+   9      =1  
+  10      =1  #define TW88_FPLL0                      0xf9
+  11      =1  #define TW88_FPLL1                      0xfa
+  12      =1  #define TW88_FPLL2                      0xfb
+  13      =1  #define TW88_FSS                        0xfc
+  14      =1  #define TW88_FSS_PD                     0xfd
+  15      =1  #define TW88_PLL_DIV            0xfe
+  16      =1  
+  17      =1  //#define TW88_XSCALE                   0x5d
+  18      =1  //#define TW88_YSCALE                   0x5e
+  19      =1  
+  20      =1  #define TW88_XUSCALELO          0x60
+  21      =1  #define TW88_XDSCALELO          0x61
+  22      =1  #define TW88_YUSCALELO          0x62
+  23      =1  #define TW88_XYSCALEHI          0x63
+  24      =1  #define TW88_XUSCALEFINE        0x69
+  25      =1  #define TW88_YUSCALEFINE        0x6a
+  26      =1  
+  27      =1  //Power Mgt
+  28      =1  #define POWER_OFF                       0
+  29      =1  #define POWER_STANDBY           1
+  30      =1  #define POWER_SUSPEND           2
+  31      =1  #define POWER_ON                        3
+  32      =1  
+  33      =1  //void TWChipsDetect(void);
+  34      =1  void SetAutoDetectStd(void);
+  35      =1  void ClearAutoDetectStd(BYTE);
+  36      =1  void I2CDeviceInitialize( CODE_P BYTE *RegSet);
+  37      =1  
+  38      =1  
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 16  
+
+  39      =1  //0x63.. Register Group
+  40      =1  #define GROUP_YCbCr                     0x40
+  41      =1  #define GROUP_RGB                       0
+  42      =1  #define SelectPanelAttrRegGroup(A)                              WriteTW88(0x70, (ReadTW88(0x70) & 0xbf) | A)
+  43      =1  
+  44      =1  //#if defined TW8801 || defined TW8803
+  45      =1  #define FB_MAIN         2
+  46      =1  #define FB_NORMAL       1
+  47      =1  #define FB_RGB          0
+  48      =1  //void SetFBmode( BYTE mode );
+  49      =1  //#endif // TW8801
+  50      =1  
+  51      =1  
+  52      =1  //=============================================================================
+  53      =1  //                                   LCD Functions   
+  54      =1  //=============================================================================
+  55      =1  BYTE GetLCDPowerState(void);
+  56      =1  void SetLCDPowerState(BYTE dat);
+  57      =1  
+  58      =1  BYTE IsFreeRun(void);
+  59      =1  void PanelFreeRun(BYTE on);
+  60      =1  void PanelBlack(BYTE on);
+  61      =1  
+  62      =1  void PanelMute(BYTE on);
+  63      =1  
+  64      =1  void LCDPowerON(BYTE mute); 
+  65      =1  void LCDPowerOFF(void);
+  66      =1  #ifdef Hs_debug
+           =1 void LCDPower(void);
+           =1 #endif
+  69      =1  void DPMSmodeOFF(void);
+  70      =1  void DPMSmodeON(void);
+  71      =1  //=============================================================================
+  72      =1  //                              Get PC Parameter Functions   
+  73      =1  //=============================================================================
+  74      =1  void GetInitPanelAttribute1(void);
+  75      =1  //void GetInitPanelAttribute2(void);
+  76      =1  void DefaultPanelAttributeForVideo(void);
+  77      =1  void SetPVR(WORD pvr);
+  78      =1  void SetPHR(WORD phr);
+  79      =1  WORD GetPVR(void);
+  80      =1  WORD GetPHR(void);
+  81      =1  WORD GetHPN(void);
+  82      =1  WORD GetVPN(void);
+  83      =1  
+  84      =1  //WORD GetVactive(void);
+  85      =1  
+  86      =1  WORD GetHstart(void);
+  87      =1  WORD GetHend(void);
+  88      =1  WORD GetVstart(void);
+  89      =1  WORD GetVend(void);
+  90      =1  void TuneLineBuffer(BYTE field);
+  91      =1  void TuneLineBuffer4Video(BYTE field);
+  92      =1  
+  93      =1  #if defined (SUPPORT_DTV)
+           =1 void SetCoarstForDTV(BYTE en);
+           =1 #endif
+  96      =1  
+  97      =1  WORD GetHactiveStart(void);
+  98      =1  WORD GetHactiveEnd(void);
+  99      =1  WORD GetVactiveStart(void);
+ 100      =1  //WORD GetVactiveLen(void);
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 17  
+
+ 101      =1  BYTE GetVBackPorch(void);
+ 102      =1  void SetVBackPorch(BYTE val);
+ 103      =1  WORD GetPHP(void);
+ 104      =1  void SetPHP(WORD php);
+ 105      =1  void SetPVP(WORD period);
+ 106      =1  WORD GetPVP(void);
+ 107      =1  //void SetPanelRelatedRegisters(void);
+ 108      =1  //BYTE ChangedHPN(void);
+ 109      =1  //WORD GetVSUD(void);
+ 110      =1  
+ 111      =1  void SetDefaultPLL(void);
+ 112      =1  //void SetDefaultFPHSperiod(void);
+ 113      =1  //BYTE CalcPHP(DWORD ppf, BYTE tol);
+ 114      =1  //void ChangeFPHSperiod4DecoderInput(WORD vsud, BYTE tol);
+ 115      =1  
+ 116      =1  //-------------------------------------------------------------------
+ 117      =1  //                  Set Active Region Functions
+ 118      =1  //-------------------------------------------------------------------
+ 119      =1  void SetHactiveStart(WORD hstart);
+ 120      =1  void SetHactiveEnd(WORD hend);
+ 121      =1  void SetVactiveStart(WORD vstart);
+ 122      =1  //void SetVactiveLen(WORD van, WORD vstart);
+ 123      =1  void SetVactiveLen(WORD van);
+ 124      =1  //=============================================================================
+ 125      =1  //                         Set Measurement Window Functions   
+ 126      =1  //=============================================================================
+ 127      =1  void SetMeasureWindowH(WORD start, WORD stop);
+ 128      =1  void SetMeasureWindowV(WORD start, WORD stop);
+ 129      =1  //=============================================================================
+ 130      =1  //                              Video Input Functions   
+ 131      =1  //=============================================================================
+ 132      =1  BYTE IsVideoInput(void);
+ 133      =1  BYTE DetectDecoderInput(void);
+ 134      =1  //=============================================================================
+ 135      =1  //
+ 136      =1  //=============================================================================
+ 137      =1  void AutoPHPCalEnable(void);
+ 138      =1  void AutoPHPCalDisable(void);
+ 139      =1  
+ 140      =1  void MakeStartInt(void);
+ 141      =1  void AVGAInput(void);
+ 142      =1  void DVIInput(void);
+ 143      =1  //void DVGAInput(void);
+ 144      =1  void DisableDVGA(void);
+ 145      =1  
+ 146      =1  void COMPOSITE1Input(void);
+ 147      =1  void COMPOSITE2Input(void);
+ 148      =1  void COMPOSITE3Input(void);
+ 149      =1  
+ 150      =1  void SVIDEOInput(void);
+ 151      =1  void COMPONENTInput(void);
+ 152      =1  void ANALOGDTVInput(void);
+ 153      =1  void DTVInput(void);
+ 154      =1  void TVInput(void);
+ 155      =1  void SCARTInput(void);
+ 156      =1  
+ 157      =1  //=============================================================================
+ 158      =1  //                          Measurement Functions
+ 159      =1  //=============================================================================
+ 160      =1  ///void SetPanelBitOrder(BYTE swap);
+ 161      =1  //void SetPanelSingleDouble(BYTE single);
+ 162      =1  
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 18  
+
+ 163      =1  BYTE MeasureAndWait(BYTE flag);
+ 164      =1  
+ 165      =1  //WORD GetHCounter1(BYTE field);
+ 166      =1  //void SetHInitial(BYTE field, WORD counter);
+ 167      =1  //=============================================================================
+ 168      =1  //                          Invert Polarity Functions
+ 169      =1  //=============================================================================
+ 170      =1  void InvertHSYNCPolarity(void);
+ 171      =1  void InvertVSYNCPolarity(void);
+ 172      =1  //=============================================================================
+ 173      =1  //            Interrupt / SW Reset Control Functions
+ 174      =1  //=============================================================================
+ 175      =1  void SetInt(void);
+ 176      =1  //void ClearInt(void);
+ 177      =1  void SetEnDet(void);
+ 178      =1  void ClearEnDet(void);
+ 179      =1  void SWReset(void);
+ 180      =1  //void ClearSYNCLossStatus(void);
+ 181      =1  //void ClearSYNCChangeStatus(void);
+ 182      =1  //=============================================================================
+ 183      =1  //
+ 184      =1  //=============================================================================
+ 185      =1  BYTE IsBypassmode(void);
+ 186      =1  //BYTE IsInteraced(void);
+ 187      =1  void Clear_bypass(void);
+ 188      =1  void MaskOnSYNCInt(void);
+ 189      =1  void MaskOffSYNCInt(void);
+ 190      =1  //=============================================================================
+ 191      =1  //                                    ZoomControl
+ 192      =1  //=============================================================================
+ 193      =1  void BypassZoom(void);
+ 194      =1  
+ 195      =1  void XscaleU(DWORD scale);
+ 196      =1  void XscaleD(DWORD scale);
+ 197      =1  void XScale2(DWORD scale);
+ 198      =1  void YScale2(DWORD scale);
+ 199      =1  WORD GetYScale(void);
+ 200      =1  //=============================================================================
+ 201      =1  //
+ 202      =1  //=============================================================================
+ 203      =1  WORD GetHSYNCPulse(void);
+ 204      =1  WORD GetVSYNCPulse(void);
+ 205      =1  //#if defined TW8801 || defined TW8803
+ 206      =1  WORD GetRelativePosition(void);
+ 207      =1  //#endif
+ 208      =1  //=============================================================================
+ 209      =1  //                                                              MISC2 for decoder
+ 210      =1  //=============================================================================
+ 211      =1  #define BLUE_DECODER            2
+ 212      =1  #define BLACK_DECODER           0
+ 213      =1  
+ 214      =1  BYTE ForceDecoderOutput(BYTE color);
+ 215      =1  BYTE ClearForcedDecoderOutput(void);
+ 216      =1  //=============================================================================
+ 217      =1  //                                                              CC and EDS
+ 218      =1  //=============================================================================
+ 219      =1  BYTE GetCCStatus(void);
+ 220      =1  void DisableCC(void);
+ 221      =1  void EnableCC(void);
+ 222      =1  BYTE GetCCData(void);
+ 223      =1  BYTE IsCCEnabled(void);
+ 224      =1  void EnableEDS(void);
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 19  
+
+ 225      =1  void DisableEDS(void);
+ 226      =1  void RecoverCCOverflow(void);
+ 227      =1  
+ 228      =1  #define CCFIFOHalfFull()                        (ReadDecoder(CSTATUS) & 0x04)
+ 229      =1  //=============================================================================
+ 230      =1  //                                                              Internal PLL
+ 231      =1  //=============================================================================
+ 232      =1  BYTE GetPOST(void);
+ 233      =1  void SetPLLS(BYTE plls);
+ 234      =1  BYTE GetREFDM(void);
+ 235      =1  void SetREFDM(BYTE refdm);
+ 236      =1  DWORD GetFBDN(void);
+ 237      =1  void SetFBDN(WORD fbdn, BYTE vcsel);
+ 238      =1  DWORD GetPPF(void);
+ 239      =1  void ChangeInternPLL(DWORD _PPF);
+ 240      =1  
+ 241      =1  //=============================================================================
+ 242      =1  //                                                              Macros for attribute
+ 243      =1  //=============================================================================
+ 244      =1  //#define       GetOSDTransReg()                                                ReadTW88(0xAE)
+ 245      =1  //#define SetOSDTransReg(AlphaV)                                        WriteTW88(0xAE, (BYTE)AlphaV )
+ 246      =1  
+ 247      =1  #define GetPanelContrastReg(gccolor)                    ReadTW88(0x71+gccolor)
+ 248      =1  #define SetPanelContrastReg(sccolor, cval)              WriteTW88(0x71+sccolor,cval)
+ 249      =1  
+ 250      =1  #define GetPanelBrightnessReg(gbcolor)                  ReadTW88(0x74+gbcolor);
+ 251      =1  #define SetPanelBrightnessReg(sbcolor, bval)    WriteTW88(0x74+sbcolor,bval);
+ 252      =1  
+ 253      =1  #define SetDTVBrightnessReg(bval)                               WriteTW88(0x74,bval);
+ 254      =1  
+ 255      =1  #define GetPanelSaturationReg(gbcolor)                  ReadTW88(0x72+gbcolor);
+ 256      =1  #define SetPanelSaturationReg(sbcolor, bval)    WriteTW88(0x72+sbcolor,bval);
+ 257      =1  
+ 258      =1  #define SetPanelSharpnessReg(bval)                              WriteTW88(0x78,((bval&0x07)|0x38) );
+ 259      =1  
+ 260      =1  #define SetPanelHueReg(bval)                                    WriteTW88(0x70, (ReadTW88(0x70) & 0xc0 | (bval)) );
+ 261      =1  
+ 262      =1  #define GetVideoContrastReg()                                   ReadDecoder(CONTRAST)
+ 263      =1  #define SetVideoContrastReg(vcval)                              WriteDecoder(CONTRAST, vcval)
+ 264      =1  
+ 265      =1  #define GetVideoBrightnessReg()                                 ReadDecoder(BRIGHT)
+ 266      =1  #define SetVideoBrightnessReg(vbval)                    WriteDecoder(BRIGHT, vbval )
+ 267      =1  
+ 268      =1  #define GetVideoSaturationReg(gvstype)                  ReadDecoder(SAT_U+gvstype)
+ 269      =1  #define SetVideoSaturationReg(svstype, vsval)   WriteDecoder(SAT_U+svstype,     vsval)
+ 270      =1  
+ 271      =1  #define GetVideoHueReg()                                                ReadDecoder(HUE)
+ 272      =1  #define SetVideoHueReg(vhval)                                   WriteDecoder(HUE,       vhval )
+ 273      =1  
+ 274      =1  #define GetVideoSharpnessRegDef                                 (ReadDecoder(SHARPNESS) & 0x0f) 
+ 275      =1  
+ 276      =1  #define GetVideoSharpnessReg()                                  GetVideoSharpnessRegDef
+ 277      =1  //#define       SetVideoSharpnessReg(vshval)                    WriteDecoder(SHARPNESS, vshval )
+ 278      =1  #define SetVideoSharpnessReg(vshval)                    WriteDecoder(SHARPNESS, ((ReadDecoder(SHARPNESS) & 0xf0) | (vshval 
+             -& 0x0f) ) );
+ 279      =1  
+ 280      =1  #ifdef TW9908
+           =1 #define SetVideoVPeakingReg(vshval)
+           =1 #else
+ 283      =1  #define SetVideoVPeakingReg(vshval)                             WriteDecoder(V_PEAKING, ((ReadDecoder(V_PEAKING) & 0xf8) | (vshval 
+             -& 0x07) ) );
+ 284      =1  #endif
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 20  
+
+ 285      =1  
+ 286      =1  #define SetVideoHfilterReg(val)                                 WriteDecoder(HFILTER, ((ReadDecoder(HFILTER) & 0xf8) | (val & 0x07) )|
+             -0x08 );
+ 287      =1  //----------------------------------------------------------------------------------
+ 288      =1  //color type
+ 289      =1  #define RED             0
+ 290      =1  #define GREEN   1
+ 291      =1  #define BLUE    2
+ 292      =1  #define WHITE   3
+ 293      =1  //saturation type
+ 294      =1  #define U_SAT   0
+ 295      =1  #define V_SAT   1
+ 296      =1  
+ 297      =1  //Alpha Blending Level
+ 298      =1  #define _0              0
+ 299      =1  #define _25             0x12
+ 300      =1  #define _37_5   0x13
+ 301      =1  #define _50             0x14
+ 302      =1  #define _100    0x18
+ 303      =1  
+ 304      =1  
+ 305      =1  /*
+ 306      =1  BYTE Mapping( int fromValue, struct RegisterInfo fromRange,
+ 307      =1                                   int * toValue, struct RegisterInfo toRange );
+ 308      =1  */
+ 309      =1  BYTE Mapping1( int fromValue, CODE_P struct RegisterInfo *fromRange,
+ 310      =1                                   int * toValue, CODE_P struct RegisterInfo *toRange );
+ 311      =1  #ifdef KEILC
+ 312      =1  #define Mapping2( A, B, C, D )                  Mapping1( A, B, C, D )
+ 313      =1  #define Mapping3( A, B, C, D )                  Mapping1( A, B, C, D )
+ 314      =1  #else
+           =1 BYTE Mapping2( int fromValue, IDATA_P struct RegisterInfo *fromRange,
+           =1                                  int * toValue, CODE_P struct RegisterInfo *toRange );
+           =1 BYTE Mapping3( int fromValue, CODE_P struct RegisterInfo *fromRange,
+           =1                                  int * toValue, IDATA_P struct RegisterInfo *toRange );
+           =1 #endif
+ 320      =1  
+ 321      =1  BYTE GetAttributesFromNTSCSettings(BYTE index);
+ 322      =1  
+ 323      =1  #endif  // __TW88__
+ 324      =1  
+  10          #include "etc_eep.h"
+   1      =1  #ifndef __ETC_EEP__
+   2      =1  #define __ETC_EEP__
+   3      =1  
+   4      =1  
+   5      =1  ////eeprom.h
+   6      =1  
+   7      =1  //=========================================================================
+   8      =1  //      EEPROM structure
+   9      =1  //      0x00    BYTE    4       'TW88'
+  10      =1  #define EEP_FWREV_MAJOR                 0x04    //BYTE  1       F/W Rev.-major(Hex)     
+  11      =1  #define EEP_FWREV_MINOR                 0x05    //BYTE  1       F/W Rev.-minor(Hex)
+  12      =1  #define EEP_DEBUGLEVEL                  0x06    //BYTE  1       DebugLevel
+  13      =1  //
+  14      =1  #define EEP_AUTODETECT                  0x07    //BYTE  1       Flag for Input Auto Detect      -0:Auto, 1:NTSC,....
+  15      =1  #define EEP_AUTODETECTTYTE              0x08    //BYTE  1       Type of Auto-detect(will be value of register 0x1d)
+  16      =1  //                      ---------------------------------------------------------------
+  17      =1  #define EEP_WIDEMODE                    0x09    //BYTE  1   Wide Mode
+  18      =1  
+  19      =1  #define EEP_AUTORECOGNITION             0x0a    //BYTE  1       Auto Recognition
+  20      =1  #define EEP_VIDEOMODE                   0x0b    //BYTE  1   Video Mode
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 21  
+
+  21      =1  
+  22      =1  #define EEP_OSDLANG                             0x0c    //BYTE  1   OSDLang                                             // 0
+  23      =1  
+  24      =1  #define EEP_OSDPOSITIONMODE     0x0d    //BYTE  1       OSD Position Mode
+  25      =1  #define EEP_CCD                                 0x0e    //BYTE  1       Closed Caption- 0: off, 1:on
+  26      =1  
+  27      =1  #define EEP_INPUTSELECTION              0x0f    //BYTE  1       InputSelection
+  28      =1  
+  29      =1  //
+  30      =1  #define EEP_PC_CONTRAST                 0x10
+  31      =1  #define EEP_PC_BRIGHT                   0x11
+  32      =1  
+  33      =1  #define EEP_CONTRAST                    0x12    //BYTE  1       Contrast 
+  34      =1  #define EEP_BRIGHTNESS                  0x13    //BYTE  1       Brightness
+  35      =1  #define EEP_SATURATION_U                0x14    //BYTE  1       Saturation :U
+  36      =1  #define EEP_SATURATION_V                0x15    //BYTE  1       Saturation :V
+  37      =1  #define EEP_SHARPNESS                   0x16    //BYTE  1       Sharpness 
+  38      =1  #define EEP_HUE                                 0x17    //BYTE  1       Hue                    
+  39      =1  
+  40      =1  //====================================HS AWT 981001
+  41      =1  #define  EEP_AutoMode           0xa0
+  42      =1  #define  EEP_IMAGEMode          0xa1
+  43      =1  #define  EEP_RearMode           0xa2
+  44      =1  #define  EEP_COSDMode           0xa3
+  45      =1  #define  EEP_GAUGEMode          0xa4
+  46      =1  #define  EEP_CAMAMode           0xa5 
+  47      =1  #define  EEP_CAMBMode           0xa6
+  48      =1  #define  EEP_CAMCMode           0xa7
+  49      =1  #define  EEP_CAMRMode           0xa8
+  50      =1  #define  EEP_CAMOutMode         0xa9    
+  51      =1  #define  EEP_TimeStep           0xaa
+  52      =1  #define  EEP_Powerflag          0xab   
+  53      =1  #define  EEP_ONOFFChoice        0xac 
+  54      =1  
+  55      =1  #define  EEP_PRIORITY           0xad
+  56      =1  #define  EEP_JUMPMode           0xae
+  57      =1  #define  EEP_NowModeState       0xaf
+  58      =1  #define  EEP_SelectMode         0xb0
+  59      =1  #define  EEP_PriorityOffSelectMode      0xb1
+  60      =1  #define  EEP_AudioRecord                0xb2
+  61      =1  
+  62      =1  #define  EEP_FirstNumber                0xb3
+  63      =1  #define  EEP_SecondNumber               0xb4
+  64      =1  #define  EEP_ThridNumber                0xb5
+  65      =1  #define  EEP_FourthNumber               0xb6
+  66      =1  
+  67      =1  #define  EEP_CAMNUMBER     0xb7
+  68      =1  #define  EEP_PELCO                 0xb8
+  69      =1  #define  EEP_Baud_rate     0xb9
+  70      =1  #define  EEP_TriggerVGA    0xba
+  71      =1  #define  EEP_DVRDisplay    0xbb
+  72      =1  #define  EEP_IMAGE_A_Mode    0xbc//andy A1.4 20100113
+  73      =1  #define  EEP_IMAGE_B_Mode    0xbd//andy A1.4 20100113
+  74      =1  #define  EEP_IMAGE_C_Mode    0xbe//andy A1.4 20100113
+  75      =1  
+  76      =1  //#define  EEP_SelectModeBuf         0xb2
+  77      =1  
+  78      =1  #if 0
+           =1 #define  EEP_Resolution                 0xc0
+           =1 #define  EEP_FPS                                0xc1
+           =1 #define  EEP_Quality                    0xc2
+           =1 #define  EEP_RecordMode                 0xc3
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 22  
+
+           =1 #define  EEP_RecordLength               0xc4
+           =1 #define  EEP_PreAlarmLength             0xc5
+           =1 #define  EEP_PostAlarmLength    0xc6
+           =1 #endif
+  87      =1  //====================================HS AWT 981001
+  88      =1  
+  89      =1  //
+  90      =1  //              ---------------------------------------------------------------
+  91      =1  #define EEP_PCAUDIOPVOL         0x37    //BYTE  1   AudioVol
+  92      =1  #define EEP_AUDIOPVOL                   0x38    //BYTE  1   AudioVol
+  93      =1  #define EEP_AUDIOBALANCE                0x39    //BYTE  1   AudioBalance
+  94      =1  //
+  95      =1  //              ---------------------------------------------------------------
+  96      =1  
+  97      =1  #define EEP_BLOCKMOVIE                  0x40    //BYTE  1       BlockedMovie:Blocked rating for Movie   
+  98      =1  #define EEP_BLOCKTV                             0x41    //BYTE  1       BlockedTV:Blocked rating for TV                 
+  99      =1  #define EEP_FVSLD                               0x42    //BYTE  6
+ 100      =1  //                                                              7    6       4    3    2    1    0
+ 101      =1  //  FVSLD Level                        ALL   FV(V)   S    L    D    
+ 102      =1  //  0x43    BYTE    1   TV-Y            X  
+ 103      =1  //  0x44        BYTE    1   TV-Y7           X    X 
+ 104      =1  //  0x45        BYTE    1   TV-G            X 
+ 105      =1  //  0x46        BYTE    1   TV-PG           X       X    X    X    X
+ 106      =1  //  0x47        BYTE    1   TV-14           X       X    X    X    X 
+ 107      =1  //  0x48        BYTE    1   TV-MA           X       X    X    X
+ 108      =1  //
+ 109      =1  #define EEP_VCHIPPASSWORD               0x49    //BYTE  4   OSDPassword                                 //Defualt:3366
+ 110      =1  //                      ---------------------------------------------------------------
+ 111      =1  //
+ 112      =1  //
+ 113      =1  //      0x61    WORD    2   PanelXRes
+ 114      =1  //      0x63    WORD    2       PanelYRes
+ 115      =1  //      0x65    BYTE    1       PanelHsyncMinPulseWidth
+ 116      =1  //      0x66    BYTE    1       PanelVsyncMinPulseWidth
+ 117      =1  //      0x67    WORD    2       PanelHminBackPorch
+ 118      =1  //      0x69    BYTE    1       PanelHsyncPolarity
+ 119      =1  //      0x6a    BYTE    1       PanelVsyncPolarity
+ 120      =1  //      0x6b    WORD    2       PanelDotClock
+ 121      =1  //      0x6d    BYTE    1       PanelPixsPerClock
+ 122      =1  //      0x6e    BYTE    1       PanelDEonly
+ 123      =1  //                      ---------------------------------------------------------------
+ 124      =1  //
+ 125      =1  //      0x80    PC Data
+ 126      =1  //
+ 127      =1  //                      ---------------------------------------------------------------
+ 128      =1  //
+ 129      =1  //      0x300   TV Data
+ 130      =1  //
+ 131      =1  //      --- NTSC_TV -------------------------------------------------------------
+ 132      =1  //      CNT_SAVEDAIR                    BYTE    1   Total count of saved Air TV Channel.
+ 133      =1  //      IDX_CURAIR                              BYTE    1   Index of Current Air TV Channel
+ 134      =1  //      CHN_CURAIR                              BYTE    1   Current Air TV Channel.
+ 135      =1  //
+ 136      =1  //      FIRSTSAVED_AIRCHN               BYTE    1       First saved Air TV channel no   (maximum 100)
+ 137      =1  //      ....
+ 138      =1  //
+ 139      =1  //      CNT_SAVEDCABLE                  BYTE    1   Total count of saved Cable TV Channel.
+ 140      =1  //      IDX_CURCABLE                    BYTE    1   Index of Current Cable TV Channel
+ 141      =1  //      CHN_CURCABLE                    BYTE    1   Current Cable TV Channel.
+ 142      =1  //
+ 143      =1  //      FIRSTSAVED_CABLECHN             BYTE    1       First saved Cable TV channel no (maximum 100)
+ 144      =1  //
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 23  
+
+ 145      =1  //      --- PAL_TV --------------------------------------------------------------
+ 146      =1  //      PR_CUR                                  BYTE    1   Current PR no.
+ 147      =1  //      FIRST_SAVEDPR                   DWORD   4   Freq of PR0.        (TOTAL_PR)
+ 148      =1  //      FIRST_SAVEDPR+4                 DWORD   4   Freq of PR1.
+ 149      =1  //      .....
+ 150      =1  //
+ 151      =1  
+ 152      =1  
+ 153      =1  
+ 154      =1  //
+ 155      =1  // Offset of EEPROM
+ 156      =1  //
+ 157      =1  /*
+ 158      =1  #define VIDEOCONTRAST           0x18            // for NTSC.(PAL:0x20,SECAM:0x28)
+ 159      =1  #define VIDEOBRIGHTNESS         0x19
+ 160      =1  #define VIDEOSATURATION_U       0x1a
+ 161      =1  #define VIDEOSATURATION_V       0x1b
+ 162      =1  #define VIDEOHUE                        0x1c            // only for NTSC
+ 163      =1  #define VIDEOSHARPNESS          0x1d
+ 164      =1  */
+ 165      =1  #define CCCOLOR         0x52
+ 166      =1  #define VOLZOOM         0x53
+ 167      =1  
+ 168      =1  #define PANELINFO       0x61
+ 169      =1  
+ 170      =1  // PAL_TV
+ 171      =1  #define  PR_CUR                                 0x301   
+ 172      =1  #define  FIRST_SAVEDPR                  0x308   
+ 173      =1   #define TVFREQ_HIGH 0 
+ 174      =1   #define TVFREQ_LOW  1
+ 175      =1  #ifdef PAL_TV
+           =1  #define TVFINETUNE  2
+           =1                 // NOT Finetune: 0 , Range: -32 ~ +32
+           =1  #define TVPRSYSTEM  3  
+           =1                 // bit 7: Add:1 Ereased :0
+           =1                 // 
+           =1  #define TVCHNAME    4
+           =1 
+           =1  #define BYTEPERCHANNEL 9 
+           =1 #endif
+ 185      =1  // NTSC_TV
+ 186      =1  #define  EEP_TVInputSel                 0x302
+ 187      =1  #define  CHN_CURAIR                             0x303   
+ 188      =1  #define  FIRSTSAVED_AIRCHN              0x308   
+ 189      =1  #define  CHN_CURCABLE                   0x403   
+ 190      =1  #define  FIRSTSAVED_CABLECHN    0x408   
+ 191      =1  #ifdef NTSC_TV
+           =1  #define TVFINETUNE  0
+           =1                 // NOT Finetune: 0 , Range: -32 ~ +32
+           =1  #define TVPRSYSTEM  1  
+           =1                 // bit 7: Add:1 Ereased :0
+           =1                 // 
+           =1  #define BYTEPERCHANNEL 2
+           =1 #endif
+ 199      =1  
+ 200      =1  
+ 201      =1  
+ 202      =1  
+ 203      =1  WORD GetFWRevEE(void);
+ 204      =1  void SaveFWRevEE(WORD);
+ 205      =1  
+ 206      =1  BYTE GetDebugLevelEE(void);
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 24  
+
+ 207      =1  void SaveDebugLevelEE(BYTE);
+ 208      =1  
+ 209      =1  #ifdef WIDE_SCREEN
+ 210      =1  BYTE GetWideModeEE(void);
+ 211      =1  void SaveWideModeEE(BYTE dl);
+ 212      =1  #endif
+ 213      =1  
+ 214      =1  
+ 215      =1  //BYTE GetRange4CoarseEE(void);
+ 216      =1  //void SaveRange4CoarseEE(BYTE);
+ 217      =1  
+ 218      =1  BYTE GetPossibleAutoDetectStdEE(void);
+ 219      =1  void SetPossibleAutoDetectStdEE(void);
+ 220      =1  
+ 221      =1  //BYTE GetOSDXPositionEE(void);
+ 222      =1  //BYTE GetOSDYPositionEE(void);
+ 223      =1  BYTE GetClosedCaptionFlagEE(void);
+ 224      =1  
+ 225      =1  BYTE GetVideoDatafromEE(BYTE);
+ 226      =1  void SaveVideoDatatoEE(BYTE offset, BYTE ndata);
+ 227      =1  
+ 228      =1  //BYTE GetVideoBrightnessEE(void);
+ 229      =1  //BYTE GetVideoSaturationEE(BYTE);
+ 230      =1  //BYTE GetVideoHueEE(void);
+ 231      =1  //BYTE GetVideoSharpnessEE(void);
+ 232      =1  
+ 233      =1  //void SaveVideoContrastEE(BYTE ndata);
+ 234      =1  //void SaveVideoBrightnessEE(BYTE ndata);
+ 235      =1  //void SaveVideoSaturationEE(BYTE, BYTE ndata);
+ 236      =1  //void SaveVideoHueEE(BYTE ndata);
+ 237      =1  //void SaveVideoSharpnessEE(BYTE ndata);
+ 238      =1  
+ 239      =1  BYTE GetOSDPositionModeEE(void);
+ 240      =1  void SaveOSDPositionModeEE(BYTE ndata);
+ 241      =1  //void SaveOSDXPositionEE(BYTE);
+ 242      =1  //void SaveOSDYPositionEE(BYTE);
+ 243      =1  
+ 244      =1  void SaveClosedCaptionFlagEE(BYTE);
+ 245      =1  
+ 246      =1  BYTE GetBlockedTVEE(void);                      
+ 247      =1  void SaveBlockedTVEE(BYTE vi);          
+ 248      =1  BYTE GetBlockedTV_FLDSLEE( BYTE level ) ;
+ 249      =1  void SaveBlockedTV_FLDSLEE(BYTE level, BYTE vi) ;
+ 250      =1  
+ 251      =1  BYTE GetBlockedMovieEE(void);           
+ 252      =1  void SaveBlockedMovieEE(BYTE vi);       
+ 253      =1  #if 0
+           =1 BYTE GetInputSelectionEE(void);
+           =1 #endif
+ 256      =1  void SaveInputSelectionEE(BYTE val);
+ 257      =1  
+ 258      =1  //BYTE GetOSDDurationEE(void);
+ 259      =1  //void SaveOSDDurationEE(BYTE val);
+ 260      =1  
+ 261      =1  BYTE GetOSDLangEE(void);
+ 262      =1  void SaveOSDLangEE(BYTE val);
+ 263      =1  
+ 264      =1  //ljy100303...BYTE GetOSDZoomEE(void);
+ 265      =1  //ljy100303...void SaveOSDZoomEE(BYTE val);
+ 266      =1  
+ 267      =1  BYTE GetAudioVolEE(void);
+ 268      =1  void SetAudioVolEE( BYTE vol );
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 25  
+
+ 269      =1  BYTE GetPCAudioVolEE(void);
+ 270      =1  void SetPCAudioVolEE( BYTE vol );
+ 271      =1  #if 0
+           =1 BYTE GetAudioBalanceEE(void);
+           =1 void SetAudioBalanceEE( BYTE vol );
+           =1 BYTE GetAudioBassEE(void);
+           =1 void SetAudioBassEE( BYTE vol );
+           =1 BYTE GetAudioTrebleEE(void);
+           =1 void SetAudioTrebleEE( BYTE vol );
+           =1 #endif
+ 279      =1  //BYTE GetAudioEffectEE(void);
+ 280      =1  //void SetAudioEffectEE( BYTE vol );
+ 281      =1  
+ 282      =1  void ClearBasicEE(void);
+ 283      =1  
+ 284      =1  BYTE ValidPassword(DATA_P BYTE *numstr, BYTE index);
+ 285      =1  BYTE SetNewPassword(DATA_P BYTE *numstr, BYTE index);
+ 286      =1  
+ 287      =1  //WORD GetPanelXRes(void);
+ 288      =1  //WORD GetPanelYRes(void);
+ 289      =1  BYTE GetPanelHsyncMinPulseWidth(void);
+ 290      =1  BYTE GetPanelVsyncMinPulseWidth(void);
+ 291      =1  WORD GetPanelHMinBackPorch(void);
+ 292      =1  BYTE GetPanelHsyncPolarity(void);
+ 293      =1  BYTE GetPanelVsyncPolarity(void);
+ 294      =1  WORD GetPanelDotClock(void);
+ 295      =1  WORD GetPanelMaxClock(void);
+ 296      =1  BYTE GetPanelPixsPerClock(void);
+ 297      =1  // Not used yet *************************  BYTE GetPanelDEonly(void);
+ 298      =1  
+ 299      =1  void AddTVChannelEE( BYTE tvtype, BYTE chn);
+ 300      =1  BYTE GetTVChannelEE( BYTE tvtype, BYTE inx);
+ 301      =1  void ResetTVChannelEE( BYTE tvtype );
+ 302      =1  BYTE GetTVChannelCntEE(BYTE tvtype);
+ 303      =1  BYTE GetTVChnIdxEE(BYTE tvtype);
+ 304      =1  BYTE GetCurTVChannelEE(BYTE tvtype);
+ 305      =1  void SetTVChnIdxEE(BYTE tvtype, BYTE newd);
+ 306      =1  void SetCurTVChannelEE(BYTE tvtype, BYTE newd);
+ 307      =1  BYTE InsertTVChannelEE(BYTE tvtype, BYTE newd);
+ 308      =1  BYTE RemoveTVChannelEE(BYTE tvtype, BYTE newd);
+ 309      =1  
+ 310      =1  void SetTVPrEE(void);
+ 311      =1  BYTE GetTVPrEE(void);
+ 312      =1  void SetTVFreqEE(BYTE, WORD);
+ 313      =1  WORD GetTVFreqEE(BYTE);
+ 314      =1  void SetFineTuneEE(BYTE, BYTE);
+ 315      =1  BYTE GetFineTuneEE(BYTE);
+ 316      =1  BYTE GetTVPrSystem(BYTE);
+ 317      =1  void SetTVPrSystem(BYTE, BYTE);
+ 318      =1  BYTE GetTVInputSelEE(void);
+ 319      =1  void SetTVInputSelEE(BYTE);
+ 320      =1  
+ 321      =1  #define GetVInputStdDetectModeEE()                              ReadEEP(EEP_AUTODETECTTYTE)
+ 322      =1  #define SaveVInputStdDetectModeEE(A)                    WriteEEP(EEP_AUTODETECTTYTE, A)
+ 323      =1  
+ 324      =1  #define GetAutoRecogntionEE()                                   ReadEEP(EEP_AUTORECOGNITION)
+ 325      =1  #define SaveAutoRecogntionEE(A)                                 WriteEEP(EEP_AUTORECOGNITION, A)
+ 326      =1  
+ 327      =1  #define SetVideoModeEE( ctid )                                  WriteEEP( EEP_VIDEOMODE, ctid )
+ 328      =1  #define GetVideoModeEE()                                                ReadEEP( EEP_VIDEOMODE )
+ 329      =1  
+ 330      =1  #define GetPanelContrastEE()                                    ReadEEP(0x10)
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 26  
+
+ 331      =1  
+ 332      =1  #if defined( SUPPORT_PC ) || defined( SUPPORT_DTV )
+ 333      =1  //#define GetPanelHueEE()                                                       ReadEEP(0x28)
+ 334      =1  //#define GetPanelSharpnessEE()                                 ReadEEP(0x29)
+ 335      =1  #define GetPanelBrightnessEE()                                  ReadEEP(0x11)
+ 336      =1  //#define GetPanelSaturationEE()                                        ReadEEP(0x2a)
+ 337      =1  
+ 338      =1  //#define SavePanelHueEE(A)                                             WriteEEP(0x28, A)
+ 339      =1  //#define SavePanelSharpnessEE(A)                                       WriteEEP(0x29, A)
+ 340      =1  #define SavePanelContrastEE(A)                                  WriteEEP(0x10, A)
+ 341      =1  #define SavePanelBrightnessEE(A)                                WriteEEP(0x11, A)
+ 342      =1  //#define SavePanelSaturationEE(A)                              WriteEEP(0x2a, A)
+ 343      =1  #endif
+ 344      =1  
+ 345      =1  /*
+ 346      =1  #define GetDigitalVideoContrastEE()                             ReadEEP(0x2b)
+ 347      =1  #define GetDigitalVideoBrightnessEE()                   ReadEEP(0x2c)
+ 348      =1  #define GetDigitalVideoHueEE()                                  ReadEEP(0x2d)
+ 349      =1  #define GetDigitalVideoSaturationEE(off)                ReadEEP(0x2e+off)
+ 350      =1  
+ 351      =1  #define SaveDigitalVideoContrastEE(A)                   WriteEEP(0x2b, A)
+ 352      =1  #define SaveDigitalVideoBrightnessEE(A)                 WriteEEP(0x2c, A)
+ 353      =1  #define SaveDigitalVideoHueEE(A)                                WriteEEP(0x2d, A)
+ 354      =1  #define SaveDigitalVideoSaturationEE(off,A)             WriteEEP(0x2e+off, A)
+ 355      =1  */
+ 356      =1  
+ 357      =1  #endif  // __ETC_EEP__
+  11          #include "osdbasic.h"
+   1      =1  //osd_basic.h
+   2      =1  //LJY11012001
+   3      =1  #ifndef __OSD_BASIC__
+   4      =1  #define __OSD_BASIC__
+   5      =1  
+   6      =1  // osd_basic.h
+   7      =1  // char code
+   8      =1  //#include "apilib.h"
+   9      =1  
+  10      =1  //ljy052903
+  11      =1  //definition for internal OSD
+  12      =1  #define FONT_WIDTH_TW88                 12
+  13      =1  #define FONT_HEIGHT_TW88                18
+  14      =1  #define PIXS_PER_XSTEP_TW88             8
+  15      =1  #define LINES_PER_YSTEP_TW88    4
+  16      =1  #define MAX_OSDWINDOW_TW88              8
+  17      =1  
+  18      =1  // Using TW88 OSD for Menu
+  19      =1  #define FONT_WIDTH                      12
+  20      =1  #define FONT_HEIGHT                     18
+  21      =1  #define PIXS_PER_XSTEP          8
+  22      =1  #define LINES_PER_YSTEP         4
+  23      =1  #define MAX_OSDWINDOW           4
+  24      =1  
+  25      =1  #define MAX_FONT_BYTES          27
+  26      =1  #define RAMFONT         0xFE
+  27      =1  #define ROMFONT         0xFF
+  28      =1  #define NO_UDFONT                       226 
+  29      =1  
+  30      =1  #define FONT_ROM        1
+  31      =1  #define FONT_RAM        2
+  32      =1  
+  33      =1  
+  34      =1  /////////////////////////////////
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 27  
+
+  35      =1  // Old Registers...
+  36      =1  /*
+  37      =1          #define TW88_WIN1ATTR           0x76
+  38      =1          #define TW88_WIN1XSTART         0x77
+  39      =1          #define TW88_WIN1YSTART         0x78
+  40      =1          #define TW88_WIN1WIDTH          0x79
+  41      =1          #define TW88_WIN1HEIGHT         0x7a
+  42      =1          #define TW88_WIN1BRDATTR        0x7b
+  43      =1          #define TW88_WIN1BRDWIDTH       0x7c
+  44      =1          #define TW88_WIN1BRDHEIGHT      0x7d
+  45      =1          #define TW88_WIN1XSPACE         0x7e            // between characters.
+  46      =1          #define TW88_WIN1YSPACE         0x7f
+  47      =1          #define TW88_WIN1SADDR          0x80            // starting address of OSD ram for Windows 1
+  48      =1  */
+  49      =1  /////////////////////////////////
+  50      =1  
+  51      =1  // OSD
+  52      =1  #define TW88_ENABLERAM          0x94    // TW8804C
+  53      =1  #define TW88_FONTRAMADDR        0x99    // TW8804C
+  54      =1  #define TW88_FONTRAMDATA        0x9a    // TW8804C
+  55      =1  #define TW88_OSDRAMADDRHI       0x95    // TW8804C
+  56      =1  #define TW88_OSDRAMADDRLO       0x96    // TW8804C
+  57      =1  #define TW88_OSDRAMDATAHI       0x97    // TW8804C
+  58      =1  #define TW88_OSDRAMDATALO       0x98    // TW8804C
+  59      =1  #define TW88_MULTISTART         0x9b    // TW8804C
+  60      =1  #define TW88_OSDLOCKUPSEL       0x9c
+  61      =1  #define TW88_WINNUM                     0x9e    // TW8804C
+  62      =1  #define TW88_WINATTR            0x9f    //
+  63      =1  #define TW88_WINXSTART          0xa1    //
+  64      =1  #define TW88_WINYSTART          0xa2    //
+  65      =1  #define TW88_WINSTART_HI        0xa0    //
+  66      =1  #define TW88_WINWIDTH           0xa3    //
+  67      =1  #define TW88_WINHEIGHT          0xa4    //
+  68      =1  #define TW88_WINBRDATTR         0xa5    //
+  69      =1  #define TW88_WINBRDWIDTH        0xa6    //
+  70      =1  #define TW88_WINBRDHEIGHT       0xa7    //
+  71      =1  #define TW88_WINSPACE           0xa8    // between characters.
+  72      =1  #define TW88_WINZOOM            0xa9    //
+  73      =1  #define TW88_WINSADDRHI         0xa9    // starting address of OSD ram for Windows 1
+  74      =1  #define TW88_WINSADDRLO         0xaa    // starting address of OSD ram for Windows 1
+  75      =1  
+  76      =1  #define TW88_WINSHADOW          0xab    //
+  77      =1  #define TW88_WINBLENDING        0xac    //
+  78      =1  #define TW88_WINCHEFFECT        0xad    //
+  79      =1  
+  80      =1  
+  81      =1  //Attributes for OSD
+  82      =1  #define WINZOOMx1                       0x01
+  83      =1  #define WINZOOMx2                       0x02
+  84      =1  #define WINZOOMx3                       0x03
+  85      =1  #define WINZOOMx4                       0x04
+  86      =1  #define SHOW                            0x08    
+  87      =1  
+  88      =1  #define EXTENDED_COLOR          0x80
+  89      =1  #define BG_COLOR_BLACK          0x00    //For background color of window, border, and char. 
+  90      =1  #define BG_COLOR_RED            0x40    
+  91      =1  #define BG_COLOR_GREEN          0x20
+  92      =1  #define BG_COLOR_YELLOW         0x60
+  93      =1  #define BG_COLOR_BLUE           0x10
+  94      =1  #define BG_COLOR_MAGENTA        0x50
+  95      =1  #define BG_COLOR_CYAN           0x30
+  96      =1  #define BG_COLOR_WHITE          0x70
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 28  
+
+  97      =1  #define BG_COLOR_TRANS          0x80    
+  98      =1  #define BG_COLOR_MASK           0xf0    
+  99      =1  
+ 100      =1  #define CH_COLOR_BLACK          0x00    //For color of char.
+ 101      =1  #define CH_COLOR_RED            0x04    
+ 102      =1  #define CH_COLOR_GREEN          0x02
+ 103      =1  #define CH_COLOR_YELLOW         0x06
+ 104      =1  #define CH_COLOR_BLUE           0x01
+ 105      =1  #define CH_COLOR_MAGENTA        0x05
+ 106      =1  #define CH_COLOR_CYAN           0x03
+ 107      =1  #define CH_COLOR_WHITE          0x07
+ 108      =1  #define CH_BLINK                        0x08    
+ 109      =1  #define CH_COLOR_MASK           0x0f    
+ 110      =1  
+ 111      =1  #define CL_BLACK                        0x00    //For color of char.
+ 112      =1  #define CL_BLUE                         0x01
+ 113      =1  #define CL_GREEN                        0x02
+ 114      =1  #define CL_CYAN                         0x03
+ 115      =1  #define CL_RED                          0x04    
+ 116      =1  #define CL_MAGENTA                      0x05
+ 117      =1  #define CL_YELLOW                       0x06
+ 118      =1  #define CL_WHITE                        0x07
+ 119      =1  #define CL_BLINK                        0x08    
+ 120      =1  
+ 121      =1  // 0x76*(WindowNo*0x0b)
+ 122      =1  #define WINDOW_DISABLE          0x00
+ 123      =1  #define WINDOW_ENABLE           0x01
+ 124      =1  #define WINDOW_3D_ENABLE    0x04
+ 125      =1  #define WINDOW_3D_BOTTOM    0x08
+ 126      =1  #define WINDOW_3D_TOP       0x00
+ 127      =1  #define WINDOW_TRANS_ENABLE 0x80
+ 128      =1  
+ 129      =1  #define WINBDCOLOR_ENABLE       0x80
+ 130      =1  #define WINBDCOLOR_EXTENT       0x80
+ 131      =1  
+ 132      =1  
+ 133      =1  #define WINBLENDING_DISABLE 0x00
+ 134      =1  #define WINBLENDING_BACK    0x10
+ 135      =1  #define WINBLENDING_FORE    0x20
+ 136      =1  #define WINBLENDING_ALL     0x30
+ 137      =1  
+ 138      =1  #define WINSHADOW_ENABLE        0x80
+ 139      =1  // 0xc8*WindowNo
+ 140      =1  #define WIN_MULTICOLOR_ENABLE 0x20
+ 141      =1  #define WIN_CH_EFFECT_ENABLE  0x10
+ 142      =1  #define WIN_CH_EFFECT_SHADOW  0x08
+ 143      =1  
+ 144      =1  
+ 145      =1  
+ 146      =1  ///////// TW8804C /////////////
+ 147      =1  // Window Number
+ 148      =1  #define WINNUM1                         1
+ 149      =1  #define WINNUM2                         2
+ 150      =1  #define WINNUM3                         3
+ 151      =1  #define WINNUM4                         4
+ 152      =1  
+ 153      =1  // Index 0x9f Defination
+ 154      =1  #define WIN_BG_COLOR_EX         0x80
+ 155      =1  #define WIN_BG_COLOR_EX0        0x00
+ 156      =1  #define WIN_3D_TYPE                     0x08
+ 157      =1  #define WIN_3D_TYPE0            0x00
+ 158      =1  #define WIN_3D_EN                       0x04
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 29  
+
+ 159      =1  #define WIN_3D_EN0                      0x00
+ 160      =1  #define WIN_3D_LEVEL            0x02
+ 161      =1  #define WIN_EN                          0x01
+ 162      =1  #define WIN_EN0                         0x00
+ 163      =1  
+ 164      =1  // Index 0xa5 Defination
+ 165      =1  #define WIN_BD_EN                       0x80
+ 166      =1  #define WIN_BD_EN0                      0x00
+ 167      =1  #define WIN_BD_WIDTH(a)         a
+ 168      =1  
+ 169      =1  // Index 0xa6 Defination
+ 170      =1  #define WIN_BD_COLOR_EX         0x80
+ 171      =1  #define WIN_BD_COLOR_EX0        0x00
+ 172      =1  #define WIN_H_BD_W(a)           a
+ 173      =1  
+ 174      =1  // Index 0xa7 Defination
+ 175      =1  #define WIN_V_BD_W(a)           a
+ 176      =1  
+ 177      =1  // Index 0xa8
+ 178      =1  #define WIN_CH_VSPACE(a)        (a<<4)
+ 179      =1  #define WIN_CH_HSPACE(a)        a
+ 180      =1  
+ 181      =1  // Index 0xa9 Defination
+ 182      =1  #define WIN_VZOOM(a)            (a-1)
+ 183      =1  #define WIN_HZOOM(a)            (a-1)
+ 184      =1  #define WIN_SADDR(a)            a
+ 185      =1  
+ 186      =1  // Index 0xab
+ 187      =1  #define WIN_SHADOW_EN           0x80
+ 188      =1  #define WIN_SHADOW_EN0          0x00
+ 189      =1  #define WIN_SHADOW_W(a)         a
+ 190      =1  
+ 191      =1  // ad
+ 192      =1  #define WIN_SHADOW_COLOR_EX             0x80
+ 193      =1  #define WIN_SHADOW_COLOR_EX0    0x00
+ 194      =1  #define WIN_MULTI_EN                    0x40
+ 195      =1  #define WIN_MULTI_EN0                   0x00
+ 196      =1  #define WIN_V_EXT_EN                    0x20
+ 197      =1  #define WIN_V_EXT_EN0                   0x00
+ 198      =1  #define WIN_CH_BDSH_SEL(a)              a
+ 199      =1  #define SEL_BORDER                              0
+ 200      =1  #define SEL_SHADOW                              1
+ 201      =1  #define WIN_CH_BDSH_COLOR_EX    0x08
+ 202      =1  #define WIN_CH_BDSH_COLOR_EX0   0x00
+ 203      =1  
+ 204      =1  #define OSD_Win_Num(a)                  0x9e, a-1
+ 205      =1  #define OSD_Win_Start_Addr              0xa0
+ 206      =1  #define OSD_Win_Attr(a)                         a
+ 207      =1  #define OSD_Win_Start(h,v)                       (BYTE)(((WORD)h>>8) | (((WORD)v>>8)<<4)),(BYTE)h, (BYTE)v
+ 208      =1  #define OSD_Win_Width(a)                        a
+ 209      =1  #define OSD_Win_Height(a)                       a
+ 210      =1  #define OSD_Win_Border(a)                       a
+ 211      =1  #define OSD_Win_HBorder(a)                      a
+ 212      =1  #define OSD_Win_VBorder(a)                      a
+ 213      =1  #define OSD_Win_CH_Space(a)                     a
+ 214      =1  #define OSD_Win_ZM_SAddr(h,v,a)         ((h<<6)|(v<<4)|(a>>8)), (BYTE)a
+ 215      =1  #define OSD_Win_Shadow(a)                       a
+ 216      =1  #define OSD_Win_Blending(a)                     a
+ 217      =1  #define OSD_Win_CH_BorderShadow(a)      a
+ 218      =1  
+ 219      =1  
+ 220      =1  #define SetOSDWindowNum(winno)          WriteTW88(TW88_WINNUM, winno-1)
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 30  
+
+ 221      =1  
+ 222      =1  //#define  OSD_Window_Attr(Trans_en,Color,3D_Type,3D_en,W_en)       (((( Trans_en | Color ) | 3D_Type) | 3
+             -D_en) | W_en)
+ 223      =1  #define  OSD_Window_Attr(a,b,c,d,e)                                                                     (((( a | b ) | c) | d) | e)
+ 224      =1  #define  OSD_WShadow_Attr(W_Shadow_en,Color,Width)                                      W_Shadow_en | Color | Width
+ 225      =1  //#define  OSD_Blending(en,level)                                                                               en | (level & 0x0f)
+ 226      =1  //#define  OSD_Ch_Effect(Multi, Effect_En, ShadowBorder, Color)         Multi | Effect_En | ShadowBorder | Color 
+             - 
+ 227      =1  
+ 228      =1  
+ 229      =1  struct OSDStrInfo 
+ 230      =1  {
+ 231      =1          BYTE    cnt;
+ 232      =1          WORD    addr;
+ 233      =1          BYTE    attr;
+ 234      =1          DWORD   str;
+ 235      =1  };
+ 236      =1  /*
+ 237      =1  struct BarInfo {
+ 238      =1          struct RegisterInfo BarCnt;
+ 239      =1          BYTE    winno;
+ 240      =1          BYTE    xoff;
+ 241      =1          BYTE    yoff;
+ 242      =1          BYTE    color;
+ 243      =1          int             bar_cnt;
+ 244      =1  };
+ 245      =1  */
+ 246      =1  struct FontData {
+ 247      =1          BYTE    font[27];
+ 248      =1  } ;
+ 249      =1  
+ 250      =1  //====================================================================
+ 251      =1  //  Internal OSD Function
+ 252      =1  void CopyCharToOSDRAM_TW88(BYTE Addr, BYTE attr, BYTE ch);
+ 253      =1  void CopyUDCharToOSDRAM_TW88(BYTE Addr, BYTE attr, BYTE ch);
+ 254      =1  //BYTE GetOSDWindowWidth_TW88(BYTE winno);
+ 255      =1  WORD GetOSDWindowSA_TW88(BYTE winno);
+ 256      =1  void SetOSDWindowX_TW88(BYTE winno, BYTE x);
+ 257      =1  void SetOSDWindowY_TW88(BYTE winno, BYTE y);
+ 258      =1  void SetOSDWindowWidth_TW88(BYTE winno, BYTE w);
+ 259      =1  void SetOSDWindowSA_TW88(BYTE winno, WORD sa);
+ 260      =1  
+ 261      =1  void SetOSDItalicsAndUnderline(BYTE italics, BYTE underline);
+ 262      =1  
+ 263      =1  void SetOSDHBorderWidth_TW88(BYTE winno, BYTE w);
+ 264      =1  //BYTE GetOSDWindowColor_TW88(BYTE winno);
+ 265      =1  void SetOSDWindowColor_TW88(BYTE CCWin, BYTE color);
+ 266      =1  void EnableOSDRAMAndChangeFont(BYTE type);
+ 267      =1  void WriteCharToOSDRAM(WORD addr, BYTE ch, BYTE attr);
+ 268      =1  
+ 269      =1  
+ 270      =1  void ShowOSDWindowAll(BYTE on);
+ 271      =1  void ShowOSDWindow_TW88(BYTE winno, BYTE onoff);
+ 272      =1  void ClearOSD_TW88(void);
+ 273      =1  //void CreateOSDWindow_TW88(BYTE winno, BYTE x, BYTE y, BYTE w, BYTE h, WORD sa, BYTE attr);
+ 274      =1  /*not yet!!
+ 275      =1  //ljy012304...CC_ADJUST_POS
+ 276      =1  void SetOSDWindowXS_TW88(BYTE winno, BYTE xs);
+ 277      =1  void SetOSDWindowYS_TW88(BYTE winno, BYTE ys);
+ 278      =1  */
+ 279      =1  
+ 280      =1  //====================================================================
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 31  
+
+ 281      =1  //      OSDMenu Functions
+ 282      =1  
+ 283      =1  //--------------------------------------------------------------------
+ 284      =1  //      Functions used in only Menu
+ 285      =1  #define         CONVERT_CODE                    0x80
+ 286      =1  
+ 287      =1  void InitOSDWindow(BYTE *ptr);
+ 288      =1  
+ 289      =1  WORD GetOSDWindowX(BYTE winno);
+ 290      =1  WORD GetOSDWindowY(BYTE winno);
+ 291      =1  BYTE CreateOSDWindowOutline(BYTE winno, BYTE w, BYTE color);
+ 292      =1  void CreateOSDMenuWindow(BYTE, BYTE, BYTE, BYTE, BYTE, BYTE, BYTE);
+ 293      =1  void ClearOSDLine(BYTE winno, BYTE sx, BYTE sy, BYTE cnt, BYTE attr);
+ 294      =1  void WriteStringToAddr(WORD addr, BYTE *str, BYTE cnt);
+ 295      =1  void DrawAttrString(WORD addr, BYTE *str, BYTE cnt);
+ 296      =1  void DrawAttrCnt(WORD addr, BYTE color, BYTE cnt);
+ 297      =1  void ClearDataCnt(WORD, BYTE);
+ 298      =1  #define         SetOSDWindowX(A, B)                                                     SetOSDWindowX_TW88(A, B)
+ 299      =1  #define     SetOSDWindowY(A, B)                                                 SetOSDWindowY_TW88(A, B)
+ 300      =1  
+ 301      =1  
+ 302      =1  //--------------------------------------------------------------------
+ 303      =1  //      Functions used in Menu and others
+ 304      =1  #define         ShowOSDWindow(A, B)                                                     ShowOSDWindow_TW88(A, B)
+ 305      =1  #define     ClearOSD()                                                                  ClearOSD_TW88()
+ 306      =1  
+ 307      =1  //================================================================
+ 308      =1  //      Font
+ 309      =1  void DownloadUDFont(void);
+ 310      =1  #ifdef Hs_debug
+           =1 void DisplayROMFont(BYTE);
+           =1 void DisplayRAMFont(BYTE);
+           =1 #endif
+ 314      =1  void DownloadFont(BYTE cod, CODE_P BYTE *fontdata);
+ 315      =1  //void DisplayGrid( void );
+ 316      =1  //void DisplayCone( void );
+ 317      =1  //void DisplayJapanese( void );
+ 318      =1  void TestRAMFont( void );
+ 319      =1  #ifdef BANKING
+           =1 void DisplayMGrid( BYTE );
+           =1 void DisplayMessage( void );
+           =1 void DisplayChinese( void );
+           =1 void DisplayJapanese( void );
+           =1 void DisplayKorean( void );
+           =1 void DisplayGridBank0( BYTE n );
+           =1 void DisplayGridBank1( BYTE n );
+           =1 #endif
+ 328      =1  
+ 329      =1  //================================================================
+ 330      =1  //      OSD COLOR
+ 331      =1  void Change_OSDColorLookup(void);
+ 332      =1  void Reset_OSDColorLookup(void);
+ 333      =1  
+ 334      =1  //====================================================================
+ 335      =1  //                              Conversion
+ 336      =1  //====================================================================
+ 337      =1  BYTE utoa(WORD value, BYTE *str, BYTE radix);
+ 338      =1  BYTE ltoa_K(long value, BYTE *str, BYTE);
+ 339      =1  BYTE strlen( BYTE *str );
+ 340      =1  
+ 341      =1  #define CStrlen(A)                              strlen(A)
+ 342      =1  
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 32  
+
+ 343      =1  void WaitEndofDisplayArea(void);
+ 344      =1  
+ 345      =1  #endif  // __OSD_BASIC__
+  12          #include "osdmenu.h"
+   1      =1  //osdmenu.h
+   2      =1  //LJY10292001
+   3      =1  #ifndef __OSDMENU__
+   4      =1  #define __OSDMENU__
+   5      =1  
+   6      =1  //=======================================================================
+   7      =1  // 
+   8      =1  //BYTE GetOSDDuration(void);
+   9      =1  
+  10      =1  void ResetVideoValue(void);
+  11      =1  //#if defined( SUPPORT_PC ) || defined( SUPPORT_DTV )
+  12      =1  //void ResetPCValue(void);
+  13      =1  //#endif
+  14      =1  BYTE GetOSDMenuLevel( void );
+  15      =1  
+  16      =1  void DrawMenulist(BYTE);
+  17      =1  void Display_EnterPin(void);
+  18      =1  void OSDHighMenu_sub(void);
+  19      =1  void ResetOSDValue(void);
+  20      =1  #ifdef E_Wintek
+           =1 void ResetUESROSDValue(void);
+           =1 #endif
+  23      =1  //BYTE OnChangingValue(void);
+  24      =1  //Not used yet *******************BYTE OnChangingTime(void);
+  25      =1  
+  26      =1  //WORD GetOSDclock(void);
+  27      =1  
+  28      =1  void InitOSDMenu(void);
+  29      =1  BYTE CloseOSDMenu(void);
+  30      =1  void OpenOSDMenu(void);
+  31      =1  void OSDHighMenu(void);
+  32      =1  void OSDSelect(void);
+  33      =1  void OSDCursorMove(BYTE flag );
+  34      =1  void OSDLeftRight(BYTE flag );
+  35      =1  void OSDValueUpDn(BYTE flag);
+  36      =1  WORD SetItemValue( BYTE id, BYTE flag );
+  37      =1  BYTE DoAction(BYTE id);
+  38      =1  
+  39      =1  BYTE SaveValue1(void);
+  40      =1  void ClearValueWin(void);
+  41      =1  
+  42      =1  void OSDNumber( BYTE num );
+  43      =1  
+  44      =1  void Set4WideScreen(BYTE id);
+  45      =1  
+  46      =1  void SetRGBContrast( BYTE id, BYTE val );
+  47      =1  BYTE SetPCColorTemp(BYTE flag);
+  48      =1  void ResetPanelAttributeValue(void);
+  49      =1  WORD GetItemValue( BYTE);
+  50      =1  void DisplayViewBar( WORD,BYTE);
+  51      =1  void DrawNum(WORD, CODE_P struct NumType *, WORD);
+  52      =1  void DrawStringByLang( WORD, CODE_P struct EnumType *, WORD);
+  53      =1  
+  54      =1  void DisplayVolumebar(BYTE val);
+  55      =1  BYTE GetOSDLang(void);
+  56      =1  void InitOSDMenuXY(void);
+  57      =1  
+  58      =1  void Display_TVGuide_Window(void);
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 33  
+
+  59      =1  void Display_TVGuide_Status(void);
+  60      =1  
+  61      =1  void ChangeVchip_LevelCursor(BYTE);
+  62      =1  void ChangeVchip_ContentCursor(BYTE);
+  63      =1  void Select_VchipLevel(void);
+  64      =1  void SetVideoMode(BYTE mode);
+  65      =1  BYTE GetVideoDatawithOffset(BYTE offset);
+  66      =1  void SetVideoContrast(BYTE newv);
+  67      =1  void SetVideoBrightness(BYTE newv);
+  68      =1  void SetVideoHue(BYTE newv) ;
+  69      =1  void SetVideoSaturation(BYTE svtype, BYTE newv) ;
+  70      =1  BYTE SetVideoSharpness(BYTE flag) ;
+  71      =1  void SetVideoBacklight(BYTE newv) ;
+  72      =1  //------------------------------------------------andy awt 981013
+  73      =1  //void DaySelect(BYTE);
+  74      =1  void CAMOutDSel(BYTE val);
+  75      =1  void DVRAodioSel(BYTE  val);
+  76      =1  
+  77      =1  //------------------------------------------------andy awt 981013
+  78      =1  
+  79      =1  void DisplayLineOSD(void);      // OSD Line display Demo
+  80      =1  
+  81      =1  
+  82      =1  struct MenuType {
+  83      =1          BYTE    width,  height;
+  84      =1          BYTE    TitleColor;     
+  85      =1          BYTE    CursorColor;
+  86      =1  };
+  87      =1  
+  88      =1  struct NumType {
+  89      =1          BYTE    PrePostCharLen;         // high nibble(pre) / low nibble(post)
+  90      =1          BYTE    PrePostChar[4];
+  91      =1  };
+  92      =1  
+  93      =1  struct NumberStringType {
+  94      =1          BYTE    x, y;
+  95      =1          BYTE    width;
+  96      =1          BYTE    BackColor;
+  97      =1          BYTE    Radix;
+  98      =1          BYTE    NumColor;
+  99      =1          BYTE    MaxLen;                         // maximum length of string
+ 100      =1          BYTE    PrePostCharLen;         // high nibble(pre) / low nibble(post)
+ 101      =1          BYTE    PrePostChar[3];
+ 102      =1  };
+ 103      =1  
+ 104      =1  struct TimeType {
+ 105      =1          BYTE    x, y;
+ 106      =1          BYTE    width;
+ 107      =1          BYTE    BackColor;
+ 108      =1          BYTE    Format;                         //_24H_TIME
+ 109      =1          BYTE    TimeColor;
+ 110      =1          BYTE    CursorColor;
+ 111      =1  };
+ 112      =1  
+ 113      =1  struct EnumType {
+ 114      =1          BYTE    Sz;//size
+ 115      =1          BYTE    ByLang;
+ 116      =1          BYTE    Str[15];                        // doesn't matter the size !!!
+ 117      =1  };
+ 118      =1  
+ 119      =1  #define ICON_CH_SZ              2
+ 120      =1  //#define BAR_NUM_SZ            4
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 34  
+
+ 121      =1  #define ICON_BUF_SZ             2
+ 122      =1  struct DefineMenu {
+ 123      =1          //WORD                                          Icon[ICON_BUF_SZ];      
+ 124      =1          BYTE                            CODE    *Icon;
+ 125      =1          BYTE                                            **Desc;                         
+ 126      =1          BYTE                                            PreFnId, 
+ 127      =1                                                                  PostFnId;
+ 128      =1  //      void            (*CalltoFunction)(void);                                    // Un/Dn/Sel Function
+ 129      =1          BYTE                                            IconColor;                      //NIL: not to display icon
+ 130      =1          BYTE                                            DescColor;                      //NIL: not to display desc. (IconColor==NIL && DescColor==NIL)->Last Item
+ 131      =1          struct DefineMenu       CODE    *Child;
+ 132      =1          BYTE                                            Type;                           // MENU, CHOICEMENU, BAR, NUMBER, TIME, ACTION, ENUM_STRING
+ 133      =1          BYTE                                            ActiveWithCursor;
+ 134      =1          BYTE                                            Id;
+ 135      =1          BYTE                            CODE    *TypeData;      //MenuType, BarType, NumType,,,
+ 136      =1  } ;
+ 137      =1  
+ 138      =1  struct PictureInfo {
+ 139      =1  
+ 140      =1          BYTE Register_Addr;
+ 141      =1          BYTE EEPROM_Addr;
+ 142      =1          struct RegisterInfo     CODE    *Control_Range;
+ 143      =1  };
+ 144      =1  
+ 145      =1  
+ 146      =1  //-------------------------------------------------------------------
+ 147      =1  // OSD Window Information
+ 148      =1  //-------------------------------------------------------------------
+ 149      =1  // Window Number
+ 150      =1  #define OSDCURSORWINDOW                 1
+ 151      =1  #define OSDMENUWINDOW                   OSDCURSORWINDOW+1
+ 152      =1  #define OSDMENU_TOPWIN                  OSDCURSORWINDOW+2
+ 153      =1  #define OSDMENU_TITLEWIN                OSDCURSORWINDOW+3
+ 154      =1  #define OSDBARWINDOW                    OSDCURSORWINDOW
+ 155      =1  
+ 156      =1  #define TECHWELLOGO_OSDWIN      1       
+ 157      =1  #define TVINFO_OSDWIN           2       
+ 158      =1  #define FONTTEST_OSDWIN         2       
+ 159      =1  #define INPUTINFO_OSDWIN        3  
+ 160      =1  #define RATINGINFO_OSDWIN       1       
+ 161      =1  #define PCINFO_OSDWIN           3//4/   
+ 162      =1  
+ 163      =1  //-------------OSDMENU_TITLEWIN------------------------------------------------------
+ 164      =1  // Window Start address
+ 165      =1  #define OSDMENU_MAINADDR        0
+ 166      =1  #define OSDMENU_SUBADDR     OSDMENU_MAINADDR+15    //25*9:196
+ 167      =1  #define OSDMENU_BARADDR         175 //OSDMENU_SUBADDR+225    //256   //25x2:50
+ 168      =1  
+ 169      =1  #define INPUTINFO_ADDR          160     // 9x1:9
+ 170      =1  #ifdef WQVGA
+           =1 #define INPUTINFO1_ADDR         INPUTINFO_ADDR+17       //17x3:51
+           =1 #else
+ 173      =1  #define INPUTINFO1_ADDR         INPUTINFO_ADDR+34       //17x2:51
+ 174      =1  #endif
+ 175      =1  
+ 176      =1  #define MUTEINFO_ADDR       INPUTINFO1_ADDR+51  // 4x1:4
+ 177      =1  #define TVCHINFO_ADDR           MUTEINFO_ADDR//324      // 3X1:3
+ 178      =1  #define LOGO_ADDR                       0
+ 179      =1  #define RATINGINFO_ADDR         0       //addr:210(8x1:8)
+ 180      =1  #define PCMEASUREINFO_ADDR  OSDMENU_BARADDR //10x1
+ 181      =1  
+ 182      =1  
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 35  
+
+ 183      =1  //--------------------------------------------------------------------
+ 184      =1  // OSD Menu Position Range
+ 185      =1  #if ((defined WQVGA) && (defined ANALOG_7INCH)) || ((defined QVGA) && (defined SHARP_LQ050Q5DR01))
+           =1         #define OSD_PHR_ PHR_/2
+           =1 #else
+ 188      =1          #define OSD_PHR_ PHR_
+ 189      =1  #endif
+ 190      =1  
+ 191      =1  #define OSDHSTART_MAX (OSD_PHR_-(12+1)*25 - 56*2 -4)  //PHR - (pixelsize +Hspace)*MenuWidth - Hborder*2 - 
+             -outlinewidth*2
+ 192      =1  #define OSDVSTART_MAX (PVR_-(18+11)*9 - 5*2 ) //  PVR - (Linesize+Vspace)*MENU_HEIGHT - Vborder*2  - outli
+             -newidth*2
+ 193      =1  
+ 194      =1  #define OSDMENUX_MIN 1//0
+ 195      =1  #define OSDMENUX_MAX (OSDHSTART_MAX>>3)
+ 196      =1  #define OSDMENUX_50  (OSDHSTART_MAX>>4)
+ 197      =1  
+ 198      =1  #define OSDMENUY_MIN 2//0
+ 199      =1  #define OSDMENUY_MAX (OSDVSTART_MAX>>2)
+ 200      =1  #define OSDMENUY_50  (OSDVSTART_MAX>>3)
+ 201      =1  
+ 202      =1  //--------------------------------------------------------------------
+ 203      =1  // OSD Menu Width, Height 
+ 204      =1  #ifdef E_Wintek
+           =1 #define ICON_HIGH                               0x14
+           =1 #else
+ 207      =1  #define ICON_HIGH                               0x0a
+ 208      =1  #endif
+ 209      =1  #define TOTAL_MAX_HIGHT                 9
+ 210      =1  
+ 211      =1  #define TOPMENU_WIDTH                   2
+ 212      =1  #define TOTAL_TOP_HEIGHT                5       // Include blank line!
+ 213      =1  
+ 214      =1  #define TOPMENU_HEIGHT                  4       
+ 215      =1  
+ 216      =1  #if (defined QVGA) && (defined SHARP_LQ050Q5DR01)
+           =1 #define MENU_WIDTH                              17 //23//25 
+           =1 #define TITLE_MAX_DESC                  17//25  //
+           =1 #define BAR_LENGTH                              0
+           =1 #else
+ 221      =1  #define MENU_WIDTH                              23//23//25 
+ 222      =1  #define TITLE_MAX_DESC                  23//25  //
+ 223      =1  #define BAR_LENGTH                              5//8
+ 224      =1  #endif
+ 225      =1  
+ 226      =1  #define MENU_HEIGHT                             7//6 
+ 227      =1  
+ 228      =1  #define BARNUM_LENGTH                   8       //11
+ 229      =1  #ifdef REFERENCE
+           =1 #define BACK_COLOR                              BG_COLOR_CYAN
+           =1 #define DEFAULT_COLOR                   BG_COLOR_CYAN   | CH_COLOR_WHITE
+           =1 //#define ACTIVE_COLOR                  BG_COLOR_YELLOW | CH_COLOR_WHITE
+           =1 #define TITLE_BACK_COLOR                BG_COLOR_MAGENTA
+           =1 #define TITLE_COLOR                             TITLE_BACK_COLOR | CH_COLOR_YELLOW
+           =1 #define COMMENT_COLOR                   TITLE_BACK_COLOR | CH_COLOR_WHITE
+           =1 #define CURSOR_COLOR                    BG_COLOR_YELLOW | CH_COLOR_BLUE
+           =1 #define OSD_INFO_COLOR                  DEFAULT_COLOR
+           =1 #define BAR_COLOR                               DEFAULT_COLOR   
+           =1 #define BAR_NUM_COLOR                   DEFAULT_COLOR
+           =1 #define NUM_COLOR                               DEFAULT_COLOR
+           =1 
+           =1 #define OSDMENU_OUTLINE_COLOR   BG_COLOR_BLUE
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 36  
+
+           =1 
+           =1 #else
+ 245      =1  #define BACK_COLOR                              BG_COLOR_CYAN
+ 246      =1  #define DEFAULT_COLOR                   BG_COLOR_CYAN | CH_COLOR_WHITE
+ 247      =1  //#define ACTIVE_COLOR                  BG_COLOR_YELLOW | CH_COLOR_WHITE
+ 248      =1  #define TITLE_BACK_COLOR                BG_COLOR_BLUE
+ 249      =1  #define TITLE_COLOR                             TITLE_BACK_COLOR | CH_COLOR_YELLOW
+ 250      =1  #define COMMENT_COLOR                   TITLE_BACK_COLOR | CH_COLOR_WHITE
+ 251      =1  #define CURSOR_COLOR                    BG_COLOR_YELLOW  | CH_COLOR_BLUE
+ 252      =1  #define OSD_INFO_COLOR                  BG_COLOR_CYAN    | CH_COLOR_GREEN
+ 253      =1  #define BAR_COLOR                               DEFAULT_COLOR   
+ 254      =1  #define BAR_NUM_COLOR                   DEFAULT_COLOR
+ 255      =1  #define NUM_COLOR                               DEFAULT_COLOR
+ 256      =1  
+ 257      =1  #define VER_COLOR               BG_COLOR_CYAN   | CH_COLOR_YELLOW   /// V1.1 03/07/07 simonsung
+ 258      =1  
+ 259      =1  
+ 260      =1  #define OSDMENU_OUTLINE_COLOR   BG_COLOR_CYAN
+ 261      =1  #endif 
+ 262      =1  
+ 263      =1  
+ 264      =1  //DisplayedOSD
+ 265      =1  //              new       |     MENU    TVINFO          CC              INPUTINFO               PCINFO          RATINGINFO
+ 266      =1  //      current   |
+ 267      =1  //============|=========================================================================
+ 268      =1  //      MENU      |                     TVINFO          --              INPUTINFO               PCINFO          MENU + RATINGINFO       
+ 269      =1  //                        |                                              
+ 270      =1  //------------|-------------------------------------------------------------------------
+ 271      =1  //      TVINFO    |     MENU    TVINFO          --              INPUTINFO               PCINFO          TVINFO+RATING
+ 272      =1  //------------|-------------------------------------------------------------------------
+ 273      =1  //      CC                |     MENU->  TVINFO->                        INPUTINFO->             PCINFO          RATINGINFO
+ 274      =1  //                        |      CC              CC                                      CC                                              
+ 275      =1  //------------|-------------------------------------------------------------------------
+ 276      =1  //      INPUTINFO |     MENU    TVINFO          --              INPUTINFO               PCINFO          --
+ 277      =1  //------------|-------------------------------------------------------------------------
+ 278      =1  //      PCINFO    |     MENU    x                       x               INPUTINFO               PCINFO          x
+ 279      =1  //------------|-------------------------------------------------------------------------
+ 280      =1  //      RATINGINFO|     MENU    TVINFO     RATING   INPUTINFO           x                       RATINGINFO
+ 281      =1  //                                                                      
+ 282      =1  
+ 283      =1  //=======================================================================================
+ 284      =1  // OSD Menu Constant define.
+ 285      =1  //=======================================================================================
+ 286      =1  //Time type
+ 287      =1  #define _24H_TIME               1
+ 288      =1  
+ 289      =1  //for previous, next, parent or child
+ 290      =1  #define YES                             0xfe    
+ 291      =1  #define NO                              0
+ 292      =1  
+ 293      =1  
+ 294      =1  //#define OVERWRITE             0
+ 295      =1  //#define POPUP                 1
+ 296      =1  
+ 297      =1  //CursorMove
+ 298      =1  #define VERT                    0
+ 299      =1  #define HORI                    1
+ 300      =1  
+ 301      =1  //Type of MenuItem
+ 302      =1  #define OSDMENU                 1
+ 303      =1  #define CHOICEMENU              2
+ 304      =1  #define ACTION                  3
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 37  
+
+ 305      =1  #define BAR                             4
+ 306      =1  #define NUMBER                  5
+ 307      =1  #define CHOICE                  6
+ 308      =1  #define ENUM_STRING             7 //YESNO                       7
+ 309      =1  #define CHOICE1                 8
+ 310      =1  #define TIME                    9
+ 311      =1  #define NUMBER_STRING   10
+ 312      =1  #define TEXT_STR              11   // V1.1 02/28/07 simonsung
+ 313      =1  
+ 314      =1  
+ 315      =1  //Bar type
+ 316      =1  #define LEFT_FILLED             1
+ 317      =1  #define RIGHT_FILLED    2
+ 318      =1  #define NO_FILLED               3
+ 319      =1  
+ 320      =1  //OSDmenu up and down key
+ 321      =1  #define UP                                      1
+ 322      =1  #define DN                                      2
+ 323      =1  #define RIGHT                           3
+ 324      =1  #define LEFT                            4
+ 325      =1  
+ 326      =1  // Action Id
+ 327      =1  #define DISP_INFO                       0x16
+ 328      =1  
+ 329      =1  #define INPUTSELECTION                          0x2f
+ 330      =1  
+ 331      =1  #define CHANGE_TO_COMPOSITE                     (0x20|CH_TW2835)                        // Low nibble need to start from 1 
+ 332      =1  #define CHANGE_TO_SVIDEO                        (0x20|SVIDEO)                           // so that it match with COMPOSITE...
+ 333      =1  #define CHANGE_TO_COMPONENT                     (0x20|COMPONENT)                
+ 334      =1  #define CHANGE_TO_DTV                           (0x20|DTV)              
+ 335      =1  #define CHANGE_TO_TV                            (0x20|TV)                                       
+ 336      =1  #define CHANGE_TO_PC                            (0x20|PC)                                       
+ 337      =1  #define CHANGE_TO_DIGITALVGA            (0x20|DIGITALVGA)                       
+ 338      =1  #define CHANGE_TO_SCART                         (0x20|SCART)                            
+ 339      =1  
+ 340      =1  
+ 341      =1  #define OSDPOSITIONMODE     0x10
+ 342      =1  #define OSD_VPOS                        0x11
+ 343      =1  #define OSD_HPOS                        0x12
+ 344      =1  #define OSD_HALFTONE            0x13
+ 345      =1  #define OSD_DURATION            0x14
+ 346      =1  #define RESET_OSDVALUE          0x15
+ 347      =1  #define OSDLANG                         0x16
+ 348      =1  
+ 349      =1  #define PANEL_CONTRAST          0x58
+ 350      =1  #define PANEL_BRIGHTNESS        0x59
+ 351      =1  #define PANEL_HUE                       0x5a
+ 352      =1  #define PANEL_SHARPNESS         0x5b
+ 353      =1  #define PANEL_SATURATION        0x5c
+ 354      =1  
+ 355      =1  #define PC_VPOS                         0x43
+ 356      =1  #define PC_HPOS                         0x44
+ 357      =1  #define PC_HSIZE                        0x4d
+ 358      =1  
+ 359      =1  #define PC_CLOCK                        0x45
+ 360      =1  #define PC_PHASE                        0x46
+ 361      =1  
+ 362      =1  #define AUTOADJUST                      0x47
+ 363      =1  #define AUTOADJUST2                     0x48
+ 364      =1  //#define SAVE_AUTOADJUST               0x49
+ 365      =1  #define RESET_AUTOADJUST        0x4a
+ 366      =1  
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 38  
+
+ 367      =1  #define PCCOLORADJUST           0x4b
+ 368      =1  #define SAVE_COLORADJUST        0x4c
+ 369      =1  //#define RESET_COLORADJUST     0x4d
+ 370      =1  
+ 371      =1  #define RESET_PCVALUE           0x4e
+ 372      =1  #define CameraOSD                       0x4f
+ 373      =1  
+ 374      =1  #define PC_COLOR_MODE           0x3f
+ 375      =1  #define PC_COLOR_TEMP           0x30
+ 376      =1  #define PC_COLOR_MODE1          0x31
+ 377      =1  #define PC_COLOR_MODE2          0x32
+ 378      =1  #define PC_COLOR_MODE3          0x33
+ 379      =1  #define PC_COLOR_USER           0x34
+ 380      =1  #define PC_COLOR_R                      0x35
+ 381      =1  #define PC_COLOR_G                      0x36
+ 382      =1  #define PC_COLOR_B                      0x37
+ 383      =1  
+ 384      =1  #define VIDEO_MODE                      0x90
+ 385      =1  #define VIDEO_MODE1                     0x91
+ 386      =1  #define VIDEO_MODE2                     0x92
+ 387      =1  #define VIDEO_MODE3                     0x93
+ 388      =1  #define VIDEO_USER                      0x94
+ 389      =1  #define VIDEO_CONTRAST          0x95
+ 390      =1  #define VIDEO_BRIGHTNESS        0x96
+ 391      =1  #define VIDEO_SATURATION        0x97
+ 392      =1  #define VIDEO_HUE                       0x99
+ 393      =1  #define VIDEO_SHARPNESS         0x9a
+ 394      =1  #define VIDEO_BACKLIGHT         0x9c            // add new value 
+ 395      =1  #define RESET_VIDEOVALUE        0x9b
+ 396      =1  #ifdef E_Wintek
+           =1 #define RESET_USERVALUE 0x9d
+           =1 #endif
+ 399      =1  #define VIDEOPICTURE            0x9f
+ 400      =1  
+ 401      =1  #define INPUTSTD                        0x6f
+ 402      =1  #define CHANGE_TO_AUTO          0x60
+ 403      =1  #define CHANGE_TO_NTSC          (0x60 | NTSC)
+ 404      =1  #define CHANGE_TO_PAL           (0x60 | PAL)
+ 405      =1  #define CHANGE_TO_SECAM         (0x60 | SECAM)
+ 406      =1  #define CHANGE_TO_NTSC4         (0x60 | NTSC4)
+ 407      =1  #define CHANGE_TO_PALM          (0x60 | PALM)
+ 408      =1  #define CHANGE_TO_PALN          (0x60 | PALN)
+ 409      =1  #define CHANGE_TO_PAL60         (0x60 | PAL60)
+ 410      =1  
+ 411      =1  
+ 412      =1  
+ 413      =1  
+ 414      =1  #define CLOSED_CAPTION          0x7f
+ 415      =1  #define CLOSEDCAP_OFF           0x70
+ 416      =1  #define CLOSEDCAP_CC1           0x71
+ 417      =1  #define CLOSEDCAP_CC2           0x72
+ 418      =1  #define CLOSEDCAP_CC3           0x73
+ 419      =1  #define CLOSEDCAP_CC4           0x74
+ 420      =1  #define CLOSEDCAP_T1            0x75
+ 421      =1  #define CLOSEDCAP_T2            0x76
+ 422      =1  #define CLOSEDCAP_T3            0x77
+ 423      =1  #define CLOSEDCAP_T4            0x78
+ 424      =1  
+ 425      =1  #define TV_GUIDE                        0x8f
+ 426      =1  #define NO_VCHIP_LOCK           0
+ 427      =1  #define VCHIP_TV_Y                      1
+ 428      =1  #define VCHIP_TV_Y7                     2
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 39  
+
+ 429      =1  #define VCHIP_TV_G                      3
+ 430      =1  #define VCHIP_TV_PG                     4
+ 431      =1  #define VCHIP_TV_14                     5
+ 432      =1  #define VCHIP_TV_MA                     6
+ 433      =1  #define PASSWORD                        0x87
+ 434      =1  #define NEW_PASSWORD            0x88
+ 435      =1  #define CHK_PASSWORD            0x89
+ 436      =1  #define RET_CHK_PASSWORD        0x8a
+ 437      =1  
+ 438      =1  #define MPAA_RATING                     0x9f
+ 439      =1  #define NO_MPAA_RATING          0
+ 440      =1  #define MPAA_G                          1
+ 441      =1  #define MPAA_PG                         2
+ 442      =1  #define MPAA_PG_13                      3
+ 443      =1  #define MPAA_R                          4
+ 444      =1  #define MPAA_NC_17                      5
+ 445      =1  #define MPAA_X                          6
+ 446      =1  
+ 447      =1  #define TVINSTALL                       0xa0
+ 448      =1  #define SCAN_CHANNEL            0xa1
+ 449      =1  #define AIR_CABLE_TV            0xa3
+ 450      =1  #define STORE_CLEAR_TVCHN       0xa4
+ 451      =1  #define MTS                                     0xa5
+ 452      =1  #define EDIT_CHANNEL            0xa6
+ 453      =1          #define         MTS_STEREO                      0//0x10
+ 454      =1          #define         MTS_MONO                        1//0x11
+ 455      =1  
+ 456      =1  #define AUDIO_VOLUME            0xb7
+ 457      =1  
+ 458      =1  #if 0 //andy AWT8.4 20090811
+           =1 
+           =1 #define AUDIO_BALANCE           0xb9
+           =1 #define AUDIO_BASS                      0xba
+           =1 #define AUDIO_TREBLE            0xbb
+           =1 
+           =1 #define AUDIO_LOUDNESS          0xbc
+           =1 #define AUDIO_EFFECT            0xbd
+           =1 #define AUDIO_MUTE                      0xbe
+           =1 #endif
+ 468      =1  
+ 469      =1  #define DayChoice           0xb8
+ 470      =1  #define CAMOSDONOFF         0xb9
+ 471      =1  #define GAUGEChoice         0xba
+ 472      =1  #define OsdLockChoice       0xbb
+ 473      =1  #define PRIORITYChoice      0xcA
+ 474      =1  #define DVRDisplay              0xcc
+ 475      =1  
+ 476      =1  #define CAMAONOFF                   0xc1
+ 477      =1  #define CAMBONOFF               0xc2
+ 478      =1  #define CAMCONOFF                   0xc3
+ 479      =1  #define CAMRONOFF                       0xc4
+ 480      =1  
+ 481      =1  #define IMAGEChoice         0xc5 
+ 482      =1  #define REARChoice          0xc6
+ 483      =1  #define JUMPChoice          0xc7
+ 484      =1  #define CAMOUTChoice        0xc8 
+ 485      =1  #define STIME_STEP                  0xc9
+ 486      =1  #define TriggerVGA                  0xcb
+ 487      =1  #define IMAGE_A_Choice         0xcd
+ 488      =1  #define IMAGE_B_Choice         0xce
+ 489      =1  #define IMAGE_C_Choice         0xcf
+ 490      =1  
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 40  
+
+ 491      =1  
+ 492      =1  #define MANUAL_TUNE_CHANNEL     0xab
+ 493      =1  #define FINE_TUNE_CHANNEL       0xac
+ 494      =1  #define STORE_PALCHANNEL        0xad
+ 495      =1  
+ 496      =1  //#define CLEAR_TVCHN                   0xb0
+ 497      =1  //#define STORE_TVCHN                   0xb1
+ 498      =1  
+ 499      =1  #define WIDESCREEN                      0xc0
+ 500      =1  #define WIDESCREEN_NORMAL       0 
+ 501      =1  #define WIDESCREEN_WIDE         1 
+ 502      =1  #define WIDESCREEN_PANO         2
+ 503      =1  #define WIDESCREEN_FULL         3 
+ 504      =1  #define WIDESCREEN_ZOOM         4 
+ 505      =1  
+ 506      =1  #define SYSTEM_CLOCK            0xd1
+ 507      =1  #define SYSTEM_CLOCK_H          0xd2
+ 508      =1  #define WAKEUP_TIME                     0xd3
+ 509      =1  #define WAKEUP_TIME_H           0xd4
+ 510      =1  #define WAKEUP_PR                       0xd5
+ 511      =1  #define OFF_TIME                        0xd6
+ 512      =1  #define OFF_TIME_H                      0xd7
+ 513      =1  #define SLEEP_TIMER                     0xd8
+ 514      =1  
+ 515      =1  #define Resolution                      0xe0
+ 516      =1  #define FPS                                     0xe1
+ 517      =1  #define Quality                         0xe2
+ 518      =1  #define RecordMode                      0xe3
+ 519      =1  #define RecordLength            0xe4
+ 520      =1  #define PreAlarmLength          0xe5
+ 521      =1  #define PostAlarmLength         0xe6
+ 522      =1  #define Apply                           0xe7
+ 523      =1  #define ManualRecordStart       0xe8
+ 524      =1  #define ManualRecordStop        0xe9
+ 525      =1  #define Snapshot                        0xea
+ 526      =1  #define FormatSD                        0xeb
+ 527      =1  #define AudioRecord                     0xec
+ 528      =1  #define FirmwareUpdate          0xed
+ 529      =1  #define ChangePassword          0xee
+ 530      =1  #define OverWrite                       0xef
+ 531      =1  
+ 532      =1  
+ 533      =1  
+ 534      =1  
+ 535      =1  #define Year                            0x20
+ 536      =1  #define Month                           0x21
+ 537      =1  #define Day                                     0x22
+ 538      =1  #define Hour                            0x23
+ 539      =1  #define Minute                          0x24
+ 540      =1  
+ 541      =1  #define DaylightSaving                          0x25
+ 542      =1  #define TimeBeginesMonth                        0x26
+ 543      =1  #define TimeBeginesWeek                         0x27
+ 544      =1  #define TimeBeginesTime                         0x28
+ 545      =1  #define StandardTimeBeginesMonth        0x29
+ 546      =1  #define StandardTimeBeginesWeek         0x2a
+ 547      =1  #define StandardTimeBeginesTime         0x2b
+ 548      =1  #define TimeZone                                        0x2c
+ 549      =1  #define FirstNumber                                     0x2d
+ 550      =1  #define SecondNumber                            0x2e
+ 551      =1  #define ThridNumber                                     0x2f
+ 552      =1  #define FourthNumber                            0x38
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 41  
+
+ 553      =1  
+ 554      =1  
+ 555      =1  
+ 556      =1  #define OSDLANGI                        0xd9
+ 557      =1  #define OSDLANGII                       OSDLANGI+1
+ 558      =1  #define OSDLANGIII                      OSDLANGI+2
+ 559      =1  #define OSDLANGIV                       OSDLANGI+3
+ 560      =1  
+ 561      =1  
+ 562      =1  #define TOHIGHMENU                      0xf1
+ 563      =1  #define MOVECURSOR2FIRST        0xf2
+ 564      =1  #define RESET_ALL                       0xf3
+ 565      =1  #define EXITMENU                        0xf4
+ 566      =1  #define DVRParamApply           0xf5
+ 567      =1  #define DATETIMEApply           0xf6
+ 568      =1  
+ 569      =1  
+ 570      =1  #define CHOICE1_VAL                     0xfc
+ 571      =1  #define CHOICE_VAL                      0xfd
+ 572      =1  #define BAR_VAL                         0xfe
+ 573      =1  #define NUM_VAL                         0xff
+ 574      =1  
+ 575      =1  #define CAMNumberChoice     0xa3 
+ 576      =1  #define PelcoChoice         0xa4
+ 577      =1  #define Baud_rateChoice         0xa5
+ 578      =1  
+ 579      =1  #endif  // __OSDMENU__
+  13          #include "audio.h"
+   1      =1  
+   2      =1  
+   3      =1  extern  BYTE    AudioVol;
+   4      =1  extern  BYTE    PCAudioVol;
+   5      =1  
+   6      =1  //BYTE ResetMSP(void);
+   7      =1  //void SetMSPSCARTPrescale(void);
+   8      =1  //void SetMSPSourceSel(void);
+   9      =1  //void SetMSPVol(void);
+  10      =1  
+  11      =1  //BYTE AudioAutoStdDetection(void);
+  12      =1  //BYTE SteroMonoDetection(void);
+  13      =1  
+  14      =1  //BYTE TunerAudio(void);
+  15      =1  //void ExtAudio(void);
+  16      =1  //id PCAudio(void);
+  17      =1  //id MuteOn(void);
+  18      =1  //BYTE GetAudioVol(void);
+  19      =1  BYTE ChangeVol(char);
+  20      =1  //BYTE GetAudioBalance(void);
+  21      =1  //BYTE ChangeBalance(char);
+  22      =1  //BYTE GetAudioBass(void);
+  23      =1  //BYTE ChangeBass(char);
+  24      =1  //BYTE GetAudioTreble(void);
+  25      =1  //BYTE ChangeTreble(char);
+  26      =1  //BYTE GetAudioEffect(void);
+  27      =1  //BYTE ChangeAudioEffect(char amount);
+  28      =1  //void ToggleAudioMute(void);
+  29      =1  //void CheckAndClearMuteOn(void);
+  30      =1  
+  31      =1  //BYTE IsAudioMuteOn(void);
+  32      =1  //void SetAudioMute(BYTE on );
+  33      =1  //void ChangeMTS(BYTE type);
+  34      =1  //void AudioOff(void);
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 42  
+
+  35      =1  void AudioMute(bit mute);
+  36      =1  
+  37      =1  //#define AudioOn()                     SetMSPVol()
+  38      =1  //void ResetAudioValue();
+  14          //-----------------------------------------------------------------------------
+  15          
+  16          extern          BYTE  InputSelection;
+  17          //extern                        BYTE    TVChannel, DummyChannel;
+  18          //extern                BYTE    TVInputSel;
+  19          
+  20          //=============================================================================
+  21          WORD GetFWRevEE()
+  22          {
+  23   1              WORD    rev;
+  24   1      
+  25   1              if( ReadEEP(0) != 'T' ) return 0;
+  26   1              if( ReadEEP(1) != 'W' ) return 0;
+  27   1              if( ReadEEP(2) != '8' ) return 0;
+  28   1              if( ReadEEP(3) != '8' ) return 0;
+  29   1      
+  30   1              rev = ReadEEP(EEP_FWREV_MAJOR) << 8;
+  31   1              rev |= ReadEEP(EEP_FWREV_MINOR);
+  32   1      
+  33   1              return rev;
+  34   1      }
+  35          
+  36          void SaveFWRevEE(WORD rev)
+  37          {
+  38   1              WriteEEP(0, 'T');
+  39   1              WriteEEP(1, 'W');
+  40   1              WriteEEP(2, '8');
+  41   1              WriteEEP(3, '8');
+  42   1      
+  43   1              WriteEEP(EEP_FWREV_MAJOR, (BYTE)(rev>>8) );
+  44   1              WriteEEP(EEP_FWREV_MINOR, (BYTE)rev );
+  45   1      }
+  46          
+  47          BYTE GetDebugLevelEE(void)
+  48          {
+  49   1              return ReadEEP(EEP_DEBUGLEVEL);
+  50   1      }
+  51          
+  52          void SaveDebugLevelEE(BYTE dl)
+  53          {
+  54   1              WriteEEP(EEP_DEBUGLEVEL, dl);
+  55   1              //delay(1);                     
+  56   1      }
+  57          
+  58          #ifdef WIDE_SCREEN
+  59          BYTE GetWideModeEE(void)
+  60          {
+  61   1              return ReadEEP(EEP_WIDEMODE);
+  62   1      }
+  63          
+  64          void SaveWideModeEE(BYTE dl)
+  65          {
+  66   1              WriteEEP(EEP_WIDEMODE, dl);
+  67   1              //delay(1);                     
+  68   1      }
+  69          #endif
+  70          
+  71          BYTE GetPossibleAutoDetectStdEE(void)
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 43  
+
+  72          {
+  73   1              BYTE val;
+  74   1      
+  75   1              val = GetAutoRecogntionEE();
+  76   1      
+  77   1              #ifdef DEBUG_EEP
+                      dPrintf("\r\nGetPossibleAutoDetectStdEE:0x%02x", (WORD)val);
+                      #endif
+  80   1      
+  81   1              return val;
+  82   1      }
+  83          
+  84          void SetPossibleAutoDetectStdEE()
+  85          {
+  86   1              BYTE    i, val=0;
+  87   1              extern  CODE struct struct_IdName struct_VInputStd[];
+  88   1      
+  89   1              for(i=0; ; i++) {
+  90   2                      switch(struct_VInputStd[i].Id) {
+  91   3                      case 0:                         {       // end of list
+  92   4                                                              SaveAutoRecogntionEE(val);
+  93   4      
+  94   4                                                              #ifdef DEBUG_EEP
+                                                                      dPrintf("\r\nSetPossibleAutoDetectStdEE:0x%02x", (WORD)val);
+                                                                      #endif
+  97   4                                                              return;         
+  98   4                                                              }
+  99   3                      case NTSC:                      val |= 0x01;    break;
+ 100   3                      case PAL:                       val |= 0x02;    break;
+ 101   3                      case SECAM:                     val |= 0x04;    break;
+ 102   3                      case NTSC4:                     val |= 0x08;    break;
+ 103   3                      case PALM:                      val |= 0x10;    break;
+ 104   3                      case PALN:                      val |= 0x20;    break;
+ 105   3                      case PAL60:                     val |= 0x40;    break;
+ 106   3                      default:                        break;
+ 107   3                      }
+ 108   2              }
+ 109   1      }
+ 110          
+ 111          //=============================================================================
+ 112          //
+ 113          //=============================================================================
+ 114          #ifdef SUPPORT_OSDPOSITIONMOVE
+ 115          BYTE GetOSDPositionModeEE(void)
+ 116          {
+ 117   1              BYTE val;
+ 118   1      
+ 119   1              val = ReadEEP(EEP_OSDPOSITIONMODE);
+ 120   1      
+ 121   1              return val;
+ 122   1      }
+ 123          
+ 124          void SaveOSDPositionModeEE(BYTE ndata)
+ 125          {
+ 126   1      
+ 127   1              WriteEEP(EEP_OSDPOSITIONMODE, ndata);
+ 128   1      }
+ 129          
+ 130          #endif // SUPPORT_OSDPOSITIONMOVE
+ 131          
+ 132          
+ 133          #define TOT_VIDEO       6
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 44  
+
+ 134          BYTE GetVideoDatafromEE(BYTE offset)
+ 135          {
+ 136   1              BYTE val;
+ 137   1      
+ 138   1              val = ReadEEP(EEP_CONTRAST+(InputSelection-1)*TOT_VIDEO + offset);
+ 139   1      
+ 140   1              return val;
+ 141   1      }
+ 142          
+ 143          void SaveVideoDatatoEE(BYTE offset, BYTE ndata)
+ 144          {
+ 145   1              BYTE tot;
+ 146   1      
+ 147   1              tot=EEP_CONTRAST+ (InputSelection-1)*TOT_VIDEO+offset;
+ 148   1      
+ 149   1              WriteEEP(tot, ndata);
+ 150   1      
+ 151   1      }
+ 152          #if 0
+              BYTE GetInputSelectionEE(void)
+              {
+                      BYTE val, i;
+                      extern CODE struct struct_IdName struct_InputSelection[];
+              
+                      val = ReadEEP(EEP_INPUTSELECTION);
+              
+                      for(i=0; ; i++)
+                              if( struct_InputSelection[i].Id == val )
+                                      break;
+                              else if (struct_InputSelection[i].Id ==0 ) {
+                                      //i=0;
+                                      val = CH_TW2835;//UNKNOWN; (return composite)
+                                      break;
+                              }
+                      
+                      //InputSelectionInx = i;
+                      #ifdef DEBUG_EEP
+                      dPrintf("\r\nGetInputSelectionEE:%02x", (WORD)val);
+                      #endif
+              
+                      return val;
+              }
+              #endif
+ 177          void SaveInputSelectionEE(BYTE val)
+ 178          {
+ 179   1              WriteEEP(EEP_INPUTSELECTION, val);
+ 180   1      }
+ 181          
+ 182          /*
+ 183          #ifndef TW8803
+ 184          
+ 185          BYTE GetOSDDurationEE(void)
+ 186          {
+ 187                  BYTE val;
+ 188          
+ 189                  val = ReadEEP(0x30);
+ 190                  
+ 191                  #ifdef DEBUG_EEP
+ 192                  dPrintf("\r\nGetOSDUuration:%02x", (WORD)val);
+ 193                  #endif
+ 194          
+ 195                  return val;
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 45  
+
+ 196          }
+ 197          
+ 198          void SaveOSDDurationEE(BYTE val)
+ 199          {
+ 200                  WriteEEP(0x30, val);
+ 201          }
+ 202          */
+ 203          BYTE GetOSDLangEE(void)
+ 204          {
+ 205   1              BYTE val;
+ 206   1      
+ 207   1              val = ReadEEP(EEP_OSDLANG);
+ 208   1              
+ 209   1              #ifdef DEBUG_EEP
+                      dPrintf("\r\nGetOSDLang:%02x", (WORD)val);
+                      #endif
+ 212   1      
+ 213   1              return val;
+ 214   1      }
+ 215          
+ 216          void SaveOSDLangEE(BYTE val)
+ 217          {
+ 218   1              WriteEEP(EEP_OSDLANG, val);
+ 219   1      }
+ 220          
+ 221          /*ljy100303
+ 222          BYTE GetOSDZoomEE(void)
+ 223          {
+ 224                  BYTE val;
+ 225          
+ 226                  val = ReadEEP(OSDZOOM);
+ 227          
+ 228                  #ifdef DEBUG_EEP
+ 229                  dPrintf("\r\nGetOSDZoom:%02x", (WORD)val);
+ 230                  #endif
+ 231          
+ 232                  return val;
+ 233          }
+ 234          
+ 235          void SaveOSDZoomEE(BYTE val)
+ 236          {
+ 237                  WriteEEP(OSDZOOM, val);
+ 238          }
+ 239          */
+ 240          
+ 241          
+ 242          //=========  Audio =================================================
+ 243          BYTE GetAudioVolEE(void)
+ 244          {
+ 245   1              return ReadEEP( EEP_AUDIOPVOL );
+ 246   1      }
+ 247          
+ 248          void SetAudioVolEE( BYTE vol )
+ 249          {
+ 250   1              WriteEEP( EEP_AUDIOPVOL, vol );
+ 251   1      }
+ 252          
+ 253          BYTE GetPCAudioVolEE(void)
+ 254          {
+ 255   1              return ReadEEP( EEP_PCAUDIOPVOL );
+ 256   1      }
+ 257          void SetPCAudioVolEE( BYTE vol )
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 46  
+
+ 258          {
+ 259   1              WriteEEP( EEP_PCAUDIOPVOL, vol );
+ 260   1      }
+ 261          #if 0
+              BYTE GetAudioBalanceEE(void)
+              {
+                      return ReadEEP( 0x39 );
+              }
+              
+              void SetAudioBalanceEE( BYTE vol )
+              {
+                      WriteEEP( 0x39, vol );
+              }
+              
+              BYTE GetAudioBassEE(void)
+              {
+                      return ReadEEP( 0x3a );
+              }
+              
+              void SetAudioBassEE( BYTE vol )
+              {
+                      WriteEEP( 0x3a, vol );
+              }
+              
+              BYTE GetAudioTrebleEE(void)
+              {
+                      return ReadEEP( 0x3b );
+              }
+              
+              void SetAudioTrebleEE( BYTE vol )
+              {
+                      WriteEEP( 0x3b, vol );
+              }
+              #endif
+ 292          /*
+ 293          BYTE GetAudioEffectEE(void)
+ 294          {
+ 295                  return ReadEEP( 0x3c );
+ 296          }
+ 297          
+ 298          void SetAudioEffectEE( BYTE vol )
+ 299          {
+ 300                  WriteEEP( 0x3c, vol );
+ 301          }
+ 302          */
+ 303          
+ 304          
+ 305          //===================================================================
+ 306          /*#include "panel.h"
+ 307          void SavePanelInfoEE(void)
+ 308          {
+ 309                  WriteEEP( PANELINFO+0 , (BYTE)PanelConfig.x_res );
+ 310                  WriteEEP( PANELINFO+1 , (BYTE)(PanelConfig.x_res >> 8) );
+ 311          
+ 312                  WriteEEP( PANELINFO+2 , (BYTE)PanelConfig.y_res );
+ 313                  WriteEEP( PANELINFO+3 , (BYTE)(PanelConfig.y_res >> 8) );
+ 314          
+ 315                  WriteEEP( PANELINFO+4 , PanelConfig.h_sync_min_pulse_width );
+ 316          
+ 317                  WriteEEP( PANELINFO+5 , PanelConfig.v_sync_min_pulse_width );
+ 318          
+ 319                  WriteEEP( PANELINFO+6 , (BYTE)PanelConfig.h_min_back_porch );
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 47  
+
+ 320                  WriteEEP( PANELINFO+7 , (BYTE)(PanelConfig.h_min_back_porch >> 8 ) );
+ 321          
+ 322                  WriteEEP( PANELINFO+8 , PanelConfig.h_sync_polarity );
+ 323          
+ 324                  WriteEEP( PANELINFO+9 , PanelConfig.v_sync_polarity );
+ 325          
+ 326                  WriteEEP( PANELINFO+0x0a , (BYTE)PanelConfig.dot_clock );
+ 327                  WriteEEP( PANELINFO+0x0b , (BYTE)(PanelConfig.dot_clock >> 8 ) );
+ 328          
+ 329                  WriteEEP( PANELINFO+0x0c , (BYTE)PanelConfig.max_clock );
+ 330                  WriteEEP( PANELINFO+0x0d , (BYTE)(PanelConfig.max_clock >> 8 ) );
+ 331          
+ 332                  WriteEEP( PANELINFO+0x0e , PanelConfig.pixs_per_clock );
+ 333          
+ 334                  WriteEEP( PANELINFO+0x0f , PanelConfig.DE_only );
+ 335          }
+ 336          
+ 337          
+ 338          #if (defined SERIAL) || (defined SUPPORT_PATTERN) || (defined WIDE_SCREEN)
+ 339          WORD GetPanelXRes(void)
+ 340          {
+ 341                  WORD res;
+ 342          
+ 343                  res = ReadEEP( PANELINFO+1 );
+ 344                  res = (res <<8 ) | ReadEEP( PANELINFO+0 );
+ 345                  return res;
+ 346          }
+ 347          
+ 348          WORD GetPanelYRes(void)
+ 349          {
+ 350                  WORD res;
+ 351          
+ 352                  res = ReadEEP( PANELINFO+3 );
+ 353                  res = (res <<8 ) | ReadEEP( PANELINFO+2 );
+ 354                  return res;
+ 355          }
+ 356          #endif//  (defined SUPPORT_PATTERN) || (defined WIDE_SCREEN)
+ 357          */
+ 358          
+ 359          /****
+ 360          #if (defined SERIAL) || (defined WIDE_SCREEN)
+ 361          BYTE GetPanelHsyncMinPulseWidth(void)
+ 362          {
+ 363                  return ReadEEP( PANELINFO+4 );
+ 364          }
+ 365          
+ 366          BYTE GetPanelVsyncMinPulseWidth(void)
+ 367          {
+ 368                  return ReadEEP( PANELINFO+5 );
+ 369          }
+ 370          
+ 371          WORD GetPanelHMinBackPorch(void)
+ 372          {
+ 373                  WORD res;
+ 374          
+ 375                  res = ReadEEP( PANELINFO+7 );
+ 376                  res = (res <<8 ) | ReadEEP( PANELINFO+6 );
+ 377                  return res;
+ 378          }
+ 379          
+ 380          BYTE GetPanelHsyncPolarity(void)
+ 381          {
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 48  
+
+ 382                  return ReadEEP( PANELINFO+8 );
+ 383          }
+ 384          
+ 385          BYTE GetPanelVsyncPolarity(void)
+ 386          {
+ 387                  return ReadEEP( PANELINFO+9 );
+ 388          }
+ 389          
+ 390          WORD GetPanelDotClock(void)
+ 391          {
+ 392                  WORD res;
+ 393          
+ 394                  res = ReadEEP( PANELINFO+0x0b );
+ 395                  res = (res <<8 ) | ReadEEP( PANELINFO+0x0a );
+ 396                  return res;
+ 397          }
+ 398          #endif // WIDE_SCREEN
+ 399          
+ 400          WORD GetPanelMaxClock(void)
+ 401          {
+ 402                  WORD res;
+ 403          
+ 404                  res = ReadEEP( PANELINFO+0x0d );
+ 405                  res = (res <<8 ) | ReadEEP( PANELINFO+0x0c );
+ 406                  return res;
+ 407          }
+ 408          
+ 409          BYTE GetPanelPixsPerClock(void)
+ 410          {
+ 411                  return ReadEEP( PANELINFO+0x0e );
+ 412          }
+ 413          ***/
+ 414          
+ 415          /* Not used yet *************************
+ 416          BYTE GetPanelDEonly(void)
+ 417          {
+ 418                  return ReadEEP( PANELINFO+0x0f );
+ 419          }
+ 420          */
+ 421          
+ 422          //===================================================================
+ 423          
+ 424          void ClearBasicEE(void)
+ 425          {
+ 426   1              WriteEEP(EEP_PRIORITY,0x00);    //PRIORITY.........OFF  Andy-980602
+ 427   1      
+ 428   1      
+ 429   1              SaveVInputStdDetectModeEE(0);   // AUTO
+ 430   1              WriteEEP(EEP_CCD, 0);   // CC = OFF
+ 431   1      
+ 432   1              ResetOSDValue();
+ 433   1              //SavePanelInfoEE();
+ 434   1      
+ 435   1              //ResetAudioValue();
+ 436   1      
+ 437   1      
+ 438   1              ResetVideoValue();
+ 439   1      
+ 440   1              #ifdef WIDE_SCREEN
+ 441   1              Set4WideScreen(WIDESCREEN_WIDE);
+ 442   1              #endif
+ 443   1      }
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 49  
+
+ASSEMBLY LISTING OF GENERATED OBJECT CODE
+
+
+             ; FUNCTION GetFWRevEE (BEGIN)
+                                           ; SOURCE LINE # 21
+                                           ; SOURCE LINE # 22
+                                           ; SOURCE LINE # 25
+0000 E4                CLR     A
+0001 FF                MOV     R7,A
+0002 FE                MOV     R6,A
+0003 120000      E     LCALL   _ReadEEP
+0006 EF                MOV     A,R7
+0007 6454              XRL     A,#054H
+0009 6002              JZ      ?C0001
+000B 8028              SJMP    ?C0040
+000D         ?C0001:
+                                           ; SOURCE LINE # 26
+000D 7F01              MOV     R7,#01H
+000F 7E00              MOV     R6,#00H
+0011 120000      E     LCALL   _ReadEEP
+0014 EF                MOV     A,R7
+0015 6457              XRL     A,#057H
+0017 6002              JZ      ?C0003
+0019         ?C0038:
+0019 801A              SJMP    ?C0040
+001B         ?C0003:
+                                           ; SOURCE LINE # 27
+001B 7F02              MOV     R7,#02H
+001D 7E00              MOV     R6,#00H
+001F 120000      E     LCALL   _ReadEEP
+0022 EF                MOV     A,R7
+0023 6438              XRL     A,#038H
+0025 6002              JZ      ?C0004
+0027         ?C0039:
+0027 800C              SJMP    ?C0040
+0029         ?C0004:
+                                           ; SOURCE LINE # 28
+0029 7F03              MOV     R7,#03H
+002B 7E00              MOV     R6,#00H
+002D 120000      E     LCALL   _ReadEEP
+0030 EF                MOV     A,R7
+0031 6438              XRL     A,#038H
+0033 6004              JZ      ?C0005
+0035         ?C0040:
+0035 E4                CLR     A
+0036 FE                MOV     R6,A
+0037 FF                MOV     R7,A
+0038 22                RET     
+0039         ?C0005:
+                                           ; SOURCE LINE # 30
+0039 7F04              MOV     R7,#04H
+003B 7E00              MOV     R6,#00H
+003D 120000      E     LCALL   _ReadEEP
+0040 EF                MOV     A,R7
+0041 F8                MOV     R0,A
+0042 E4                CLR     A
+0043 7900        R     MOV     R1,#LOW rev+01H
+0045 F3                MOVX    @R1,A
+0046 E8                MOV     A,R0
+0047 19                DEC     R1
+0048 F3                MOVX    @R1,A
+                                           ; SOURCE LINE # 31
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 50  
+
+0049 7F05              MOV     R7,#05H
+004B 7E00              MOV     R6,#00H
+004D 120000      E     LCALL   _ReadEEP
+0050 7800        R     MOV     R0,#LOW rev
+0052 E2                MOVX    A,@R0
+0053 FE                MOV     R6,A
+0054 08                INC     R0
+0055 E2                MOVX    A,@R0
+0056 4F                ORL     A,R7
+0057 FF                MOV     R7,A
+0058 18                DEC     R0
+0059 EE                MOV     A,R6
+005A F2                MOVX    @R0,A
+005B FE                MOV     R6,A
+005C 08                INC     R0
+005D EF                MOV     A,R7
+005E F2                MOVX    @R0,A
+                                           ; SOURCE LINE # 33
+                                           ; SOURCE LINE # 34
+005F         ?C0002:
+005F 22                RET     
+             ; FUNCTION GetFWRevEE (END)
+
+             ; FUNCTION _SaveFWRevEE (BEGIN)
+                                           ; SOURCE LINE # 36
+0000 7800        R     MOV     R0,#LOW rev
+0002 EE                MOV     A,R6
+0003 F2                MOVX    @R0,A
+0004 08                INC     R0
+0005 EF                MOV     A,R7
+0006 F2                MOVX    @R0,A
+                                           ; SOURCE LINE # 37
+                                           ; SOURCE LINE # 38
+0007 7D54              MOV     R5,#054H
+0009 E4                CLR     A
+000A FF                MOV     R7,A
+000B FE                MOV     R6,A
+000C 120000      E     LCALL   _WriteEEP
+                                           ; SOURCE LINE # 39
+000F 7D57              MOV     R5,#057H
+0011 7F01              MOV     R7,#01H
+0013 7E00              MOV     R6,#00H
+0015 120000      E     LCALL   _WriteEEP
+                                           ; SOURCE LINE # 40
+0018 7D38              MOV     R5,#038H
+001A 7F02              MOV     R7,#02H
+001C 7E00              MOV     R6,#00H
+001E 120000      E     LCALL   _WriteEEP
+                                           ; SOURCE LINE # 41
+0021 7D38              MOV     R5,#038H
+0023 7F03              MOV     R7,#03H
+0025 7E00              MOV     R6,#00H
+0027 120000      E     LCALL   _WriteEEP
+                                           ; SOURCE LINE # 43
+002A 7800        R     MOV     R0,#LOW rev
+002C E2                MOVX    A,@R0
+002D FD                MOV     R5,A
+002E 7F04              MOV     R7,#04H
+0030 7E00              MOV     R6,#00H
+0032 120000      E     LCALL   _WriteEEP
+                                           ; SOURCE LINE # 44
+0035 7800        R     MOV     R0,#LOW rev
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 51  
+
+0037 08                INC     R0
+0038 E2                MOVX    A,@R0
+0039 FD                MOV     R5,A
+003A 7F05              MOV     R7,#05H
+003C 7E00              MOV     R6,#00H
+003E 020000      E     LJMP    _WriteEEP
+             ; FUNCTION _SaveFWRevEE (END)
+
+             ; FUNCTION GetDebugLevelEE (BEGIN)
+                                           ; SOURCE LINE # 47
+                                           ; SOURCE LINE # 48
+                                           ; SOURCE LINE # 49
+0000 7F06              MOV     R7,#06H
+0002 7E00              MOV     R6,#00H
+0004 120000      E     LCALL   _ReadEEP
+                                           ; SOURCE LINE # 50
+0007         ?C0007:
+0007 22                RET     
+             ; FUNCTION GetDebugLevelEE (END)
+
+             ; FUNCTION _SaveDebugLevelEE (BEGIN)
+                                           ; SOURCE LINE # 52
+;---- Variable 'dl' assigned to Register 'R7' ----
+                                           ; SOURCE LINE # 53
+                                           ; SOURCE LINE # 54
+0000 AD07              MOV     R5,AR7
+0002 7F06              MOV     R7,#06H
+0004 7E00              MOV     R6,#00H
+0006 020000      E     LJMP    _WriteEEP
+             ; FUNCTION _SaveDebugLevelEE (END)
+
+             ; FUNCTION GetWideModeEE (BEGIN)
+                                           ; SOURCE LINE # 59
+                                           ; SOURCE LINE # 60
+                                           ; SOURCE LINE # 61
+0000 7F09              MOV     R7,#09H
+0002 7E00              MOV     R6,#00H
+0004 120000      E     LCALL   _ReadEEP
+                                           ; SOURCE LINE # 62
+0007         ?C0009:
+0007 22                RET     
+             ; FUNCTION GetWideModeEE (END)
+
+             ; FUNCTION _SaveWideModeEE (BEGIN)
+                                           ; SOURCE LINE # 64
+;---- Variable 'dl' assigned to Register 'R7' ----
+                                           ; SOURCE LINE # 65
+                                           ; SOURCE LINE # 66
+0000 AD07              MOV     R5,AR7
+0002 7F09              MOV     R7,#09H
+0004 7E00              MOV     R6,#00H
+0006 020000      E     LJMP    _WriteEEP
+             ; FUNCTION _SaveWideModeEE (END)
+
+             ; FUNCTION GetPossibleAutoDetectStdEE (BEGIN)
+                                           ; SOURCE LINE # 71
+                                           ; SOURCE LINE # 72
+                                           ; SOURCE LINE # 75
+0000 7F0A              MOV     R7,#0AH
+0002 7E00              MOV     R6,#00H
+0004 120000      E     LCALL   _ReadEEP
+;---- Variable 'val' assigned to Register 'R7' ----
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 52  
+
+                                           ; SOURCE LINE # 81
+                                           ; SOURCE LINE # 82
+0007         ?C0011:
+0007 22                RET     
+             ; FUNCTION GetPossibleAutoDetectStdEE (END)
+
+             ; FUNCTION SetPossibleAutoDetectStdEE (BEGIN)
+                                           ; SOURCE LINE # 84
+                                           ; SOURCE LINE # 85
+                                           ; SOURCE LINE # 86
+0000 E4                CLR     A
+0001 7800        R     MOV     R0,#LOW val
+0003 F2                MOVX    @R0,A
+                                           ; SOURCE LINE # 89
+0004 18                DEC     R0
+0005 F2                MOVX    @R0,A
+0006         ?C0012:
+                                           ; SOURCE LINE # 90
+0006 7800        R     MOV     R0,#LOW i
+0008 E2                MOVX    A,@R0
+0009 75F011            MOV     B,#011H
+000C 900000      E     MOV     DPTR,#struct_VInputStd
+000F 120000      E     LCALL   ?C?OFFXADD
+0012 E4                CLR     A
+0013 93                MOVC    A,@A+DPTR
+0014 120000      E     LCALL   ?C?CCASE
+0017 0000        R     DW      ?C0016
+0019 00                DB      00H
+001A 0000        R     DW      ?C0018
+001C 01                DB      01H
+001D 0000        R     DW      ?C0019
+001F 02                DB      02H
+0020 0000        R     DW      ?C0020
+0022 03                DB      03H
+0023 0000        R     DW      ?C0021
+0025 04                DB      04H
+0026 0000        R     DW      ?C0022
+0028 05                DB      05H
+0029 0000        R     DW      ?C0023
+002B 06                DB      06H
+002C 0000        R     DW      ?C0024
+002E 07                DB      07H
+002F 0000              DW      00H
+0031 0000        R     DW      ?C0014
+                                           ; SOURCE LINE # 91
+0033         ?C0016:
+                                           ; SOURCE LINE # 92
+0033 7800        R     MOV     R0,#LOW val
+0035 E2                MOVX    A,@R0
+0036 FD                MOV     R5,A
+0037 7F0A              MOV     R7,#0AH
+0039 7E00              MOV     R6,#00H
+003B 020000      E     LJMP    _WriteEEP
+                                           ; SOURCE LINE # 98
+                                           ; SOURCE LINE # 99
+003E         ?C0018:
+003E 7800        R     MOV     R0,#LOW val
+0040 E2                MOVX    A,@R0
+0041 4401              ORL     A,#01H
+0043 F2                MOVX    @R0,A
+0044 802E              SJMP    ?C0014
+                                           ; SOURCE LINE # 100
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 53  
+
+0046         ?C0019:
+0046 7800        R     MOV     R0,#LOW val
+0048 E2                MOVX    A,@R0
+0049 4402              ORL     A,#02H
+004B F2                MOVX    @R0,A
+004C 8026              SJMP    ?C0014
+                                           ; SOURCE LINE # 101
+004E         ?C0020:
+004E 7800        R     MOV     R0,#LOW val
+0050 E2                MOVX    A,@R0
+0051 4404              ORL     A,#04H
+0053 F2                MOVX    @R0,A
+0054 801E              SJMP    ?C0014
+                                           ; SOURCE LINE # 102
+0056         ?C0021:
+0056 7800        R     MOV     R0,#LOW val
+0058 E2                MOVX    A,@R0
+0059 4408              ORL     A,#08H
+005B F2                MOVX    @R0,A
+005C 8016              SJMP    ?C0014
+                                           ; SOURCE LINE # 103
+005E         ?C0022:
+005E 7800        R     MOV     R0,#LOW val
+0060 E2                MOVX    A,@R0
+0061 4410              ORL     A,#010H
+0063 F2                MOVX    @R0,A
+0064 800E              SJMP    ?C0014
+                                           ; SOURCE LINE # 104
+0066         ?C0023:
+0066 7800        R     MOV     R0,#LOW val
+0068 E2                MOVX    A,@R0
+0069 4420              ORL     A,#020H
+006B F2                MOVX    @R0,A
+006C 8006              SJMP    ?C0014
+                                           ; SOURCE LINE # 105
+006E         ?C0024:
+006E 7800        R     MOV     R0,#LOW val
+0070 E2                MOVX    A,@R0
+0071 4440              ORL     A,#040H
+0073 F2                MOVX    @R0,A
+                                           ; SOURCE LINE # 106
+                                           ; SOURCE LINE # 107
+                                           ; SOURCE LINE # 108
+0074         ?C0014:
+0074 7800        R     MOV     R0,#LOW i
+0076 E2                MOVX    A,@R0
+0077 04                INC     A
+0078 F2                MOVX    @R0,A
+0079 808B              SJMP    ?C0012
+             ; FUNCTION SetPossibleAutoDetectStdEE (END)
+
+             ; FUNCTION GetOSDPositionModeEE (BEGIN)
+                                           ; SOURCE LINE # 115
+                                           ; SOURCE LINE # 116
+                                           ; SOURCE LINE # 119
+0000 7F0D              MOV     R7,#0DH
+0002 7E00              MOV     R6,#00H
+0004 120000      E     LCALL   _ReadEEP
+;---- Variable 'val' assigned to Register 'R7' ----
+                                           ; SOURCE LINE # 121
+                                           ; SOURCE LINE # 122
+0007         ?C0026:
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 54  
+
+0007 22                RET     
+             ; FUNCTION GetOSDPositionModeEE (END)
+
+             ; FUNCTION _SaveOSDPositionModeEE (BEGIN)
+                                           ; SOURCE LINE # 124
+;---- Variable 'ndata' assigned to Register 'R7' ----
+                                           ; SOURCE LINE # 125
+                                           ; SOURCE LINE # 127
+0000 AD07              MOV     R5,AR7
+0002 7F0D              MOV     R7,#0DH
+0004 7E00              MOV     R6,#00H
+0006 020000      E     LJMP    _WriteEEP
+             ; FUNCTION _SaveOSDPositionModeEE (END)
+
+             ; FUNCTION _GetVideoDatafromEE (BEGIN)
+                                           ; SOURCE LINE # 134
+;---- Variable 'offset' assigned to Register 'R3' ----
+0000 AB07              MOV     R3,AR7
+                                           ; SOURCE LINE # 135
+                                           ; SOURCE LINE # 138
+0002 7800        E     MOV     R0,#LOW InputSelection
+0004 E2                MOVX    A,@R0
+0005 FF                MOV     R7,A
+0006 7E00              MOV     R6,#00H
+0008 7C00              MOV     R4,#00H
+000A 7D06              MOV     R5,#06H
+000C 120000      E     LCALL   ?C?IMUL
+000F EF                MOV     A,R7
+0010 240C              ADD     A,#0CH
+0012 FF                MOV     R7,A
+0013 E4                CLR     A
+0014 3E                ADDC    A,R6
+0015 FE                MOV     R6,A
+0016 EF                MOV     A,R7
+0017 2B                ADD     A,R3
+0018 FF                MOV     R7,A
+0019 EC                MOV     A,R4
+001A 3E                ADDC    A,R6
+001B FE                MOV     R6,A
+001C 120000      E     LCALL   _ReadEEP
+;---- Variable 'val' assigned to Register 'R7' ----
+                                           ; SOURCE LINE # 140
+                                           ; SOURCE LINE # 141
+001F         ?C0028:
+001F 22                RET     
+             ; FUNCTION _GetVideoDatafromEE (END)
+
+             ; FUNCTION _SaveVideoDatatoEE (BEGIN)
+                                           ; SOURCE LINE # 143
+;---- Variable 'ndata' assigned to Register 'R5' ----
+;---- Variable 'offset' assigned to Register 'R7' ----
+                                           ; SOURCE LINE # 144
+                                           ; SOURCE LINE # 147
+0000 7800        E     MOV     R0,#LOW InputSelection
+0002 E2                MOVX    A,@R0
+0003 75F006            MOV     B,#06H
+0006 A4                MUL     AB
+0007 240C              ADD     A,#0CH
+0009 2F                ADD     A,R7
+000A FF                MOV     R7,A
+;---- Variable 'tot' assigned to Register 'R7' ----
+                                           ; SOURCE LINE # 149
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 55  
+
+000B 7E00              MOV     R6,#00H
+000D 020000      E     LJMP    _WriteEEP
+             ; FUNCTION _SaveVideoDatatoEE (END)
+
+             ; FUNCTION _SaveInputSelectionEE (BEGIN)
+                                           ; SOURCE LINE # 177
+;---- Variable 'val' assigned to Register 'R7' ----
+                                           ; SOURCE LINE # 178
+                                           ; SOURCE LINE # 179
+0000 AD07              MOV     R5,AR7
+0002 7F0F              MOV     R7,#0FH
+0004 7E00              MOV     R6,#00H
+0006 020000      E     LJMP    _WriteEEP
+             ; FUNCTION _SaveInputSelectionEE (END)
+
+             ; FUNCTION GetOSDLangEE (BEGIN)
+                                           ; SOURCE LINE # 203
+                                           ; SOURCE LINE # 204
+                                           ; SOURCE LINE # 207
+0000 7F0C              MOV     R7,#0CH
+0002 7E00              MOV     R6,#00H
+0004 120000      E     LCALL   _ReadEEP
+;---- Variable 'val' assigned to Register 'R7' ----
+                                           ; SOURCE LINE # 213
+                                           ; SOURCE LINE # 214
+0007         ?C0031:
+0007 22                RET     
+             ; FUNCTION GetOSDLangEE (END)
+
+             ; FUNCTION _SaveOSDLangEE (BEGIN)
+                                           ; SOURCE LINE # 216
+;---- Variable 'val' assigned to Register 'R7' ----
+                                           ; SOURCE LINE # 217
+                                           ; SOURCE LINE # 218
+0000 AD07              MOV     R5,AR7
+0002 7F0C              MOV     R7,#0CH
+0004 7E00              MOV     R6,#00H
+0006 020000      E     LJMP    _WriteEEP
+             ; FUNCTION _SaveOSDLangEE (END)
+
+             ; FUNCTION GetAudioVolEE (BEGIN)
+                                           ; SOURCE LINE # 243
+                                           ; SOURCE LINE # 244
+                                           ; SOURCE LINE # 245
+0000 7F38              MOV     R7,#038H
+0002 7E00              MOV     R6,#00H
+0004 120000      E     LCALL   _ReadEEP
+                                           ; SOURCE LINE # 246
+0007         ?C0033:
+0007 22                RET     
+             ; FUNCTION GetAudioVolEE (END)
+
+             ; FUNCTION _SetAudioVolEE (BEGIN)
+                                           ; SOURCE LINE # 248
+;---- Variable 'vol' assigned to Register 'R7' ----
+                                           ; SOURCE LINE # 249
+                                           ; SOURCE LINE # 250
+0000 AD07              MOV     R5,AR7
+0002 7F38              MOV     R7,#038H
+0004 7E00              MOV     R6,#00H
+0006 020000      E     LJMP    _WriteEEP
+             ; FUNCTION _SetAudioVolEE (END)
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 56  
+
+
+             ; FUNCTION GetPCAudioVolEE (BEGIN)
+                                           ; SOURCE LINE # 253
+                                           ; SOURCE LINE # 254
+                                           ; SOURCE LINE # 255
+0000 7F37              MOV     R7,#037H
+0002 7E00              MOV     R6,#00H
+0004 120000      E     LCALL   _ReadEEP
+                                           ; SOURCE LINE # 256
+0007         ?C0035:
+0007 22                RET     
+             ; FUNCTION GetPCAudioVolEE (END)
+
+             ; FUNCTION _SetPCAudioVolEE (BEGIN)
+                                           ; SOURCE LINE # 257
+;---- Variable 'vol' assigned to Register 'R7' ----
+                                           ; SOURCE LINE # 258
+                                           ; SOURCE LINE # 259
+0000 AD07              MOV     R5,AR7
+0002 7F37              MOV     R7,#037H
+0004 7E00              MOV     R6,#00H
+0006 020000      E     LJMP    _WriteEEP
+             ; FUNCTION _SetPCAudioVolEE (END)
+
+             ; FUNCTION ClearBasicEE (BEGIN)
+                                           ; SOURCE LINE # 424
+                                           ; SOURCE LINE # 425
+                                           ; SOURCE LINE # 426
+0000 E4                CLR     A
+0001 FD                MOV     R5,A
+0002 7FAD              MOV     R7,#0ADH
+0004 FE                MOV     R6,A
+0005 120000      E     LCALL   _WriteEEP
+                                           ; SOURCE LINE # 429
+0008 E4                CLR     A
+0009 FD                MOV     R5,A
+000A 7F08              MOV     R7,#08H
+000C FE                MOV     R6,A
+000D 120000      E     LCALL   _WriteEEP
+                                           ; SOURCE LINE # 430
+0010 E4                CLR     A
+0011 FD                MOV     R5,A
+0012 7F0E              MOV     R7,#0EH
+0014 FE                MOV     R6,A
+0015 120000      E     LCALL   _WriteEEP
+                                           ; SOURCE LINE # 432
+0018 120000      E     LCALL   ResetOSDValue
+                                           ; SOURCE LINE # 438
+001B 120000      E     LCALL   ResetVideoValue
+                                           ; SOURCE LINE # 441
+001E 7F01              MOV     R7,#01H
+0020 020000      E     LJMP    _Set4WideScreen
+             ; FUNCTION ClearBasicEE (END)
+
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 57  
+
+NAME                                    CLASS   MSPACE  TYPE    OFFSET  SIZE
+====                                    =====   ======  ====    ======  ====
+
+
+ResetVideoValue. . . . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+DWORD. . . . . . . . . . . . . . . . .  TYPEDEF  -----  U_LONG   -----  4
+_SaveDebugLevelEE. . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  dl . . . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0007H  1
+CAM_R. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BAR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+_SaveOSDLangEE . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  val. . . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0007H  1
+CAM_CAR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ACR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CBR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BCR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+NumberStringType . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  11
+  x. . . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  y. . . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0001H  1
+  width. . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0002H  1
+  BackColor. . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0003H  1
+  Radix. . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0004H  1
+  NumColor . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0005H  1
+  MaxLen . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0006H  1
+  PrePostCharLen . . . . . . . . . . .  MEMBER   -----  U_CHAR   0007H  1
+  PrePostChar. . . . . . . . . . . . .  MEMBER   -----  ARRAY    0008H  3
+GetDebugLevelEE. . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+FontData . . . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  27
+  font . . . . . . . . . . . . . . . .  MEMBER   -----  ARRAY    0000H  27
+GetOSDLangEE . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  val. . . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0007H  1
+GetPossibleAutoDetectStdEE . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  val. . . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0007H  1
+AVMode . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+struct_VInputStd . . . . . . . . . . .  EXTERN   CODE   ARRAY    -----  -----
+SourceModeType . . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+CAM_NUM. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+SetPossibleAutoDetectStdEE . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  i. . . . . . . . . . . . . . . . . .  AUTO     PDATA  U_CHAR   0000H  1
+  val. . . . . . . . . . . . . . . . .  AUTO     PDATA  U_CHAR   0001H  1
+_SaveWideModeEE. . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  dl . . . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0007H  1
+CAM_RAB_H. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+OSDStrInfo . . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  8
+  cnt. . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  addr . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0001H  2
+  attr . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0003H  1
+  str. . . . . . . . . . . . . . . . .  MEMBER   -----  U_LONG   0004H  4
+CAM_BA . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_AB . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+BYTE . . . . . . . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+TimeType . . . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  7
+  x. . . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  y. . . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0001H  1
+  width. . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0002H  1
+  BackColor. . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0003H  1
+  Format . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0004H  1
+  TimeColor. . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0005H  1
+  CursorColor. . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0006H  1
+CAM_CA . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 58  
+
+NAME                                    CLASS   MSPACE  TYPE    OFFSET  SIZE
+====                                    =====   ======  ====    ======  ====
+
+
+CAM_AC . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BC . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CB . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+SourceModeTypeEnum . . . . . . . . . .  * TAG *  -----  ENUM     -----  -----
+struct_IdName. . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  17
+  Id . . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  Name . . . . . . . . . . . . . . . .  MEMBER   -----  ARRAY    0001H  16
+EnumType . . . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  17
+  Sz . . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  ByLang . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0001H  1
+  Str. . . . . . . . . . . . . . . . .  MEMBER   -----  ARRAY    0002H  15
+MenuType . . . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  4
+  width. . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  height . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0001H  1
+  TitleColor . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0002H  1
+  CursorColor. . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0003H  1
+CAM_RAB_T. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+WORD . . . . . . . . . . . . . . . . .  TYPEDEF  -----  U_INT    -----  2
+GetWideModeEE. . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+InputSelection . . . . . . . . . . . .  EXTERN   PDATA  U_CHAR   -----  1
+CAM_AR . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BR . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_RB . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CR . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+Register . . . . . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+_Set4WideScreen. . . . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+GetAudioVolEE. . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+NumType. . . . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  5
+  PrePostCharLen . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  PrePostChar. . . . . . . . . . . . .  MEMBER   -----  ARRAY    0001H  4
+_ReadEEP . . . . . . . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+RegisterInfo . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  6
+  Min. . . . . . . . . . . . . . . . .  MEMBER   -----  INT      0000H  2
+  Max. . . . . . . . . . . . . . . . .  MEMBER   -----  INT      0002H  2
+  Default. . . . . . . . . . . . . . .  MEMBER   -----  INT      0004H  2
+ClearBasicEE . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+_GetVideoDatafromEE. . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  offset . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0003H  1
+  val. . . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0007H  1
+_SaveInputSelectionEE. . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  val. . . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0007H  1
+CAM_QUAD . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+_SetAudioVolEE . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  vol. . . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0007H  1
+DefineMenu . . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  16
+  Icon . . . . . . . . . . . . . . . .  MEMBER   -----  PTR      0000H  2
+  Desc . . . . . . . . . . . . . . . .  MEMBER   -----  PTR      0002H  3
+  PreFnId. . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0005H  1
+  PostFnId . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0006H  1
+  IconColor. . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0007H  1
+  DescColor. . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0008H  1
+  Child. . . . . . . . . . . . . . . .  MEMBER   -----  PTR      0009H  2
+  Type . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   000BH  1
+  ActiveWithCursor . . . . . . . . . .  MEMBER   -----  U_CHAR   000CH  1
+  Id . . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   000DH  1
+  TypeData . . . . . . . . . . . . . .  MEMBER   -----  PTR      000EH  2
+VGAMode. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+C51 COMPILER V8.16   ETC_EEP                                                               03/04/2011 15:51:16 PAGE 59  
+
+NAME                                    CLASS   MSPACE  TYPE    OFFSET  SIZE
+====                                    =====   ======  ====    ======  ====
+
+
+_SaveOSDPositionModeEE . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  ndata. . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0007H  1
+GetPCAudioVolEE. . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+_SaveFWRevEE . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  rev. . . . . . . . . . . . . . . . .  AUTO     PDATA  U_INT    0000H  2
+_WriteEEP. . . . . . . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+SEQ. . . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+LongRegisterInfo . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  6
+  Min. . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0000H  2
+  Max. . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0002H  2
+  Default. . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0004H  2
+ResetOSDValue. . . . . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+PictureInfo. . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  4
+  Register_Addr. . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  EEPROM_Addr. . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0001H  1
+  Control_Range. . . . . . . . . . . .  MEMBER   -----  PTR      0002H  2
+CAM_ABR_T3 . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABR_T4 . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_A. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_B. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_C. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+_SetPCAudioVolEE . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  vol. . . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0007H  1
+CAM_D. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+GetOSDPositionModeEE . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  val. . . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0007H  1
+_SaveVideoDatatoEE . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  offset . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0007H  1
+  ndata. . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0005H  1
+  tot. . . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0007H  1
+CAM_CAB. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BAC. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABC. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+GetFWRevEE . . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  rev. . . . . . . . . . . . . . . . .  AUTO     PDATA  U_INT    0000H  2
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    486    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----       6
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

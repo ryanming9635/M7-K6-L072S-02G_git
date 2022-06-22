@@ -1,0 +1,516 @@
+#include "Config.h"
+#include "typedefs.h"
+#include "i2c.h"
+#include "main.h"
+#include "tw88.h"
+#include "osdbasic.h"
+#include "dispinfo.h"
+#include "measure.h"
+#include "debug.h"
+#include "printf.h"
+#include "udfont.h"
+#include "regmap.h"
+#include "externs.h"
+#include "CPU.h"
+#include "etc_eep.h"
+#include "panel.h"
+#include "osdmenu.h"
+#include "HS_DisplayOSD.h"
+#include "HS_DVRProtocol.h"
+
+//============================================================================= 
+//                       倒車車幅線控制                                                       
+//=============================================================================
+
+CODE BYTE GaugeString[]= {RAMFONT,0x01,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x02,ROMFONT,0}; // 0x31 -> 0x2e  Jusitn 拿掉3M
+CODE BYTE GaugeString1[]= {RAMFONT,0x01,ROMFONT,0};    //....顯示"/-" 
+CODE BYTE GaugeString2[]= {RAMFONT,0x02,ROMFONT,0};    //....顯示"-\"
+CODE BYTE GaugeString3[]= {RAMFONT,0x05,ROMFONT,0};    //....顯示"/"
+CODE BYTE GaugeString4[]= {RAMFONT,0x06,ROMFONT,0};    //....顯示"\"
+CODE BYTE GaugeString5[]= {RAMFONT,0x01,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x02,ROMFONT,0};  // 0x30 -> 0x2e  Jusitn 拿掉2M
+CODE BYTE GaugeString6[]= {RAMFONT,0x01,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x04,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x02,ROMFONT,0};
+
+
+
+#define Gauge_COLOR1      BG_COLOR_BLACK|CH_COLOR_GREEN	
+#define Gauge_COLOR2      BG_COLOR_BLACK|CH_COLOR_YELLOW	
+#define Gauge_COLOR3      BG_COLOR_BLACK|CH_COLOR_RED	
+#define GAUGEINFO_ADDR    0 
+
+extern BYTE	year1,year2,month,day,hour,minute,second;
+extern BYTE	DVR_SDCardAvailable		;
+extern BYTE	DVR_RecordMode;
+extern BYTE	DVR_Resolution;
+extern BYTE	DVR_RecordStatus		;
+extern BYTE	DVR_Busy				;
+extern BYTE 	DVRVersion[11];
+extern BYTE 	DVRVersionLen;
+extern DATA BYTE	DVR_buf[DVR_BUF_MAX];
+//倒車車幅線屬性
+CODE BYTE Init_Osd_DisplayGAUGEWindow[] = {
+    17,
+    OSD_Win_Num             ( BACK_COLOR|RATINGINFO_OSDWIN ),   // 2 bytes
+    OSD_Win_Attr            ( WIN_BG_COLOR_EX0 | BACK_COLOR | WIN_3D_TYPE0 | WIN_3D_EN0 | WIN_EN ),
+    OSD_Win_Start           ( 40,100),  // 120->40   24->               
+    OSD_Win_Width           ( 30 ),                                                                                  
+    OSD_Win_Height          ( 5 ),
+    OSD_Win_Border          ( WIN_BD_EN | BG_COLOR_WHITE | WIN_BD_WIDTH(0) ),
+    OSD_Win_HBorder         ( WIN_BD_COLOR_EX0 | WIN_H_BD_W(0x00) ),
+    OSD_Win_VBorder         ( WIN_V_BD_W(0x00) ),
+    OSD_Win_CH_Space        ( WIN_CH_HSPACE(0) | WIN_CH_VSPACE(0) ),
+    OSD_Win_ZM_SAddr        ( WIN_VZOOM(WINZOOMx4), WIN_HZOOM(WINZOOMx2), WIN_SADDR(RATINGINFO_ADDR) ), // 2 bytes
+    OSD_Win_Shadow          ( WIN_SHADOW_EN0 | BACK_COLOR | WIN_SHADOW_W(8) ),//
+    OSD_Win_Blending        ( 8 ),
+    OSD_Win_CH_BorderShadow ( WIN_SHADOW_COLOR_EX0 | WIN_MULTI_EN | WIN_V_EXT_EN0 
+                            | WIN_CH_BDSH_SEL(SEL_BORDER) 
+                            | WIN_CH_BDSH_COLOR_EX0 | CH_COLOR_BLACK ),
+    0 // End of Data
+};
+
+#if 0
+//=============================================================================
+//			Initialize Window for DisplayDVRstatus
+//=============================================================================
+CODE BYTE Init_Osd_DisplayDVRstatus[] = {
+
+	//----- Input Selection : Zoom 4
+	17,
+	OSD_Win_Num				( BACK_COLOR|DVRStatus_OSDWIN ),	// 2 bytes
+	OSD_Win_Attr			( WIN_BG_COLOR_EX0 | BACK_COLOR | WIN_3D_TYPE0 | WIN_3D_EN0 | WIN_EN0 ),
+	OSD_Win_Start			( 12, 500 ),	// 3 bytes
+	OSD_Win_Width			( 30 ),
+	OSD_Win_Height			( 1 ),
+	OSD_Win_Border			( WIN_BD_EN0 | OSDMENU_OUTLINE_COLOR | WIN_BD_WIDTH(1) ),
+	OSD_Win_HBorder			( WIN_BD_COLOR_EX0 | WIN_H_BD_W(1) ),
+	OSD_Win_VBorder			( WIN_V_BD_W(0x00) ),
+	OSD_Win_CH_Space		( WIN_CH_HSPACE(0) | WIN_CH_VSPACE(0) ),
+	OSD_Win_ZM_SAddr		( WIN_VZOOM(WINZOOMx4), WIN_HZOOM(WINZOOMx2), WIN_SADDR(DVRStatus_ADDR) ),	// 2 bytes
+	OSD_Win_Shadow			( WIN_SHADOW_EN0 | BG_COLOR_BLACK | WIN_SHADOW_W(0) ),
+	OSD_Win_Blending		( 8 ),
+	OSD_Win_CH_BorderShadow	( WIN_SHADOW_COLOR_EX0 | WIN_MULTI_EN | WIN_V_EXT_EN0 
+	                        | WIN_CH_BDSH_SEL(SEL_BORDER) 
+	                        | WIN_CH_BDSH_COLOR_EX0 | CH_COLOR_BLACK ),
+	0 // End of Data
+};	
+#endif
+
+extern IDATA BYTE  DisplayedOSD;
+
+void DisplayGaugeOSD(void)
+{
+   BYTE i;
+   //extern CODE BYTE Init_Osd_DisplayGAUGEWindow[];
+   ClearOSDInfo();
+   ClearDataCnt(GAUGEINFO_ADDR,30*8);     
+   DrawAttrCnt(0,0x00,30*8);  //2007.4.25 解畫倒車線出現藍色區塊//william-v1.43-970403
+   InitOSDWindow(Init_Osd_DisplayGAUGEWindow); 
+
+   for(i=0;i<150;i++){WriteStringToAddr(i," ",1);}  
+			  
+   DrawAttrCnt(GAUGEINFO_ADDR,Gauge_COLOR1,30);       
+   WriteStringToAddr(GAUGEINFO_ADDR+5,GaugeString,22);
+   WriteStringToAddr(GAUGEINFO_ADDR+30+4,GaugeString5,23);
+
+   DrawAttrCnt(GAUGEINFO_ADDR+30,Gauge_COLOR2,60);   
+   WriteStringToAddr(GAUGEINFO_ADDR+30*2+3,GaugeString3,3);
+   WriteStringToAddr(GAUGEINFO_ADDR+30*2+26,GaugeString4,3);
+   WriteStringToAddr(GAUGEINFO_ADDR+30*3+2,GaugeString6,27); 
+
+   DrawAttrCnt(GAUGEINFO_ADDR+30*3,Gauge_COLOR3,60);  
+   WriteStringToAddr(GAUGEINFO_ADDR+30*4+1,GaugeString3,3);
+   WriteStringToAddr(GAUGEINFO_ADDR+30*4+28,GaugeString4,3);
+
+   
+   SetDisplayedOSD(GAUGEINFO);
+
+   ShowOSDWindow(RATINGINFO_OSDWIN,TRUE);
+   ShowOSDWindowAll(1);  //0x09c  第4bit : OSD ON, 1: OSD OFF
+   WriteTW88(TW88_WINBLENDING,0x08);	   //wiliiam-v1.1-970827
+
+
+}
+
+void ClearGAUGEINFO(void)
+{
+    ShowOSDWindow(RATINGINFO_OSDWIN ,FALSE);
+    DisplayedOSD &= (~(GAUGEINFO));
+}
+
+void DisplaylockOSD(void)  // 2007.4.11 Justin
+{
+   extern CODE BYTE Init_Osd_DisplayGAUGEWindow[];                                                                               
+   ClearOSDInfo();
+   ClearDataCnt(GAUGEINFO_ADDR,30*5);                                                 
+   InitOSDWindow(Init_Osd_DisplayGAUGEWindow);                     
+   DrawAttrCnt(0,0x04,30*5);   //設定位址的屬性   
+   WriteStringToAddr(30*3+7,"OSD MENU LOCKED",15);
+   SetDisplayedOSD(GAUGEINFO);
+   ShowOSDWindow(RATINGINFO_OSDWIN,TRUE);
+   ShowOSDWindowAll(1);  //0x09c  第4bit : OSD ON, 1: OSD OFF
+   WriteTW88(TW88_WINBLENDING,0x08);	   //wiliiam-v1.1-970827
+}
+
+
+
+void DisplayNumber(BYTE addr,WORD val,BYTE type)
+{
+
+#define Number_LENGTH 6 
+#define Number_LENGTH2 2
+
+
+   // BYTE i;
+   
+    BYTE Bar_str[Number_LENGTH]={ ' ',' ','.',' ',' ','V' };
+	BYTE Bar_str_AC[Number_LENGTH]={ ' ',' ',' ','.',' ','V' };
+	BYTE Bar_str_Battery[Number_LENGTH]={ ' ','.',' ',' ',' ','V' };
+	BYTE Num_str[Number_LENGTH2]={ ' ',' ' };
+
+    //WORD addr;
+
+
+switch(type)
+{
+
+case 1:
+//if(ModeIndex==MODE_AC)
+//{
+    //if( Bar_str[0] == 0x01 ) Bar_str[0] = 0x02; // |..
+    Bar_str_AC[4] = val % 10 + '0';    val /= 10;
+    Bar_str_AC[2] = val % 10 + '0';    val /= 10;
+    Bar_str_AC[1] =  val % 10 + '0';    val /= 10;
+    Bar_str_AC[0] = val + '0';
+    if( Bar_str_AC[0] == '0' ) Bar_str_AC[0] = ' ';
+	if( (Bar_str_AC[1] == '0') && (Bar_str_AC[0] == ' ') ) Bar_str_AC[1] = ' ';
+//}	
+	DrawAttrCnt(addr, DEFAULT_COLOR, Number_LENGTH ); 
+	WriteStringToAddr(addr, Bar_str_AC, Number_LENGTH );
+
+
+break;
+
+case 2:
+//{
+    Bar_str_Battery[4] = val % 10 + '0';    val /= 10;
+    Bar_str_Battery[3] = val % 10 + '0';    val /= 10;
+    Bar_str_Battery[2] = val % 10 + '0';    val /= 10;
+    Bar_str_Battery[0] = val + '0';
+   // if( Bar_str[0] == '0' ) Bar_str[0] = ' ';
+   DrawAttrCnt(addr, DEFAULT_COLOR, Number_LENGTH ); 
+   WriteStringToAddr(addr, Bar_str_Battery, Number_LENGTH );
+
+//}
+break;
+
+case 3:
+//else
+//{
+    // Number
+    Bar_str[4] = val % 10 + '0';    val /= 10;
+    Bar_str[3] = val % 10 + '0';    val /= 10;
+    Bar_str[1] =  val % 10 + '0';    val /= 10;
+    Bar_str[0] = val + '0';
+    if( Bar_str[0] == '0' ) Bar_str[0] = ' ';
+	//if( Bar_str[2] == '0' ) Bar_str[0] = ' ';
+//}
+	DrawAttrCnt(addr, DEFAULT_COLOR, Number_LENGTH ); 
+	WriteStringToAddr(addr, Bar_str, Number_LENGTH );
+
+break;
+
+	
+	case 4:
+
+		// Number
+		Num_str[1] =  val % 10 + '0';	 val /= 10;
+		Num_str[0] = val + '0';
+
+
+		//DrawAttrCnt(addr, DEFAULT_COLOR, Number_LENGTH2 ); 
+		WriteStringToAddr(addr, Num_str, Number_LENGTH2 );
+	
+	break;
+
+    //addr = OSDMENU_MAINADDR; // 
+	
+
+}
+}
+
+
+
+void DisplayactvOSD(void)  //2007.4.11 Justin
+{
+   extern CODE BYTE Init_Osd_DisplayGAUGEWindow[];                                                                               
+   ClearOSDInfo();
+   ClearDataCnt(GAUGEINFO_ADDR,30*5);                                                 
+   InitOSDWindow(Init_Osd_DisplayGAUGEWindow);                     
+   DrawAttrCnt(0,0x02,30*5);   //設定位址的屬性   
+   WriteStringToAddr(30*3+7,"OSD MENU ATCIVE",15);
+   SetDisplayedOSD(GAUGEINFO);
+   ShowOSDWindow(RATINGINFO_OSDWIN,TRUE);
+   ShowOSDWindowAll(1);  //0x09c  第4bit : OSD ON, 1: OSD OFF
+   WriteTW88(TW88_WINBLENDING,0x08);	   //wiliiam-v1.1-970827
+}
+
+//#ifdef SUPPORT_SDCARD
+void DisplayFormatOSD(void)  //2007.4.11 Justin
+{
+   extern CODE BYTE Init_Osd_DisplayGAUGEWindow[];                                                                               
+   ClearOSDInfo();
+   ClearDataCnt(GAUGEINFO_ADDR,30*5);                                                 
+   InitOSDWindow(Init_Osd_DisplayGAUGEWindow);                     
+   DrawAttrCnt(0,Gauge_COLOR2,30*5);   //設定位址的屬性   
+   WriteStringToAddr(30*3+8,"FORMAT SD CARD",14);
+   SetDisplayedOSD(GAUGEINFO);
+   ShowOSDWindow(RATINGINFO_OSDWIN,TRUE);
+   ShowOSDWindowAll(1);  //0x09c  第4bit : OSD ON, 1: OSD OFF
+   WriteTW88(TW88_WINBLENDING,0x08);	   //wiliiam-v1.1-970827
+}
+
+void DisplayFormatOkOSD(void)  //2007.4.11 Justin
+{
+   extern CODE BYTE Init_Osd_DisplayGAUGEWindow[];                                                                               
+   ClearOSDInfo();
+   ClearDataCnt(GAUGEINFO_ADDR,30*5);                                                 
+   InitOSDWindow(Init_Osd_DisplayGAUGEWindow);                     
+   DrawAttrCnt(0,Gauge_COLOR1,30*5);   //設定位址的屬性   
+   WriteStringToAddr(30*3+8,"FORMAT SUCCESS",14);
+   SetDisplayedOSD(GAUGEINFO);
+   ShowOSDWindow(RATINGINFO_OSDWIN,TRUE);
+   ShowOSDWindowAll(1);  //0x09c  第4bit : OSD ON, 1: OSD OFF
+   WriteTW88(TW88_WINBLENDING,0x08);	   //wiliiam-v1.1-970827
+}
+
+void DisplayFormatFailOSD(void)  //2007.4.11 Justin
+{
+   extern CODE BYTE Init_Osd_DisplayGAUGEWindow[];                                                                               
+   ClearOSDInfo();
+   ClearDataCnt(GAUGEINFO_ADDR,30*5);                                                 
+   InitOSDWindow(Init_Osd_DisplayGAUGEWindow);                     
+   DrawAttrCnt(0,Gauge_COLOR3,30*5);   //設定位址的屬性   
+   WriteStringToAddr(30*3+10,"FORMAT FAIL",11);
+   SetDisplayedOSD(GAUGEINFO);
+   ShowOSDWindow(RATINGINFO_OSDWIN,TRUE);
+   ShowOSDWindowAll(1);  //0x09c  第4bit : OSD ON, 1: OSD OFF
+   WriteTW88(TW88_WINBLENDING,0x08);	   //wiliiam-v1.1-970827
+}
+
+void DisplayFWUpDate(void)  //2007.4.11 Justin
+{
+   extern CODE BYTE Init_Osd_DisplayGAUGEWindow[];                                                                               
+   ClearOSDInfo();
+   ClearDataCnt(GAUGEINFO_ADDR,30*5);                                                 
+   InitOSDWindow(Init_Osd_DisplayGAUGEWindow);                     
+   DrawAttrCnt(0,Gauge_COLOR2,30*5);   //設定位址的屬性   
+   WriteStringToAddr(30*3+10,"FW Update...",12);
+   SetDisplayedOSD(GAUGEINFO);
+   ShowOSDWindow(RATINGINFO_OSDWIN,TRUE);
+   ShowOSDWindowAll(1);  //0x09c  第4bit : OSD ON, 1: OSD OFF
+   WriteTW88(TW88_WINBLENDING,0x08);	   //wiliiam-v1.1-970827
+}
+
+void DisplayFWUpDateOK(void)  //2007.4.11 Justin
+{
+   extern CODE BYTE Init_Osd_DisplayGAUGEWindow[];                                                                               
+   ClearOSDInfo();
+   ClearDataCnt(GAUGEINFO_ADDR,30*5);                                                 
+   InitOSDWindow(Init_Osd_DisplayGAUGEWindow);                     
+   DrawAttrCnt(0,Gauge_COLOR1,30*5);   //設定位址的屬性   
+   WriteStringToAddr(30*3+7,"FW Update SUCCESS",17);
+   SetDisplayedOSD(GAUGEINFO);
+   ShowOSDWindow(RATINGINFO_OSDWIN,TRUE);
+   ShowOSDWindowAll(1);  //0x09c  第4bit : OSD ON, 1: OSD OFF
+   WriteTW88(TW88_WINBLENDING,0x08);	   //wiliiam-v1.1-970827
+}
+
+void DisplayFWUpDateFail(void)  //2007.4.11 Justin
+{
+   extern CODE BYTE Init_Osd_DisplayGAUGEWindow[];                                                                               
+   ClearOSDInfo();
+   ClearDataCnt(GAUGEINFO_ADDR,30*5);                                                 
+   InitOSDWindow(Init_Osd_DisplayGAUGEWindow);                     
+   DrawAttrCnt(0,Gauge_COLOR3,30*5);   //設定位址的屬性   
+   WriteStringToAddr(30*3+8,"FW Update FAIL",14);
+   SetDisplayedOSD(GAUGEINFO);
+   ShowOSDWindow(RATINGINFO_OSDWIN,TRUE);
+   ShowOSDWindowAll(1);  //0x09c  第4bit : OSD ON, 1: OSD OFF
+   WriteTW88(TW88_WINBLENDING,0x08);	   //wiliiam-v1.1-970827
+}
+
+void DisplayDVRnotReady(void)  
+{
+   extern CODE BYTE Init_Osd_DisplayGAUGEWindow[];                                                                               
+   ClearOSDInfo();
+   ClearDataCnt(GAUGEINFO_ADDR,30*5);                                                 
+   InitOSDWindow(Init_Osd_DisplayGAUGEWindow);                     
+   DrawAttrCnt(0,Gauge_COLOR3,30*5);   //設定位址的屬性   
+   WriteStringToAddr(30*3+6,"SD CARD Not Ready",17);
+   SetDisplayedOSD(GAUGEINFO);
+   ShowOSDWindow(RATINGINFO_OSDWIN,TRUE);
+   ShowOSDWindowAll(1);  //0x09c  第4bit : OSD ON, 1: OSD OFF
+   WriteTW88(TW88_WINBLENDING,0x08);	   //wiliiam-v1.1-970827
+}
+
+void DisplayFWVersion(void)  //2007.4.11 Justin
+{
+   extern CODE BYTE Str_VER_E[];   
+   BYTE i;
+   BYTE Str_DVRVersion[]={' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',0}; //  william-1.45-971106
+
+
+	for(i=0;i<DVRVersionLen;i++) 
+	{
+		Str_DVRVersion[i]=DVRVersion[i];
+	}
+
+   ClearOSDInfo();
+   ClearDataCnt(GAUGEINFO_ADDR,30*5);                                                 
+   InitOSDWindow(Init_Osd_DisplayGAUGEWindow);                     
+   DrawAttrCnt(0,Gauge_COLOR1,30*5);   //設定位址的屬性   
+   WriteStringToAddr(30*0,"LCD:",4);
+   WriteStringToAddr(30*1,Str_VER_E,8);
+   #ifdef SUPPORT_SDCARD
+   WriteStringToAddr(30*2,"DVR:",4);
+   WriteStringToAddr(30*3,Str_DVRVersion,DVRVersionLen);
+   #endif
+  #if 0 
+   	for(i=0;i<DVR_BUF_MAX;i++) 
+	{  
+		DisplayNumber(30*0+i*2,DVR_buf[i],4);
+	}
+#endif
+   SetDisplayedOSD(GAUGEINFO);
+   ShowOSDWindow(RATINGINFO_OSDWIN,TRUE);
+   ShowOSDWindowAll(1);  //0x09c  第4bit : OSD ON, 1: OSD OFF
+   WriteTW88(TW88_WINBLENDING,0x08);	   //wiliiam-v1.1-970827
+}
+//#endif	//#ifdef SUPPORT_SDCARD
+
+//#ifdef SUPPORT_SDCARD
+void DisplayDVRStatus(void)
+{
+	extern CODE BYTE SDCARD_ICON[];
+	extern CODE BYTE SCANSDCARD_ICON[];
+	extern CODE BYTE NoSDCard_ICON[];
+	extern CODE BYTE SDCardOverWrite_ICON[];
+	//CODE BYTE Str_720[] = {RAMFONT,0x08,0x09,ROMFONT,0};
+	//CODE BYTE Str_352[] = {RAMFONT,0x0A,0x0B,ROMFONT,0};
+	BYTE RecordStatus=0;
+
+	//display date & time
+	DrawAttrCnt(DVRStatus_ADDR,0x02,25);   //設定位址的屬性   
+	DrawAttrCnt(DVRStatus_ADDR+26,Gauge_COLOR3,1);   //設定位址的屬性   
+	DrawAttrCnt(DVRStatus_ADDR+28,Gauge_COLOR2,2);   //設定位址的屬性 
+	DisplayNumber(DVRStatus_ADDR+1,year1,4);	
+	DisplayNumber(DVRStatus_ADDR+3,year2,4);
+	WriteStringToAddr(DVRStatus_ADDR+5,"/",1);
+	DisplayNumber(DVRStatus_ADDR+6,month,4);
+	WriteStringToAddr(DVRStatus_ADDR+8,"/",1);
+	DisplayNumber(DVRStatus_ADDR+9,day,4);
+	DisplayNumber(DVRStatus_ADDR+12,hour,4);
+	DisplayNumber(DVRStatus_ADDR+15,minute,4);
+
+	if(second&0x01)
+		WriteStringToAddr(DVRStatus_ADDR+14,":",1);
+	else
+		 ClearDataCnt(DVRStatus_ADDR+14,1);	
+	
+	//WriteStringToAddr(DVRStatus_ADDR+16,":",1);
+	//DisplayNumber(DVRStatus_ADDR+17,second,4);
+
+
+	//display dvr status
+	if(DVR_SDCardAvailable!=0xff)
+	{
+
+	if(DVR_Busy)
+		{
+	  	WriteStringToAddr(DVRStatus_ADDR+20,SCANSDCARD_ICON,3);
+		//DisplayNumber(DVRStatus_ADDR+22,DVR_SDCardAvailable,4);
+		//WriteStringToAddr(DVRStatus_ADDR+24,"%",1);
+		}
+	else	 if((DVR_RecordStatus&OverWrite_Record)==OverWrite_Record)	
+		{
+	  	WriteStringToAddr(DVRStatus_ADDR+20,SDCardOverWrite_ICON,3);
+		DisplayNumber(DVRStatus_ADDR+22,DVR_SDCardAvailable,4);
+		WriteStringToAddr(DVRStatus_ADDR+24,"%",1);
+		}
+	
+	else
+		{
+	  	WriteStringToAddr(DVRStatus_ADDR+20,SDCARD_ICON,3);
+		DisplayNumber(DVRStatus_ADDR+22,DVR_SDCardAvailable,4);
+		WriteStringToAddr(DVRStatus_ADDR+24,"%",1);
+		}
+		if((DVR_RecordStatus&ALARM_Record)==ALARM_Record)
+		   {
+			 WriteStringToAddr(DVRStatus_ADDR+26,"A",1);		
+			 #if 0
+			 if(DVR_Resolution==1)		//720*480
+			   {
+				 WriteStringToAddr(DVRStatus_ADDR+28,Str_720,4);
+			   }
+			 else if(DVR_Resolution==2) //352*234
+			   {
+				 WriteStringToAddr(DVRStatus_ADDR+28,Str_352,4);
+			   }	
+			 #endif
+			RecordStatus=1; 
+		   }
+		
+		else if((DVR_RecordStatus&Manual_Record)==Manual_Record && RecordStatus==0)
+		   {
+			 WriteStringToAddr(DVRStatus_ADDR+26,"M",1);
+			 #if 0
+			 if(DVR_Resolution==1)		//720*480
+			   {
+				 WriteStringToAddr(DVRStatus_ADDR+28,Str_720,4);
+			   }
+			 else if(DVR_Resolution==2) //352*234
+			   {
+				 WriteStringToAddr(DVRStatus_ADDR+28,Str_352,4);
+			   } 
+			 #endif
+			 RecordStatus=1; 
+		   }
+
+		else if((DVR_RecordStatus&NORMAL_Record)==NORMAL_Record && RecordStatus==0)
+		   {
+			 WriteStringToAddr(DVRStatus_ADDR+26,"R",1);
+			#if 0 
+			 if(DVR_Resolution==1)		//720*480
+			   {
+				 WriteStringToAddr(DVRStatus_ADDR+28,Str_720,4);
+			   }
+			 else if(DVR_Resolution==2) //352*234
+			   {
+				 WriteStringToAddr(DVRStatus_ADDR+28,Str_352,4);
+			   }
+			 #endif
+			 RecordStatus=1; 
+			 
+		   }
+		
+		if(RecordStatus==0)
+    		 ClearDataCnt(DVRStatus_ADDR+26,4);	
+	}
+	else
+	{
+		WriteStringToAddr(DVRStatus_ADDR+20,NoSDCard_ICON,4);
+		ClearDataCnt(DVRStatus_ADDR+22,8);	
+
+	}
+
+if(ReadEEP(EEP_DVRDisplay)==0)
+	ShowOSDWindow(DVRStatus_OSDWIN,TRUE);
+else
+	ShowOSDWindow(DVRStatus_OSDWIN,FALSE);
+
+   ShowOSDWindowAll(1);  //0x09c  第4bit : OSD ON, 1: OSD OFF
+   WriteTW88(TW88_WINBLENDING,0x08);	   //wiliiam-v1.1-970827
+
+}
+
+//#endif	//#ifdef SUPPORT_SDCARD
+

@@ -1,0 +1,2864 @@
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE I2C
+OBJECT MODULE PLACED IN .\Output\I2c.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE I2c.c LARGE OPTIMIZE(9,SIZE) BROWSE INCDIR(.\Include\) DEBUG OBJECTEXTEN
+                    -D CODE LISTINCLUDE SYMBOLS PRINT(.\Source\I2c.lst) TABS(2) OBJECT(.\Output\I2c.obj)
+
+line level    source
+
+   1          //-------------------------------------------------------------
+   2          //  This is changed for sdcc compiler 2.2.0a  LJY000721
+   3          //  ver0.11 2/20/2001 Support Z86129 Line 21 decoder.
+   4          //-------------------------------------------------------------
+   5          /*#include <io51.h>*/
+   6          //#include <pk-51.h>  LJY000721
+   7          
+   8          #include "Config.h"
+   1      =1  /*****************************************************************************/
+   2      =1  /*                           System Configurations                           */
+   3      =1  /*              rev 0.10 include auto test             */
+   4      =1  // 0.11 change DTV, PC input initial download data correct for Charge Pump
+   5      =1  // 0.12 correct phase measurement routine '>>3'
+   6      =1  // 0.13 enable function for SPI control... only EXT MCU case
+   7      =1  // 0.14 corrected PC measurement......
+   8      =1  // 0.0a test function only for CVBS, SVIDEO
+   9      =1  // 0.15 corrected DTV scaler setting for panel resolutions
+  10      =1  // 0.0b panel for AND 640x480 TICON panel
+  11      =1  // 0.16 corrected COMPONENT scaler setting for panel resolutions  11/21/2007
+  12      =1  // 0.0c automatic chip test
+  13      =1  // 0.17 add monitor function, osd grid for writing grid
+  14      =1  // 0.18 add component, dtv pc for analogpanel, 12/06/2007
+  15      =1  // 0.19 correct pal input for CES, 12/20/2007
+  16      =1  // 0.1a CCFL control, 12/28/2007
+  17      =1  // 0.19 Multi Grid for Banking on Internal MCU  01/17/2008
+  18      =1  // 0.20 CCFL contol for backlight brightness  01/21/2008
+  19      =1  // 0.21 CCFL contol for backlight brightness  01/25/2008
+  20      =1  // 0.22 phase setting 02/07/2008
+  21      =1  // 0.221 display input correction 04/03/2008
+  22      =1  // 0.23 PC, DTV mode, no signal display
+  23      =1  // 0.24 PC Auto Color adjustment
+  24      =1  // 0.25 revised PC Auto Clock adjustment - find divide number and phase
+  25      =1  // 0.26 Digital RGB for TW8826
+  26      =1  // 0.27 Correct LVDS control          08/22/2008
+  27      =1  // 0.28 Add WSVGA resolution          10/23/2008
+  28      =1  // 0.29 Add NEW GRID              11/14/2008
+  29      =1  // 0.30 Fix DTV input             12/10/2008
+  30      =1  // 0.31 Add 1080i23, 24, 25A, 25B       01/20/2009
+  31      =1  // 0.32 TCON setting FIX all mode       01/22/2009
+  32      =1  // 0.33 autodetect is auto on/off by dip sw1  02/02/2009
+  33      =1  // 0.34 Fix autocolor function and clamp position 02/08/2009
+  34      =1  /*****************************************************************************/
+  35      =1  #ifndef __CONFIG_H__
+  36      =1  #define __CONFIG_H__
+  37      =1  
+  38      =1  //#define INTERNAL_MCU -- defined by Project Compiler session
+  39      =1  #define   HS        
+  40      =1  //#define   E_Wintek  
+  41      =1  //#define   AWT 
+  42      =1  //#define Holtz
+  43      =1  
+  44      =1  //#define QUAD
+  45      =1  
+  46      =1  #ifdef QUAD
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 2   
+
+           =1   #define AWT_ML072Q  //Pinchi 20150827 disable for HTRV
+           =1 //  #define HTRV  //Pinchi 20140902 disable for AWT ML072Q
+           =1 #else
+  50      =1    #define AWT_ML072S
+  51      =1  #endif
+  52      =1  
+  53      =1  //--------------------------------------------------
+  54      =1  //              Common Feature Define
+  55      =1  //--------------------------------------------------
+  56      =1  //#define FIRST_RUN_FROM_AC  //Pinchi 20150831 disable for Screen re-setting by Set4WideScreen()  //Pinchi
+             - 20141029 add
+  57      =1  #define SUPPORT_ML072Q_AUTO_DAY_NIGHT  //Pinchi 20150825 add for function define
+  58      =1  #define SUPPORT_TRIGGER_EXIT_MENU  //Pinchi 20150827 add for exit OSD Menu by CAM trigger
+  59      =1  #define SUPPORT_AC_ON_NORMAL_SCREEN  //Pinchi 20150901 add to set 4:3 screen when AC on
+  60      =1  
+  61      =1  #define FIX_DISPLAY_OFF_TRIGGER_ISSUE  //Pinchi 20150908 add to fix [Display] set OFF and trigger release 
+             -then trigger again during display info the CAM will change from trigger CH to original CH
+  62      =1  #define FIX_EXIT_STANDBY_NO_AUDIO  //Pinchi 20150908 add to fix no audio output when exit Standby mode
+  63      =1  #ifdef AWT_ML072Q
+           =1 #define FIX_2835_SCREEN_NOISE  //Pinchi 20160929 add to fix the screen noise of TW2835 by change DDR to ma
+             -ke clock shift
+           =1 #endif
+  66      =1  
+  67      =1  #define SUPPORT_NEW_TRIGGER_FUNCTION  /////修改新的Trigger方式減少trigger polling 時間 add by ryan@2018012
+             -4
+  68      =1  
+  69      =1  //#define AWT_ML072QS_MSG  //Pinchi 20140925 add
+  70      =1  //#define REDUCE_DELAY_TIME  //Pinchi 20141029 add
+  71      =1  //#define DISPLAY_TECHWELL_LOGO  //Pinchi 2050903 add to disable the Techwell logo
+  72      =1  
+  73      =1  //#define SUPPORT_SVIDEO                     //andy Awt 20090914
+  74      =1  //#define SUPPORT_COMPONENT     // support component analog to decoder//andy Awt 20090914
+  75      =1  //#define SUPPORT_DTV           // support DTV input through component( to ADC ).//andy Awt 20090914
+  76      =1  //#define SUPPORT_PC        // support PC function
+  77      =1  //#define SUPPORT_DVI       // support DVI input
+  78      =1  //#define SUPPORT_SDCARD
+  79      =1  
+  80      =1  #define SUPPORT_2835_CLK_TUNE_BACK_DOOR  //Pinchi 20160913 add to fine tune TW2835 clock by hot key
+  81      =1  //#define SUPPORT_DISPLAY_TEST_VERSION  //Pinchi 20150929 add to display test software version on OSD
+  82      =1  
+  83      =1  //--------------------------------------------------
+  84      =1  //              Model Feature Define
+  85      =1  //--------------------------------------------------
+  86      =1  #if (defined AWT_ML072Q) || (defined AWT_ML072S)
+  87      =1  #define AWT_ML072QS_FW_RULE  //Pinchi 20140902 add
+  88      =1  //#define AWT_NEW_SLIM_MODEL  //Pinchi 20150203 add for AWT new slim model
+  89      =1  #define AWT_NO_SIGNAL_MSG  //Pinchi 20150319 add for display "NO VIDEO SIGNAL" by AWT request of 20150302
+  90      =1  #define AWT_TW2835_DRAW_T_ICON  //Pinchi 20150415 add to draw T icon by TW2835 when CAM C trigger
+  91      =1  #define SUPPORT_AC_ON_REDUCE_TIME  //Pinchi 20150903 add to reduce Power time when AC on
+  92      =1  
+  93      =1  //#define SUPPORT_TRIGGER_RELEASE_DELAY  //Pinchi 20150908 add to support delay time when CAM trigger rele
+             -ase
+  94      =1  
+  95      =1  typedef enum  //Pinchi 20150326 add
+  96      =1  {
+  97      =1       LAST_TRIG_NON =  0x00,
+  98      =1       LAST_TRIG_LEFT =   0x01,
+  99      =1       LAST_TRIG_RIGHT =  0x02,
+ 100      =1       LAST_TRIG_REVERSE =0x03,
+ 101      =1       LAST_TRIG_CAMC =   0x04,
+ 102      =1  
+ 103      =1  } AWT_LAST_TRIGGER;
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 3   
+
+ 104      =1  
+ 105      =1  #endif
+ 106      =1  
+ 107      =1  
+ 108      =1  #ifdef HTRV  //Pinchi 20150825 add
+           =1 #define HTRV_ML072Q_FW_RULE  //Pinchi 20150827 add
+           =1 #define HTRV_REDUCE_SCREEN_CHANGE  //Pinchi 20150828 add to reduce screen double change
+           =1 
+           =1 #if 0  //Pinchi 20151209 add to remove 4:3 screen by HTRV request of 20151209
+           =1 #define HTRV_SUPPORT_4_3_SCREEN
+           =1 #else
+           =1 #undef SUPPORT_AC_ON_NORMAL_SCREEN  //Pinchi 20151210 add
+           =1 #endif
+           =1 
+           =1 #endif
+ 119      =1  
+ 120      =1  //#define SUPPORT_RS485
+ 121      =1  //-----------------------------------------------------------------------------
+ 122      =1  //    Firmware Version
+ 123      =1  //-----------------------------------------------------------------------------
+ 124      =1  #ifdef HTRV  //Pinchi 20150907 add
+           =1 //#define FWVER     0x200 // Rev 2.00
+           =1 //#define FWVER     0x210   // Rev 2.1  //Pinchi 20151209 update version for HTRV request to remove 4:3 scree
+             -n
+           =1 //#define FWVER     0x220   // Rev 2.2  //Pinchi 20160929 change for V2.2
+           =1 #define FWVER     0x230     //Rev 2.3    ryan@20170727 update version by Encoder switches零件 EOL更換
+           =1 #else
+ 130      =1  #define FWVER     0x210   // Rev 0.14
+ 131      =1  #endif
+ 132      =1  
+ 133      =1  //-----------------------------------------------------------------------------
+ 134      =1  //    Compiler
+ 135      =1  //-----------------------------------------------------------------------------
+ 136      =1  #define KEILC           // Keil C 5.0
+ 137      =1  //-----------------------------------------------------------------------------
+ 138      =1  //    MPU Clock
+ 139      =1  //-----------------------------------------------------------------------------
+ 140      =1  #ifndef INTERNAL_MCU
+ 141      =1  //#define CLOCK_11M         // 11.0592MHz
+ 142      =1  #define CLOCK_22M         // 22.1184MHz
+ 143      =1  #else                 // INTERNAL_MCU
+           =1 #define CLOCK_27M         // 27MHz
+           =1 #define REG_START_ADDRESS 0xc000    // register start 0xc000, for page0, 0xc100-page1 
+           =1 #endif
+ 147      =1  //-----------------------------------------------------------------------------
+ 148      =1  //    TW88 Version
+ 149      =1  //-----------------------------------------------------------------------------
+ 150      =1  #define TW8816   ///AWT TW8806 change to TW8816 platform //ryan@20170921
+ 151      =1  //-----------------------------------------------------------------------------
+ 152      =1  //-----------------------------------------------------------------------------
+ 153      =1  //    Options for Backlight control
+ 154      =1  //-----------------------------------------------------------------------------
+ 155      =1  //#define BACKLIGHT_CCFL
+ 156      =1  //#define BACKLIGHT_LED
+ 157      =1  #define BACKLIGHT_PWM
+ 158      =1  
+ 159      =1  //-----------------------------------------------------------------------------
+ 160      =1  //    Panel Resolution
+ 161      =1  //-----------------------------------------------------------------------------
+ 162      =1  // ---- Select Default Panel
+ 163      =1  //
+ 164      =1  //#define UXGA            // 1600 x 1200
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 4   
+
+ 165      =1  //#define SXGA              // 1280 x 1024
+ 166      =1  //#define XGA  // 1024 x 768
+ 167      =1  #ifdef XGA
+           =1   #define LVDS          
+           =1   #define PWIDTH  1024
+           =1   #define PHEIGHT 768
+           =1 #endif
+ 172      =1  //#define SVGA            //  800 x 600
+ 173      =1  //#define VGA             //  640 x 480
+ 174      =1  #ifdef VGA
+           =1   #define PWIDTH  640
+           =1   #define PHEIGHT 480
+           =1   //#define HITACHI_640_B_160   //--> 640 x 160
+           =1   #define AND_640_480
+           =1 #endif
+ 180      =1  //#define WXGA            // 1280 x 768 (15:9) // 1366 x 768 (16:9)
+ 181      =1  #ifdef WXGA
+           =1     //#define WX_SHARP_LQ106K1LA
+           =1   #define PWIDTH  1280
+           =1   #define PHEIGHT 768
+           =1 #endif
+ 186      =1  //#define WSVGA           // 1024 x 600 *** only video mode
+ 187      =1  #ifdef WSVGA
+           =1   #define PWIDTH  1024
+           =1   #define PHEIGHT 600
+           =1   #define UNIDEN_1024_600
+           =1 #endif
+ 192      =1  #define WVGA            //  800 x 480
+ 193      =1  #ifdef WVGA
+ 194      =1    #define PWIDTH  800
+ 195      =1    #define PHEIGHT 480//600
+ 196      =1    // If WVGA, you have to select panel.
+ 197      =1    //#define AU_10INCH
+ 198      =1    //#define WVGA_TPO
+ 199      =1    //#define SAMSUNG_10INCH
+ 200      =1    //#define SAMSUNG_TICONLESS_10INCH
+ 201      =1    //#define SHARP_TICONLESS_7INCH
+ 202      =1    //#define AU_TICONLESS_7INCH
+ 203      =1    //#define AU_G084SN05V8_8_4INCH 
+ 204      =1    #define HSD070IDW1_7INCH
+ 205      =1    //#define INNOLUX_AT080TN03
+ 206      =1    //#define AU_TICONLESS_7INCH_CCFL
+ 207      =1    //#define CMO     // CHIMEI panel
+ 208      =1    //#define AU_TICONLESS_10INCH
+ 209      =1    //#define HITACHI_T01
+ 210      =1    //#define HITACHI_TX23D12
+ 211      =1    //#define HITACHI_TX18D24
+ 212      =1    //#define HITACHI_TX18D16
+ 213      =1    //#define TMD_LTA070A320F
+ 214      =1    //#define TMD_LTA080B
+ 215      =1  #endif  //WVGA
+ 216      =1  //#define HVGA            //  480 x 320
+ 217      =1  //#define QVGA            //  320 x 240 *** only video mode
+ 218      =1  #ifdef QVGA
+           =1   #define PWIDTH  320
+           =1   #define PHEIGHT 240
+           =1   //#define HITACHI_TX09D73
+           =1   //#define AU_DELTARGB
+           =1   //#define SHARP_LQ050Q5DR01
+           =1   //#define SHARP_LQ035
+           =1   //#define TMD
+           =1 #endif
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 5   
+
+ 227      =1  
+ 228      =1  //#define WQVGA           //  480 x 234 *** only video mode
+ 229      =1  #ifdef WQVGA
+           =1   #define PWIDTH  480
+           =1   #define PHEIGHT 240
+           =1   // If WQVGA, you have to select panel 
+           =1     #define ANALOG_7INCH
+           =1   //#define PWIDTH  400
+           =1   //#define PHEIGHT 240
+           =1   //#define SHARP_LQ043T3DX02   //  400 x 237
+           =1   //#define LG_ANALOG
+           =1   //#define TMD_ANALOG        //TMD_LTA05B352A
+           =1   //#define T_51945GD       // Optorex Panel
+           =1 #endif  // WQVGA
+ 241      =1  
+ 242      =1  //if LVDS pannel disable TICONLESS
+ 243      =1  
+ 244      =1  //-----------------------------------------------------------------------------
+ 245      =1  //---- Add Support One more panel with DIPSW#1
+ 246      =1  //---- Ex. Add Analog AU 7" Panel with Default Panel for evalution
+ 247      =1  //#define ADD_ANALOGPANEL   // Added Analog panel(AU7") from default set panel(expect WQVGA) with DIP #1 sw
+             -itch.(DIP#1=L:ANALOG, H:DEFAULT)
+ 248      =1                // It can't support WQVGA and ADD_ANALOGPANEL same time!!
+ 249      =1    //#define ADD_ANALOG_7INCH
+ 250      =1    //#define ADD_TMD_LTA05B352A
+ 251      =1                    
+ 252      =1  //---- Support Wide panel function
+ 253      =1  #if (defined WXGA) || (defined WSVGA) || (defined WVGA) || (defined WQVGA)
+ 254      =1  #if 0///ryan@20180115//mask for NTSC sharpness issue
+           =1 #define WIDE_SCREEN         // Can support 4 display mode, i.e. Normal, Wide, Full, Zoom
+           =1 #endif
+ 257      =1  #endif                // Tested panasonic WVGA panel.
+ 258      =1  
+ 259      =1  //-----------------------------------------------------------------------------
+ 260      =1  //    Panel Vendor Specific
+ 261      =1  //-----------------------------------------------------------------------------
+ 262      =1  
+ 263      =1  //-----------------------------------------------------------------------------
+ 264      =1  //    TV Tuner
+ 265      =1  //-----------------------------------------------------------------------------
+ 266      =1  #define PHILIPS       0
+ 267      =1  #define ALPS        1   // ALPS, LG
+ 268      =1  #define TEMIC       2
+ 269      =1  #define TVAVA       3
+ 270      =1  #define LGTUNER       4
+ 271      =1  #define SAMSUNGMUTITUNER  5
+ 272      =1  
+ 273      =1  #define TVTunerDevice   4
+ 274      =1  //-----------------------------------------------------------------------------
+ 275      =1  //    IR Remote Controller Type
+ 276      =1  //-----------------------------------------------------------------------------
+ 277      =1  //#define REMO_RC5          // RC5 style
+ 278      =1  #define TECHWELL_REMOCON
+ 279      =1  //#define REMO_NEC          // NEC style
+ 280      =1  //#define PHILIPS_REMOCON // New remocon 
+ 281      =1  
+ 282      =1  //-----------------------------------------------------------------------------
+ 283      =1  //    I2C Device Access Address Mapping
+ 284      =1  //-----------------------------------------------------------------------------
+ 285      =1  
+ 286      =1  #define EEPROMI2CAddress  0xa0  // EEPROM (24C16)
+ 287      =1  #define TW88I2CAddress    0x8a  // TW880x
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 6   
+
+ 288      =1  
+ 289      =1  #define MSPI2CAddress   0x80  // MSP
+ 290      =1  #define ALC106I2CAddress  0x4A  // MSP
+ 291      =1  //-----------------------------------------------------------------------------
+ 292      =1  //    Options for Possible Inputs
+ 293      =1  //-----------------------------------------------------------------------------
+ 294      =1  
+ 295      =1  
+ 296      =1  //-----------------------------------------------------------------------------
+ 297      =1  //    Options for Possible Standards
+ 298      =1  //    Default:NTSC
+ 299      =1  //-----------------------------------------------------------------------------
+ 300      =1  #define SUPPORT_PAL     
+ 301      =1  #define SUPPORT_SECAM
+ 302      =1  #define SUPPORT_NTSC4   
+ 303      =1  #define SUPPORT_PALM  
+ 304      =1  #define SUPPORT_PALN    
+ 305      =1  #define SUPPORT_PAL60   
+ 306      =1  
+ 307      =1  //#define ID_CHECK_BY_FW        // in Video mode, check input system ID by firmware
+ 308      =1  
+ 309      =1  //-----------------------------------------------------------------------------
+ 310      =1  //    Options for Debugging/Release
+ 311      =1  //-----------------------------------------------------------------------------
+ 312      =1  //#define SUPPORT_PATTERN       // support LCD test pattern
+ 313      =1  
+ 314      =1  #ifndef WQVGA
+ 315      =1    #ifndef QVGA
+ 316      =1  #define SUPPORT_OSDPOSITIONMOVE
+ 317      =1    #endif
+ 318      =1  #endif
+ 319      =1  
+ 320      =1  #define SERIAL              // include serial communication routines
+ 321      =1  
+ 322      =1  //#define SUPPORT_DEBUG       // Support to use Read & Write in debug OSD Window by remocon.
+ 323      =1  
+ 324      =1  //#define DEBUG           // include debug information
+ 325      =1  #ifdef DEBUG
+           =1   //#define DEBUG_MAIN
+           =1   //#define DEBUG_TIME
+           =1   //#define DEBUG_KEYREMO
+           =1   //#define DEBUG_TW88
+           =1   //#define DEBUG_DECODER
+           =1   //#define DEBUG_I2C
+           =1   //#define DEBUG_EEP
+           =1   //#define DEBUG_OSD
+           =1   //#define DEBUG_AUDIO
+           =1   //#define DEBUG_SETPANEL
+           =1   //#define DEBUG_DTV
+           =1 //  #define DEBUG_PC
+           =1   //#define DEBUG_PC_MEAS
+           =1   //#define DEBUG_PC_COLOR
+           =1   //#define DEBUG_COMPONENT
+           =1   //#define DEBUG_BANK
+           =1   //#define DEBUG_PAUSE
+           =1   //#define DEBUG_MCU
+           =1 #endif
+ 345      =1  
+ 346      =1  #define AUTOCALC_PC         // in PC mode, Enable Auto Calcuration
+ 347      =1  //#define SUPPORT_USERCOLORFROMTXT  // Use color setting of text file in Color mode=USER MODE which is as B
+             -rightness(Reg10), Contast(Reg11),
+ 348      =1                    //    Sat_U(Reg13),Sat_V(Reg14),Sharpness(Reg12,Reg78)                  
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 7   
+
+ 349      =1  //#define SUPPORT_GAMMA
+ 350      =1  
+ 351      =1  //#define CHIP_MANUAL_TEST      // DIPSW#1
+ 352      =1  
+ 353      =1  #ifndef INTERNAL_MCU
+ 354      =1  //#define NO_INITIALIZE       // After Power switch turn on with DIP SW4 Enable(Low), or pressed MENU button 
+             -for internal MCU
+ 355      =1                                      //     micom works to access only I2C bus by serial command.
+ 356      =1  #endif
+ 357      =1  
+ 358      =1  //#define SUPPORT_KRS_OSDDEMO   // For KRS Company Demo 
+ 359      =1  //#define SUPPORT_LINE_OSDDEMO
+ 360      =1  
+ 361      =1  //-----------------------------------------------------------------------------
+ 362      =1  //    Special Features
+ 363      =1  //-----------------------------------------------------------------------------
+ 364      =1  
+ 365      =1  #ifndef INTERNAL_MCU
+ 366      =1  //#define SUPPORT_DELTA_RGB
+ 367      =1  #endif
+ 368      =1  #define SUPPORT_SELECTKEY     // choose the keymap of using select key or left,right key.
+ 369      =1  //-----------------------------------------------------------------------------
+ 370      =1  
+ 371      =1  //#define HS_NEWOSDMENU     //Weylis -@121008 for Hor. Style OSD
+ 372      =1  //#define HS_NEWOSDMENU_2     //Weylis -@121008 for Hor. Style OSD(2 line)
+ 373      =1  
+ 374      =1  #endif  //__CONFIG_H__
+ 375      =1  
+   9          
+  10          #include "reg.h"
+   1      =1  //
+   2      =1  //Registers.h : Register declaration
+   3      =1  //
+   4      =1  
+   5      =1  #ifndef __REGISTERS__
+   6      =1  #define __REGISTERS__
+   7      =1  
+   8      =1  #ifdef INTERNAL_MCU
+           =1 /*  BYTE Registers  */
+           =1 sfr P0    = 0x80;
+           =1 sfr P1    = 0x90;
+           =1 sfr P2    = 0xA0;
+           =1 sfr P3    = 0xB0;
+           =1 sfr PSW   = 0xD0;
+           =1 sfr ACC   = 0xE0;
+           =1 sfr B     = 0xF0;
+           =1 sfr SP    = 0x81;
+           =1 sfr DPL   = 0x82;
+           =1 sfr DPH   = 0x83;
+           =1 sfr PCON  = 0x87;
+           =1 sfr TCON  = 0x88;
+           =1 sfr TMOD  = 0x89;
+           =1 sfr TL0   = 0x8A;
+           =1 sfr TL1   = 0x8B;
+           =1 sfr TH0   = 0x8C;
+           =1 sfr TH1   = 0x8D;
+           =1 sfr IE    = 0xA8;
+           =1 sfr IP    = 0xB8;
+           =1 sfr SCON  = 0x98;
+           =1 sfr SBUF  = 0x99;
+           =1 
+           =1 //sfr P4    = 0xd8;
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 8   
+
+           =1 
+           =1 /*  8052 Extensions  */
+           =1 sfr EXIF  = 0x91;   // external interrupt 2,3,4,5 flags should be cleared by software
+           =1 sfr T2CON = 0xC8;
+           =1 sfr RCAP2L = 0xCA;
+           =1 sfr RCAP2H = 0xCB;
+           =1 sfr TL2   = 0xCC;
+           =1 sfr TH2   = 0xCD;
+           =1 sfr EICON = 0xD8;
+           =1 sfr EIE   = 0xE8;
+           =1 sfr EIP   = 0xF8;
+           =1 
+           =1 /*  TW88 Core Extension */
+           =1 sfr BANKREG   = 0x9A;
+           =1 sfr SPICONTROL  = 0x9B;
+           =1 sfr T0HIGH    = 0x9C;
+           =1 sfr T0LOW     = 0x9D;
+           =1 sfr T1HIGH    = 0x9E;
+           =1 sfr T1LOW     = 0x9F;
+           =1 sfr T2HIGH    = 0x93;
+           =1 sfr T2LOW     = 0x94;
+           =1 
+           =1 /*  BIT Registers  */
+           =1 /*  PSW  */
+           =1 sbit CY    = 0xD7;
+           =1 sbit AC    = 0xD6;
+           =1 sbit F0    = 0xD5;
+           =1 sbit RS1   = 0xD4;
+           =1 sbit RS0   = 0xD3;
+           =1 sbit OV    = 0xD2;
+           =1 sbit P     = 0xD0;
+           =1 
+           =1 /*  TCON  */
+           =1 sbit TF1   = 0x8F;
+           =1 sbit TR1   = 0x8E;
+           =1 sbit TF0   = 0x8D;
+           =1 sbit TR0   = 0x8C;
+           =1 sbit IE1   = 0x8B;
+           =1 sbit IT1   = 0x8A;
+           =1 sbit IE0   = 0x89;
+           =1 sbit IT0   = 0x88;
+           =1 
+           =1 /*  IE  */
+           =1 sbit EA    = 0xAF;
+           =1 sbit ES    = 0xAC;
+           =1 sbit ET1   = 0xAB;
+           =1 sbit EX1   = 0xAA;
+           =1 sbit ET0   = 0xA9;
+           =1 sbit EX0   = 0xA8;
+           =1 
+           =1 /*  EIE  */
+           =1 sbit EWDI  = 0xEC;    // Watch dog timer interrupt enable
+           =1 sbit EX5   = 0xEB;    // external interrupt 5 enable
+           =1 sbit EX4   = 0xEA;    // external interrupt 4 enable
+           =1 sbit EX3   = 0xE9;    // external interrupt 3 enable
+           =1 sbit EX2   = 0xE8;    // external interrupt 2 enable
+           =1 
+           =1 /*  IP  */
+           =1 sbit PS    = 0xBC;
+           =1 sbit PT1   = 0xBB;
+           =1 sbit PX1   = 0xBA;
+           =1 sbit PT0   = 0xB9;
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 9   
+
+           =1 sbit PX0   = 0xB8;
+           =1 
+           =1 /*  EIP  */
+           =1 sbit PWDI  = 0xFC;    // Watch dog timer interrupt priority
+           =1 sbit PX5   = 0xFB;    // external interrupt5 priority
+           =1 sbit PX4   = 0xFA;    // external interrupt4 priority
+           =1 sbit PX3   = 0xF9;    // external interrupt3 priority
+           =1 sbit PX2   = 0xF8;    // external interrupt2 priority
+           =1 
+           =1 /*  P3  */
+           =1 sbit RD    = 0xB7;
+           =1 sbit WR    = 0xB6;
+           =1 sbit T1    = 0xB5;
+           =1 sbit T0    = 0xB4;
+           =1 sbit INT1  = 0xB3;
+           =1 sbit INT0  = 0xB2;
+           =1 sbit TXD   = 0xB1;
+           =1 sbit RXD   = 0xB0;
+           =1 
+           =1 /*  SCON  */
+           =1 sbit SM0   = 0x9F;
+           =1 sbit SM1   = 0x9E;
+           =1 sbit SM2   = 0x9D;
+           =1 sbit REN   = 0x9C;
+           =1 sbit TB8   = 0x9B;
+           =1 sbit RB8   = 0x9A;
+           =1 sbit TI    = 0x99;
+           =1 sbit RI    = 0x98;
+           =1 
+           =1 /*  8052 Extensions  */
+           =1 /*  IE  */
+           =1 sbit ET2   = 0xAD;
+           =1 
+           =1 /*  IP  */
+           =1 sbit PT2   = 0xBD;
+           =1 
+           =1 /*  P1  */
+           =1 sbit T2EX  = 0x91;
+           =1 sbit T2    = 0x90;
+           =1              
+           =1 /*  T2CON  */
+           =1 sbit TF2   = 0xCF;
+           =1 sbit EXF2  = 0xCE;
+           =1 sbit RCLK  = 0xCD;
+           =1 sbit TCLK  = 0xCC;
+           =1 sbit EXEN2 = 0xCB;
+           =1 sbit TR2   = 0xCA;
+           =1 sbit C_T2  = 0xC9;
+           =1 sbit CP_RL2= 0xC8;
+           =1 
+           =1 sfr CHPENR = 0xF6;
+           =1 sfr CHPCON = 0xBF;
+           =1 sfr SFRAL  = 0xC4;
+           =1 sfr SFRAH  = 0xC5;
+           =1 sfr SFRFD  = 0xC6;
+           =1 sfr SFRCN  = 0xC7;
+           =1 
+           =1 sbit P0_0  = 0x80;
+           =1 sbit P0_1  = 0x81;
+           =1 sbit P0_2  = 0x82;
+           =1 sbit P0_3  = 0x83;
+           =1 sbit P0_4  = 0x84;
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 10  
+
+           =1 sbit P0_5  = 0x85;
+           =1 sbit P0_6  = 0x86;
+           =1 sbit P0_7  = 0x87;
+           =1 
+           =1 sbit P1_0  = 0x90;
+           =1 sbit P1_1  = 0x91;
+           =1 sbit P1_2  = 0x92;
+           =1 sbit P1_3  = 0x93;
+           =1 sbit P1_4  = 0x94;
+           =1 sbit P1_5  = 0x95;
+           =1 sbit P1_6  = 0x96;
+           =1 sbit P1_7  = 0x97;
+           =1 
+           =1 sbit P2_0  = 0xa0;
+           =1 sbit P2_1  = 0xa1;
+           =1 sbit P2_2  = 0xa2;
+           =1 sbit P2_3  = 0xa3;
+           =1 sbit P2_4  = 0xa4;
+           =1 sbit P2_5  = 0xa5;
+           =1 sbit P2_6  = 0xa6;
+           =1 sbit P2_7  = 0xa7;
+           =1 
+           =1 sbit P3_0  = 0xb0;
+           =1 sbit P3_1  = 0xb1;
+           =1 sbit P3_2  = 0xb2;
+           =1 sbit P3_3  = 0xb3;
+           =1 sbit P3_4  = 0xb4;
+           =1 sbit P3_5  = 0xb5;
+           =1 sbit P3_6  = 0xb6;
+           =1 sbit P3_7  = 0xb7;
+           =1 
+           =1 #else // external MCU=WINBOND
+ 189      =1  /*  BYTE Registers  */
+ 190      =1  sfr P0    = 0x80;
+ 191      =1  sfr P1    = 0x90;
+ 192      =1  sfr P2    = 0xA0;
+ 193      =1  sfr P3    = 0xB0;
+ 194      =1  sfr PSW   = 0xD0;
+ 195      =1  sfr ACC   = 0xE0;
+ 196      =1  sfr B     = 0xF0;
+ 197      =1  sfr SP    = 0x81;
+ 198      =1  sfr DPL   = 0x82;
+ 199      =1  sfr DPH   = 0x83;
+ 200      =1  sfr PCON  = 0x87;
+ 201      =1  sfr TCON  = 0x88;
+ 202      =1  sfr TMOD  = 0x89;
+ 203      =1  sfr TL0   = 0x8A;
+ 204      =1  sfr TL1   = 0x8B;
+ 205      =1  sfr TH0   = 0x8C;
+ 206      =1  sfr TH1   = 0x8D;
+ 207      =1  sfr CKCON = 0x8E;   //clock control register, default =0x01
+ 208      =1  sfr IE    = 0xA8;
+ 209      =1  sfr IP    = 0xB8;
+ 210      =1  sfr SCON  = 0x98;
+ 211      =1  sfr SBUF  = 0x99;
+ 212      =1  sfr P4 = 0xE8; //Megawin Ryan@970716
+ 213      =1  //sfr P4    = 0xa5;      //SST MCU
+ 214      =1  //sfr P4    = 0xd8;   //winbond<960820>
+ 215      =1  
+ 216      =1  /*  8052 Extensions  */
+ 217      =1  sfr ADCTL = 0xC5;   //william-20111017
+ 218      =1  sfr ADCV = 0xC6;    //william-20111017
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 11  
+
+ 219      =1  sfr ADCVL = 0xE8;   //william-20111017
+ 220      =1  sfr T2CON = 0xC8;
+ 221      =1  sfr RCAP2L = 0xCA;
+ 222      =1  sfr RCAP2H = 0xCB;
+ 223      =1  sfr TL2   = 0xCC;
+ 224      =1  sfr TH2   = 0xCD;
+ 225      =1  
+ 226      =1  // for UART2
+ 227      =1  sfr S2CON  = 0xAA;
+ 228      =1  sfr S2BRT  = 0xBA;
+ 229      =1  sfr S2BUF  = 0x9A;
+ 230      =1  sfr AUXR2  = 0xA6;
+ 231      =1  sfr AUXIE  = 0xAD;
+ 232      =1  
+ 233      =1  sfr P1M0  = 0x91;
+ 234      =1  sfr P1M1  = 0x92;
+ 235      =1  sfr P0M0  = 0x93;
+ 236      =1  sfr P0M1  = 0x94;
+ 237      =1  sfr P2M0  = 0x95;
+ 238      =1  sfr P2M1  = 0x96;
+ 239      =1  sfr P3M0  = 0xB1;
+ 240      =1  sfr P3M1  = 0xB2;
+ 241      =1  
+ 242      =1  // for PCA
+ 243      =1  sfr CCON   = 0xD8;
+ 244      =1  sfr CMOD   = 0xD9;
+ 245      =1  sfr CCAPM0 = 0xDA;
+ 246      =1  sfr CCAPM1 = 0xDB;
+ 247      =1  sfr CCAPM2 = 0xDC;
+ 248      =1  sfr CCAPM3 = 0xDD;
+ 249      =1  sfr CCAPM4 = 0xDE;
+ 250      =1  sfr CCAPM5 = 0xDF;
+ 251      =1  sfr CL     = 0xE9;
+ 252      =1  sfr CH     = 0xF9;
+ 253      =1  sfr CCAP0L = 0xEA;
+ 254      =1  sfr CCAP0H = 0xFA;
+ 255      =1  sfr CCAP1L = 0xEB;
+ 256      =1  sfr CCAP1H = 0xFB;
+ 257      =1  sfr CCAP2L = 0xEC;
+ 258      =1  sfr CCAP2H = 0xFC;
+ 259      =1  sfr CCAP3L = 0xED;
+ 260      =1  sfr CCAP3H = 0xFD;
+ 261      =1  sfr CCAP4L = 0xEE;
+ 262      =1  sfr CCAP4H = 0xFE;
+ 263      =1  sfr CCAP5L = 0xEF;
+ 264      =1  sfr CCAP5H = 0xFF;
+ 265      =1  sfr PCAPWM0= 0xF2;
+ 266      =1  sfr PCAPWM1= 0xF3;
+ 267      =1  sfr PCAPWM2= 0xF4;
+ 268      =1  sfr PCAPWM3= 0xF5;
+ 269      =1  sfr PCAPWM4= 0xF6;
+ 270      =1  sfr PCAPWM5= 0xF7;
+ 271      =1  
+ 272      =1  /*  BIT Registers  */
+ 273      =1  /*  PSW  */
+ 274      =1  sbit CY    = 0xD7;
+ 275      =1  sbit AC    = 0xD6;
+ 276      =1  sbit F0    = 0xD5;
+ 277      =1  sbit RS1   = 0xD4;
+ 278      =1  sbit RS0   = 0xD3;
+ 279      =1  sbit OV    = 0xD2;
+ 280      =1  sbit P     = 0xD0;
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 12  
+
+ 281      =1  
+ 282      =1  /*  TCON  */
+ 283      =1  sbit TF1   = 0x8F;
+ 284      =1  sbit TR1   = 0x8E;
+ 285      =1  sbit TF0   = 0x8D;
+ 286      =1  sbit TR0   = 0x8C;
+ 287      =1  sbit IE1   = 0x8B;
+ 288      =1  sbit IT1   = 0x8A;
+ 289      =1  sbit IE0   = 0x89;
+ 290      =1  sbit IT0   = 0x88;
+ 291      =1  
+ 292      =1  /*  IE  */
+ 293      =1  sbit EA    = 0xAF;
+ 294      =1  sbit ES    = 0xAC;
+ 295      =1  sbit ET1   = 0xAB;
+ 296      =1  sbit EX1   = 0xAA;
+ 297      =1  sbit ET0   = 0xA9;
+ 298      =1  sbit EX0   = 0xA8;
+ 299      =1  
+ 300      =1  /*  IP  */
+ 301      =1  sbit PS    = 0xBC;
+ 302      =1  sbit PT1   = 0xBB;
+ 303      =1  sbit PX1   = 0xBA;
+ 304      =1  sbit PT0   = 0xB9;
+ 305      =1  sbit PX0   = 0xB8;
+ 306      =1  
+ 307      =1  /*  P3  */
+ 308      =1  sbit RD    = 0xB7;
+ 309      =1  sbit WR    = 0xB6;
+ 310      =1  sbit T1    = 0xB5;
+ 311      =1  sbit T0    = 0xB4;
+ 312      =1  sbit INT1  = 0xB3;
+ 313      =1  sbit INT0  = 0xB2;
+ 314      =1  sbit TXD   = 0xB1;
+ 315      =1  sbit RXD   = 0xB0;
+ 316      =1  
+ 317      =1  /*  SCON  */
+ 318      =1  sbit SM0   = 0x9F;
+ 319      =1  sbit SM1   = 0x9E;
+ 320      =1  sbit SM2   = 0x9D;
+ 321      =1  sbit REN   = 0x9C;
+ 322      =1  sbit TB8   = 0x9B;
+ 323      =1  sbit RB8   = 0x9A;
+ 324      =1  sbit TI    = 0x99;
+ 325      =1  sbit RI    = 0x98;
+ 326      =1  
+ 327      =1  /*  8052 Extensions  */
+ 328      =1  /*  IE  */
+ 329      =1  sbit ET2   = 0xAD;
+ 330      =1  
+ 331      =1  /*  IP  */
+ 332      =1  sbit PT2   = 0xBD;
+ 333      =1  
+ 334      =1  /*  P1  */
+ 335      =1  sbit T2EX  = 0x91;
+ 336      =1  sbit T2    = 0x90;
+ 337      =1               
+ 338      =1  /*  T2CON  */
+ 339      =1  sbit TF2   = 0xCF;
+ 340      =1  sbit EXF2  = 0xCE;
+ 341      =1  sbit RCLK  = 0xCD;
+ 342      =1  sbit TCLK  = 0xCC;
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 13  
+
+ 343      =1  sbit EXEN2 = 0xCB;
+ 344      =1  sbit TR2   = 0xCA;
+ 345      =1  sbit C_T2  = 0xC9;
+ 346      =1  sbit CP_RL2= 0xC8;
+ 347      =1  
+ 348      =1  sfr CHPENR = 0xF6;
+ 349      =1  sfr CHPCON = 0xBF;
+ 350      =1  sfr SFRAL  = 0xC4;
+ 351      =1  sfr SFRAH  = 0xC5;
+ 352      =1  sfr SFRFD  = 0xC6;
+ 353      =1  sfr SFRCN  = 0xC7;
+ 354      =1  
+ 355      =1  sbit P0_0  = 0x80;
+ 356      =1  sbit P0_1  = 0x81;
+ 357      =1  sbit P0_2  = 0x82;
+ 358      =1  sbit P0_3  = 0x83;
+ 359      =1  sbit P0_4  = 0x84;
+ 360      =1  sbit P0_5  = 0x85;
+ 361      =1  sbit P0_6  = 0x86;
+ 362      =1  sbit P0_7  = 0x87;
+ 363      =1  
+ 364      =1  sbit P1_0  = 0x90;
+ 365      =1  sbit P1_1  = 0x91;
+ 366      =1  sbit P1_2  = 0x92;
+ 367      =1  sbit P1_3  = 0x93;
+ 368      =1  sbit P1_4  = 0x94;
+ 369      =1  sbit P1_5  = 0x95;
+ 370      =1  sbit P1_6  = 0x96;
+ 371      =1  sbit P1_7  = 0x97;
+ 372      =1  
+ 373      =1  sbit P2_0  = 0xa0;
+ 374      =1  sbit P2_1  = 0xa1;
+ 375      =1  sbit P2_2  = 0xa2;
+ 376      =1  sbit P2_3  = 0xa3;
+ 377      =1  sbit P2_4  = 0xa4;
+ 378      =1  sbit P2_5  = 0xa5;
+ 379      =1  sbit P2_6  = 0xa6;
+ 380      =1  sbit P2_7  = 0xa7;
+ 381      =1  
+ 382      =1  sbit P3_0  = 0xb0;
+ 383      =1  sbit P3_1  = 0xb1;
+ 384      =1  sbit P3_2  = 0xb2;
+ 385      =1  sbit P3_3  = 0xb3;
+ 386      =1  sbit P3_4  = 0xb4;
+ 387      =1  sbit P3_5  = 0xb5;
+ 388      =1  sbit P3_6  = 0xb6;
+ 389      =1  sbit P3_7  = 0xb7;
+ 390      =1  
+ 391      =1  sbit P4_0  = P4^0;
+ 392      =1  sbit P4_1  = P4^1;
+ 393      =1  sbit INT3  = P4^2;
+ 394      =1  sbit INT2  = P4^3;
+ 395      =1  
+ 396      =1  sfr P4M0  = 0xB3;
+ 397      =1  sfr P4M1  = 0xB4;
+ 398      =1  #endif  // INTERNAL_MCU
+ 399      =1  
+ 400      =1  #endif  //__REGISTERS__
+ 401      =1  
+  11          #include "typedefs.h"
+   1      =1  #ifndef __TYPEDEFS__
+   2      =1  #define __TYPEDEFS__
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 14  
+
+   3      =1  
+   4      =1  
+   5      =1  #define DATA    data
+   6      =1  #define PDATA   pdata
+   7      =1  #define IDATA   data
+   8      =1  #define CODE    code
+   9      =1  #define CODE_P
+  10      =1  #define PDATA_P
+  11      =1  #define IDATA_P
+  12      =1  #define DATA_P
+  13      =1  
+  14      =1  #define INTERRUPT( num, name ) name() interrupt num
+  15      =1  
+  16      =1  #define _between(x, a, b) (a<=x && x<=b)
+  17      =1  #define _swap(a, b)     { a^=b; b^=a; a^=b; }
+  18      =1  
+  19      =1  typedef unsigned char Register;
+  20      =1  typedef unsigned char BYTE;
+  21      =1  typedef unsigned short  WORD;
+  22      =1  typedef unsigned long DWORD;
+  23      =1  
+  24      =1  #define TRUE  1
+  25      =1  #define FALSE 0
+  26      =1  
+  27      =1  //VInputStdDetectMode
+  28      =1  #define AUTO  0
+  29      =1  
+  30      =1  //VInputStd
+  31      =1  #define NTSC  1     
+  32      =1  #define PAL   2
+  33      =1  #define SECAM 3
+  34      =1  #define NTSC4 4
+  35      =1  #define PALM  5
+  36      =1  #define PALN  6
+  37      =1  #define PAL60 7
+  38      =1  
+  39      =1  #define MAXINPUTSTD PAL60+1 // 
+  40      =1  
+  41      =1  #define UNKNOWN 0xfe
+  42      =1  #define NOINPUT 0 //0xff
+  43      =1  
+  44      =1  #define NIL     0xff
+  45      =1  
+  46      =1  enum SourceModeTypeEnum
+  47      =1  { 
+  48      =1    AVMode,      // 0   0X00
+  49      =1    //VGAMode,       // 1
+  50      =1  #ifdef USE_CAMD 
+           =1   CAM_D,         // 2
+           =1 #endif
+  53      =1    CAM_A,         // 3   0x01
+  54      =1    CAM_B,         // 4   0x02
+  55      =1    CAM_C,         // 5   0x03
+  56      =1    CAM_R,         // 6   0x04
+  57      =1    CAM_AB,        // 7   0x05
+  58      =1    CAM_CR,        // 8   0x06
+  59      =1    CAM_AR,        // 9   0x07
+  60      =1    CAM_RB,        // 10    0x08
+  61      =1    CAM_AC,        // 11    0x09
+  62      =1    CAM_CB,        // 12    0x0a
+  63      =1    CAM_RAB_T,     // 13    0x0b
+  64      =1    CAM_RAB_H,     // 14    0x0c
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 15  
+
+  65      =1  
+  66      =1    #ifdef HTRV
+           =1   CAM_RC,
+           =1   #endif
+  69      =1    
+  70      =1    CAM_QUAD,      // 15    0x0d
+  71      =1    CAM_ABR_T3,    // 16    0x0e
+  72      =1    CAM_ABR_T4,    // 17    0x0f
+  73      =1    CAM_RAC_T,      //  0x10
+  74      =1    CAM_RBC_T,      //  0x11
+  75      =1    CAM_RAC_T2,     //  0x12
+  76      =1    CAM_RBC_T2,     //  0x13
+  77      =1    CAM_BA,       //  0x14
+  78      =1    CAM_BC,       //  0x15
+  79      =1    CAM_BR,       //  0x16
+  80      =1    CAM_CA,       //  0x17
+  81      =1    CAM_ABC,      //  0x18
+  82      =1    CAM_ABR,      //  0x19
+  83      =1    CAM_ACR,      //  0x1a
+  84      =1    CAM_BAC,      //  0x1b
+  85      =1    CAM_BAR,      //  0x1c
+  86      =1    CAM_BCR,      //  0x1d
+  87      =1    CAM_CAB,      //  0x1e
+  88      =1    CAM_CAR,      //  0x1f
+  89      =1    CAM_CBR,      //  0x20
+  90      =1    SEQ,           // 18      0x10
+  91      =1    CAM_NUM
+  92      =1  };
+  93      =1  
+  94      =1  typedef unsigned char SourceModeType;
+  95      =1  
+  96      =1  #endif  /* __TYPEDEFS__ */
+  97      =1  
+  12          #include "cpu.h"
+   1      =1  #ifndef __CPU__
+   2      =1  #define __CPU__
+   3      =1  
+   4      =1  /*
+   5      =1  #ifdef INTERNAL_MCU
+   6      =1  #define I2C_SCL   P2_0
+   7      =1  #else
+   8      =1  #define I2C_SCL   P1_0
+   9      =1  #endif
+  10      =1  #define I2C_SDA   P1_1
+  11      =1  */
+  12      =1  #define I2C_SCL     P1_0
+  13      =1  #define I2C_SDA     P1_1
+  14      =1  #ifdef SUPPORT_SDCARD  //ryan@20170824 
+           =1 #define BUF_MAX     8
+           =1 #define DVR_BUF_MAX   30
+           =1 #else
+  18      =1  #define BUF_MAX     20
+  19      =1  #define DVR_BUF_MAX   8
+  20      =1  #endif
+  21      =1  
+  22      =1  #ifdef REMO_RC5
+           =1 #define EnableRemoconInt()  { RemoDataReady = 0;  EX0 = 1;}
+           =1 #endif
+  25      =1  void  InitCPU(void);
+  26      =1  void  InitVars(void);
+  27      =1  void  InitTechwell(void);
+  28      =1  void  main_init (void);
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 16  
+
+  29      =1  void  PowerDown( void );
+  30      =1  #if 0
+           =1 BYTE  OKSleepTime(void);
+           =1 #endif
+  33      =1  #ifdef REMO_RC5
+           =1 void  InitForRemo(void);
+           =1 #endif
+  36      =1  void  PowerLED(BYTE flag);
+  37      =1  void    Wait_ms(WORD Tms);
+  38      =1  BYTE    TW2835Command(char,char,char,char,char);
+  39      =1  
+  40      =1  #ifdef Monitor_debug
+           =1 BYTE RS_rx(void);
+           =1 #endif
+  43      =1  
+  44      =1  #endif
+  45      =1  
+  13          #include "I2C.h"
+   1      =1  #ifndef __I2C_H__
+   2      =1  #define __I2C_H__
+   3      =1  
+   4      =1  
+   5      =1  void I2CReadByte3(BYTE *);
+   6      =1  void I2CRead8Byte(BYTE *);
+   7      =1  #if 0
+           =1 void I2CReadByteMSP(BYTE addr, BYTE index, BYTE *pd, BYTE cnt);
+           =1 #endif
+  10      =1  BYTE I2CWriteByte2(BYTE);
+  11      =1  BYTE I2CWriteByte3(BYTE*);
+  12      =1  BYTE I2CWrite8Byte(BYTE *);
+  13      =1  
+  14      =1  void I2CStart(void);
+  15      =1  void I2CWriteData(BYTE value);
+  16      =1  BYTE I2CReadData(void);
+  17      =1  #if 0
+           =1 BYTE I2CReadDataWithACK(void);
+           =1 #endif
+  20      =1  void I2CStop(void);
+  21      =1  void I2Cdelay(void);
+  22      =1  
+  23      =1  
+  24      =1  #define WriteTW88(a,b)    WriteI2C(TW88I2CAddress, a, b)
+  25      =1  #define ReadTW88(a)     ReadI2C(TW88I2CAddress, a)
+  26      =1  
+  27      =1  BYTE WriteTW88_Wait (BYTE, BYTE);
+  28      =1  void WriteADC   (BYTE, BYTE);
+  29      =1  BYTE ReadADC    (BYTE);
+  30      =1  BYTE ReadADC_TW88(BYTE index);
+  31      =1  void WriteADC_TW88(BYTE index, BYTE dat);
+  32      =1  
+  33      =1  void WriteEEP   (WORD, BYTE);
+  34      =1  BYTE ReadEEP    (WORD);
+  35      =1  WORD ReadALC106(WORD index);
+  36      =1  void WriteALC106(WORD index, WORD  dat);
+  37      =1  WORD ReadI2CWORD(BYTE addr, BYTE index);
+  38      =1  BYTE ReadI2C    (BYTE addr, BYTE index);
+  39      =1  void WriteI2C   (BYTE addr, BYTE index, BYTE val);
+  40      =1  
+  41      =1  void WriteI2Cn_(BYTE addr, BYTE *val, BYTE cnt);
+  42      =1  void WriteI2Cn (BYTE addr, BYTE index, BYTE *val, BYTE cnt);
+  43      =1  void WriteI2CnD(BYTE addr, BYTE index, BYTE val, BYTE cnt);
+  44      =1  
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 17  
+
+  45      =1  void ReadI2Cmn(BYTE addr, BYTE wcnt, BYTE rcnt, BYTE *rwdata);
+  46      =1  
+  47      =1  #define   WriteADC(a,b) WriteADC_TW88(a,b)
+  48      =1  #define   ReadADC(a)    ReadADC_TW88(a)
+  49      =1  
+  50      =1  #endif  /* __I2C_H__ */
+  14          #include "main.h"
+   1      =1  #ifndef __MAIN__
+   2      =1  #define __MAIN__
+   3      =1  
+   4      =1  #define ON          1
+   5      =1  #define OFF         0
+   6      =1  #if 1//ryan@20171214
+   7      =1  #define Hs_debug
+   8      =1  #define Monitor_debug  
+   9      =1  //#define Trigger_debug 
+  10      =1  #endif
+  11      =1  
+  12      =1  
+  13      =1  //#define DVR
+  14      =1  #define Format_SDCard
+  15      =1  #define BJTSwitch
+  16      =1  
+  17      =1  #define Panel_Enable()    P4=P4|0x08 //andy 980908
+  18      =1  #define Panel_Disable()   P4=P4&0xf7
+  19      =1  
+  20      =1  #if 0
+           =1 #define SetBacklight()      P4=P4|0x04
+           =1 #define clrBacklight()      P4=P4&0xfb
+           =1 #else
+  24      =1  #define SetBacklight()    P4=P4&0xfb
+  25      =1  #define clrBacklight()    P4=P4|0x04
+  26      =1  #endif
+  27      =1  
+  28      =1  //InputSelection
+  29      =1  struct struct_IdName {
+  30      =1    BYTE  Id;
+  31      =1    BYTE  Name[16];
+  32      =1  };
+  33      =1  
+  34      =1  #define CH_TW2835       1
+  35      =1  #define CH_CAMD       2
+  36      =1  #define CH_AV         3
+  37      =1  #define PC          7
+  38      =1  #define ChineseDefaultMenu  8
+  39      =1  
+  40      =1  #define SVIDEO        2
+  41      =1  #define COMPONENT     3
+  42      =1  //#define ANALOGDTV     4
+  43      =1  #define DTV         4
+  44      =1  #define TV          5
+  45      =1  #define SCART       6
+  46      =1  
+  47      =1  #ifdef HS
+  48      =1  #define CH_CAMB         4
+  49      =1  #endif
+  50      =1  
+  51      =1  #define DIGITALVGA      8
+  52      =1  
+  53      =1  #define AIRTV       0 //9
+  54      =1  #define CABLETV       1 //0xa
+  55      =1  
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 18  
+
+  56      =1  #define TVTUNER       0xd   //10
+  57      =1  #define MUTE        1 
+  58      =1  #define MENU        2 
+  59      =1  #define TVVOL       4 
+  60      =1  #ifdef AWT_ML072S
+  61      =1  #define VLOSSINFO     8 
+  62      =1  #else
+           =1 #define CC          8 
+           =1 #endif
+  65      =1  #define INPUTINFO     0x10
+  66      =1  #define PCINFO        0x20
+  67      =1  #define GAUGEINFO       0x40
+  68      =1  //#define RATINGINFO      0x40
+  69      =1  #define TVCHN       0x80
+  70      =1  //#define MUTE        0x40
+  71      =1  
+  72      =1  #define YPBPR_480i      0
+  73      =1  #define YPBPR_576i      1
+  74      =1  #define YPBPR_480p      2
+  75      =1  #define YPBPR_576p      3
+  76      =1  #define YPBPR_1080i     4
+  77      =1  #define YPBPR_720p      5
+  78      =1  #define YPBPR_720p50    6
+  79      =1  
+  80      =1  //---------------------- Feature Define ----------------------------
+  81      =1  #ifdef AWT_ML072Q
+           =1 
+           =1 //mask by ryan@20171018   #define AWT_ML720Q_NEW_TRIGGER_FUN    //Pinchi 20141031 add for AWT request each t
+             -rigger can work by PRIORITY OFF
+           =1 #define AWT_ADD_TRIGGER_DELAY_FUN 
+           =1 #define AWT_SUPPORT_4_3_SCREEN    //ryan@20170907 
+           =1 #endif
+  87      =1  
+  88      =1  #ifdef AWT_ML072S
+  89      =1  #define AWT_ADD_TRIGGER_DELAY_FUN 
+  90      =1  #endif
+  91      =1  
+  92      =1  //--------------------------- P0 Define -----------------------------
+  93      =1  //#define SEL_MIX     P0_6  // 
+  94      =1  //--------------------------- P1 Define -----------------------------
+  95      =1  //#define SEL_DVI     P3_5  //LJY062001   
+  96      =1  
+  97      =1  #define TW88HWReset     P3_4  //LJY001010 //LJY000721
+  98      =1  #define PowerUp       P3_7
+  99      =1  //======================= CDS Control ================================= 
+ 100      =1  //#define CDS_CTRL           P1_5
+ 101      =1  extern BYTE SelectModeType;
+ 102      =1  extern BYTE InputSelection;
+ 103      =1  extern BYTE SEQTime;
+ 104      =1  extern BYTE Priority;
+ 105      =1  extern BYTE PowerFlag;
+ 106      =1  //extern bit AutoDayNight;
+ 107      =1  extern bit SDCardCoverDetect;
+ 108      =1  
+ 109      =1  BYTE keyIn(void);
+ 110      =1  void TimerForRemocon(void);
+ 111      =1  void TimerForTick(void);
+ 112      =1  void DisableRemoconInt(void);
+ 113      =1  BYTE SetSupport_remocon(BYTE newd);
+ 114      =1  
+ 115      =1  void delay(BYTE cnt);
+ 116      =1  
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 19  
+
+ 117      =1  BYTE RS_ready(void);
+ 118      =1  #ifdef Monitor_debug
+ 119      =1  BYTE RS_rx(void);
+ 120      =1  #endif
+ 121      =1  void RS_tx(BYTE tx_buf);
+ 122      =1  
+ 123      =1  BYTE RS2_rx(void);
+ 124      =1  void RS2_tx(BYTE tx_buf);
+ 125      =1  
+ 126      =1  void NewLine(void);
+ 127      =1  void PutsP(PDATA_P BYTE *ptr);
+ 128      =1  #ifdef Hs_debug
+ 129      =1  //void MonWriteI2C(BYTE addr, BYTE index, BYTE val);
+ 130      =1  //BYTE MonReadI2C(BYTE addr, BYTE index);
+ 131      =1  #endif
+ 132      =1  BYTE Asc1Bin(BYTE asc);
+ 133      =1  BYTE Asc2Bin(PDATA_P BYTE *s);
+ 134      =1  
+ 135      =1  void I2CDeviceInitialize( CODE_P BYTE *RegSet);
+ 136      =1  
+ 137      =1  //void RestartSystemClock(WORD clock_hm);
+ 138      =1  WORD GetTime_ms(void);
+ 139      =1  #if 0
+           =1 BYTE GetTime_H(void);
+           =1 BYTE GetTime_M(void);
+           =1 #endif
+ 143      =1  void ChangeTime_H( char add );
+ 144      =1  void ChangeTime_M( char add );
+ 145      =1  //WORD GetWakeupTime(void);
+ 146      =1  //void SetWakeupTime(WORD wtime);
+ 147      =1  
+ 148      =1  
+ 149      =1  //WORD GetOffTime(void);
+ 150      =1  //void SetOffTime(WORD wtime);
+ 151      =1  //BYTE GetSleepTimer(void);
+ 152      =1  //void SetSleepTimer(BYTE stime);
+ 153      =1  WORD DiffTime_ms( WORD stime, WORD etime );
+ 154      =1  //void SetLastBlockedTime(void);
+ 155      =1  void SetLastCCTime(void);       //ljy010904...CC_FIX_CLEAR_ON_TIME
+ 156      =1  
+ 157      =1  void SetOSDLastKeyInTime(void);
+ 158      =1  WORD GetOSDLastKeyInTime(void);
+ 159      =1  WORD GetIVF(void);
+ 160      =1  DWORD GetIHF(void);
+ 161      =1  BYTE ReadVInputSTD(void);
+ 162      =1  void SetVInputStd(BYTE newd);
+ 163      =1  BYTE GetVInputStd(void);
+ 164      =1  BYTE GetInputSelection(void);
+ 165      =1  #ifdef ADD_ANALOGPANEL
+           =1 BYTE IsAnalogOn(void);
+           =1 #endif
+ 168      =1  void InitVideoData(BYTE src);
+ 169      =1  void ChangeVInputStdDetectMode(BYTE val);
+ 170      =1  BYTE GetVInputStdInx(void);
+ 171      =1  
+ 172      =1  void MonWriteI2Cn_(BYTE addr, BYTE *val, BYTE cnt) ;
+ 173      =1  
+ 174      =1  void CheckNewTriggerFunc(void);
+ 175      =1  ///void Usage(void);
+ 176      =1  #ifdef Monitor_debug
+ 177      =1    void Prompt(void);
+ 178      =1  #endif
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 20  
+
+ 179      =1  void DebugKeyIn(BYTE ikey);
+ 180      =1  void DVIPowerDown(bit flag);
+ 181      =1  void PowerDown_XTAL(bit flag);
+ 182      =1  
+ 183      =1  void ChangeInput(BYTE newsel);
+ 184      =1  
+ 185      =1  
+ 186      =1  void WaitPowerOn(void);
+ 187      =1  void PowerOff(void);
+ 188      =1  BYTE GetNextInputSelection(void);
+ 189      =1  
+ 190      =1  BYTE WantToStopTVScan(void);
+ 191      =1  
+ 192      =1  //BYTE IsTW8801(void);
+ 193      =1  //BYTE IsTW8803(void);
+ 194      =1  //BYTE ConvertVideoVSAT(BYTE reg);
+ 195      =1  
+ 196      =1  BYTE IsNoInput(void);
+ 197      =1  void LoadEEPROM (void);
+ 198      =1  void Hs_InitVars(void);
+ 199      =1  void AdjustAutoDayNight(BYTE val);
+ 200      =1  void ACCPowerControl(void);
+ 201      =1  void ON_LVDS(void);
+ 202      =1  void OFF_LVDS(void);
+ 203      =1  void main_loop(void);
+ 204      =1  struct RegisterInfo
+ 205      =1  {
+ 206      =1     int  Min;
+ 207      =1     int  Max;
+ 208      =1     int  Default;
+ 209      =1  };
+ 210      =1  struct LongRegisterInfo
+ 211      =1  {
+ 212      =1     WORD Min;
+ 213      =1     WORD Max;
+ 214      =1     WORD Default;
+ 215      =1  };
+ 216      =1  
+ 217      =1  
+ 218      =1  typedef enum   ///add enum  by ryan@20170907
+ 219      =1  {
+ 220      =1    NORMALL_MODE,
+ 221      =1    REVERSE_TRIG,
+ 222      =1    LEFT_TRIG,
+ 223      =1    RIGHT_TRIG,
+ 224      =1  #ifdef USE_CAMD 
+           =1   CAMD_TRIG,
+           =1 #endif  
+ 227      =1    CAMC_TRIG,
+ 228      =1    VGA_TRIG,
+ 229      =1    PARK_TRIG,
+ 230      =1    No_TRIG,
+ 231      =1    TRIGGER_NUM
+ 232      =1  }TriggerModeType;
+ 233      =1  
+ 234      =1  
+ 235      =1  #endif  // __MAIN__
+ 236      =1  
+  15          #include "debug.h"
+   1      =1  #ifndef __DEBUG__
+   2      =1  #define __DEBUG__
+   3      =1  
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 21  
+
+   4      =1  #define DEBUG_ERR 1
+   5      =1  #define DEBUG_WARN  2
+   6      =1  #define DEBUG_INFO  3
+   7      =1  #define DEBUG_BREAK 4
+   8      =1  
+   9      =1  #ifdef DEBUG_PAUSE
+           =1 #define Pause(a)  { Printf("\r\n"); Printf(a); while(!RS_ready()); RS_rx(); }
+           =1 #endif
+  12      =1  //#define BURSTLOCK 7
+  13      =1  
+  14      =1  void DebugWindowControl (void) ;
+  15      =1  void Draw_Debug_Char(void);
+  16      =1  void DebugWindowCursor( BYTE flag ) ;
+  17      =1  void DebugWindowData( BYTE flag ) ;
+  18      =1  void Debug_Write(void);
+  19      =1  void Debug_Read(void);
+  20      =1  
+  21      =1  
+  22      =1  
+  23      =1  #endif  // __DEBUG__
+  24      =1  
+  25      =1  #ifdef CHIP_MANUAL_TEST
+           =1 BYTE DelaynCheck(void);
+           =1 void ChipManualTest(void);
+           =1 
+           =1 #endif
+  16          #include "printf.h"
+   1      =1  #ifndef __PRINTF__
+   2      =1  #define __PRINTF__
+   3      =1  
+   4      =1  #define _outchar(c) while(1) { if( !RS_Xbusy ) { SBUF = c; RS_Xbusy=1; break; } }
+   5      =1  #define Putch(c) _outchar(c)
+   6      =1  
+   7      =1  #ifdef SERIAL
+   8      =1  
+   9      =1   void Printf ( const char CODE_P *fmt, ... );
+  10      =1   void Puts ( CODE_P char *ptr );
+  11      =1  
+  12      =1  #define TW2835Cmd(a)   Puts ( a )
+  13      =1  
+  14      =1  #else
+           =1 
+           =1  #undef  DEBUG
+           =1  #define Printf(a,b)  //
+           =1  #define Puts(a)      //
+           =1 
+           =1 #endif
+  21      =1  
+  22      =1  
+  23      =1  #ifndef DEBUG
+  24      =1  
+  25      =1   #define dPuts(a)   //
+  26      =1   #define wPuts(a)   //
+  27      =1   #define ePuts(a)   //
+  28      =1  
+  29      =1  #else
+           =1 
+           =1  void dPrintf( const char CODE_P *fmt, ... );
+           =1  void wPrintf( const char CODE_P *fmt, ... );
+           =1  void ePrintf( const char CODE_P *fmt, ... );
+           =1 
+           =1  void dPuts( CODE_P char *ptr );
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 22  
+
+           =1  void wPuts( CODE_P char *ptr );
+           =1  void ePuts( CODE_P char *ptr );
+           =1 
+           =1 #endif  // DEBUG
+  40      =1  
+  41      =1  BYTE Getch(void);
+  42      =1  BYTE Getche(void);
+  43      =1  
+  44      =1  
+  45      =1  #endif  //__PRINTF__
+  17          #include "osdbasic.h"
+   1      =1  //osd_basic.h
+   2      =1  //LJY11012001
+   3      =1  #ifndef __OSD_BASIC__
+   4      =1  #define __OSD_BASIC__
+   5      =1  
+   6      =1  // osd_basic.h
+   7      =1  // char code
+   8      =1  //#include "apilib.h"
+   9      =1  
+  10      =1  //ljy052903
+  11      =1  //definition for internal OSD
+  12      =1  #define FONT_WIDTH_TW88     12
+  13      =1  #define FONT_HEIGHT_TW88    18
+  14      =1  #define PIXS_PER_XSTEP_TW88   8
+  15      =1  #define LINES_PER_YSTEP_TW88  4
+  16      =1  #define MAX_OSDWINDOW_TW88    8
+  17      =1  
+  18      =1  // Using TW88 OSD for Menu
+  19      =1  #define FONT_WIDTH      12
+  20      =1  #define FONT_HEIGHT     18
+  21      =1  #define PIXS_PER_XSTEP    8
+  22      =1  #define LINES_PER_YSTEP   4
+  23      =1  #define MAX_OSDWINDOW   4
+  24      =1  
+  25      =1  #define MAX_FONT_BYTES    27
+  26      =1  #define RAMFONT   0xFE
+  27      =1  #define ROMFONT   0xFF
+  28      =1  #define NO_UDFONT     226 
+  29      =1  
+  30      =1  #define FONT_ROM  1
+  31      =1  #define FONT_RAM  2
+  32      =1  
+  33      =1  
+  34      =1  /////////////////////////////////
+  35      =1  // Old Registers...
+  36      =1  /*
+  37      =1    #define TW88_WIN1ATTR   0x76
+  38      =1    #define TW88_WIN1XSTART   0x77
+  39      =1    #define TW88_WIN1YSTART   0x78
+  40      =1    #define TW88_WIN1WIDTH    0x79
+  41      =1    #define TW88_WIN1HEIGHT   0x7a
+  42      =1    #define TW88_WIN1BRDATTR  0x7b
+  43      =1    #define TW88_WIN1BRDWIDTH 0x7c
+  44      =1    #define TW88_WIN1BRDHEIGHT  0x7d
+  45      =1    #define TW88_WIN1XSPACE   0x7e    // between characters.
+  46      =1    #define TW88_WIN1YSPACE   0x7f
+  47      =1    #define TW88_WIN1SADDR    0x80    // starting address of OSD ram for Windows 1
+  48      =1  */
+  49      =1  /////////////////////////////////
+  50      =1  
+  51      =1  // OSD
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 23  
+
+  52      =1  #define TW88_ENABLERAM    0x94  // TW8804C
+  53      =1  #define TW88_FONTRAMADDR  0x99  // TW8804C
+  54      =1  #define TW88_FONTRAMDATA  0x9a  // TW8804C
+  55      =1  #define TW88_OSDRAMADDRHI 0x95  // TW8804C
+  56      =1  #define TW88_OSDRAMADDRLO 0x96  // TW8804C
+  57      =1  #define TW88_OSDRAMDATAHI 0x97  // TW8804C
+  58      =1  #define TW88_OSDRAMDATALO 0x98  // TW8804C
+  59      =1  #define TW88_MULTISTART   0x9b  // TW8804C
+  60      =1  #define TW88_OSDLOCKUPSEL 0x9c
+  61      =1  #define TW88_WINNUM     0x9e  // TW8804C
+  62      =1  #define TW88_WINATTR    0x9f  //
+  63      =1  #define TW88_WINXSTART    0xa1  //
+  64      =1  #define TW88_WINYSTART    0xa2  //
+  65      =1  #define TW88_WINSTART_HI  0xa0  //
+  66      =1  #define TW88_WINWIDTH   0xa3  //
+  67      =1  #define TW88_WINHEIGHT    0xa4  //
+  68      =1  #define TW88_WINBRDATTR   0xa5  //
+  69      =1  #define TW88_WINBRDWIDTH  0xa6  //
+  70      =1  #define TW88_WINBRDHEIGHT 0xa7  //
+  71      =1  #define TW88_WINSPACE   0xa8  // between characters.
+  72      =1  #define TW88_WINZOOM    0xa9  //
+  73      =1  #define TW88_WINSADDRHI   0xa9  // starting address of OSD ram for Windows 1
+  74      =1  #define TW88_WINSADDRLO   0xaa  // starting address of OSD ram for Windows 1
+  75      =1  
+  76      =1  #define TW88_WINSHADOW    0xab  //
+  77      =1  #define TW88_WINBLENDING  0xac  //
+  78      =1  #define TW88_WINCHEFFECT  0xad  //
+  79      =1  
+  80      =1  
+  81      =1  //Attributes for OSD
+  82      =1  #define WINZOOMx1     0x01
+  83      =1  #define WINZOOMx2     0x02
+  84      =1  #define WINZOOMx3     0x03
+  85      =1  #define WINZOOMx4     0x04
+  86      =1  #define SHOW        0x08  
+  87      =1  
+  88      =1  #define EXTENDED_COLOR    0x80
+  89      =1  #define BG_COLOR_BLACK    0x00  //For background color of window, border, and char. 
+  90      =1  #define BG_COLOR_RED    0x40  
+  91      =1  #define BG_COLOR_GREEN    0x20
+  92      =1  #define BG_COLOR_YELLOW   0x60
+  93      =1  #define BG_COLOR_BLUE   0x10
+  94      =1  #define BG_COLOR_MAGENTA  0x50
+  95      =1  #define BG_COLOR_CYAN   0x30
+  96      =1  #define BG_COLOR_WHITE    0x70
+  97      =1  #define BG_COLOR_TRANS    0x80  
+  98      =1  #define BG_COLOR_MASK   0xf0  
+  99      =1  
+ 100      =1  #define CH_COLOR_BLACK    0x00  //For color of char.
+ 101      =1  #define CH_COLOR_RED    0x04  
+ 102      =1  #define CH_COLOR_GREEN    0x02
+ 103      =1  #define CH_COLOR_YELLOW   0x06
+ 104      =1  #define CH_COLOR_BLUE   0x01
+ 105      =1  #define CH_COLOR_MAGENTA  0x05
+ 106      =1  #define CH_COLOR_CYAN   0x03
+ 107      =1  #define CH_COLOR_WHITE    0x07
+ 108      =1  #define CH_BLINK      0x08  
+ 109      =1  #define CH_COLOR_MASK   0x0f  
+ 110      =1  
+ 111      =1  #define CL_BLACK      0x00  //For color of char.
+ 112      =1  #define CL_BLUE       0x01
+ 113      =1  #define CL_GREEN      0x02
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 24  
+
+ 114      =1  #define CL_CYAN       0x03
+ 115      =1  #define CL_RED        0x04  
+ 116      =1  #define CL_MAGENTA      0x05
+ 117      =1  #define CL_YELLOW     0x06
+ 118      =1  #define CL_WHITE      0x07
+ 119      =1  #define CL_BLINK      0x08  
+ 120      =1  
+ 121      =1  // 0x76*(WindowNo*0x0b)
+ 122      =1  #define WINDOW_DISABLE    0x00
+ 123      =1  #define WINDOW_ENABLE   0x01
+ 124      =1  #define WINDOW_3D_ENABLE    0x04
+ 125      =1  #define WINDOW_3D_BOTTOM    0x08
+ 126      =1  #define WINDOW_3D_TOP     0x00
+ 127      =1  #define WINDOW_TRANS_ENABLE 0x80
+ 128      =1  
+ 129      =1  #define WINBDCOLOR_ENABLE 0x80
+ 130      =1  #define WINBDCOLOR_EXTENT 0x80
+ 131      =1  
+ 132      =1  
+ 133      =1  #define WINBLENDING_DISABLE 0x00
+ 134      =1  #define WINBLENDING_BACK    0x10
+ 135      =1  #define WINBLENDING_FORE    0x20
+ 136      =1  #define WINBLENDING_ALL     0x30
+ 137      =1  
+ 138      =1  #define WINSHADOW_ENABLE  0x80
+ 139      =1  // 0xc8*WindowNo
+ 140      =1  #define WIN_MULTICOLOR_ENABLE 0x20
+ 141      =1  #define WIN_CH_EFFECT_ENABLE  0x10
+ 142      =1  #define WIN_CH_EFFECT_SHADOW  0x08
+ 143      =1  
+ 144      =1  
+ 145      =1  
+ 146      =1  ///////// TW8804C /////////////
+ 147      =1  // Window Number
+ 148      =1  #define WINNUM1       1
+ 149      =1  #define WINNUM2       2
+ 150      =1  #define WINNUM3       3
+ 151      =1  #define WINNUM4       4
+ 152      =1  
+ 153      =1  // Index 0x9f Defination
+ 154      =1  #define WIN_BG_COLOR_EX   0x80
+ 155      =1  #define WIN_BG_COLOR_EX0  0x00
+ 156      =1  #define WIN_3D_TYPE     0x08
+ 157      =1  #define WIN_3D_TYPE0    0x00
+ 158      =1  #define WIN_3D_EN     0x04
+ 159      =1  #define WIN_3D_EN0      0x00
+ 160      =1  #define WIN_3D_LEVEL    0x02
+ 161      =1  #define WIN_EN        0x01
+ 162      =1  #define WIN_EN0       0x00
+ 163      =1  
+ 164      =1  // Index 0xa5 Defination
+ 165      =1  #define WIN_BD_EN     0x80
+ 166      =1  #define WIN_BD_EN0      0x00
+ 167      =1  #define WIN_BD_WIDTH(a)   a
+ 168      =1  
+ 169      =1  // Index 0xa6 Defination
+ 170      =1  #define WIN_BD_COLOR_EX   0x80
+ 171      =1  #define WIN_BD_COLOR_EX0  0x00
+ 172      =1  #define WIN_H_BD_W(a)   a
+ 173      =1  
+ 174      =1  // Index 0xa7 Defination
+ 175      =1  #define WIN_V_BD_W(a)   a
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 25  
+
+ 176      =1  
+ 177      =1  // Index 0xa8
+ 178      =1  #define WIN_CH_VSPACE(a)  (a<<4)
+ 179      =1  #define WIN_CH_HSPACE(a)  a
+ 180      =1  
+ 181      =1  // Index 0xa9 Defination
+ 182      =1  #define WIN_VZOOM(a)    (a-1)
+ 183      =1  #define WIN_HZOOM(a)    (a-1)
+ 184      =1  #define WIN_SADDR(a)    a
+ 185      =1  
+ 186      =1  // Index 0xab
+ 187      =1  #define WIN_SHADOW_EN   0x80
+ 188      =1  #define WIN_SHADOW_EN0    0x00
+ 189      =1  #define WIN_SHADOW_W(a)   a
+ 190      =1  
+ 191      =1  // ad
+ 192      =1  #define WIN_SHADOW_COLOR_EX   0x80
+ 193      =1  #define WIN_SHADOW_COLOR_EX0  0x00
+ 194      =1  #define WIN_MULTI_EN      0x40
+ 195      =1  #define WIN_MULTI_EN0     0x00
+ 196      =1  #define WIN_V_EXT_EN      0x20
+ 197      =1  #define WIN_V_EXT_EN0     0x00
+ 198      =1  #define WIN_CH_BDSH_SEL(a)    a
+ 199      =1  #define SEL_BORDER        0
+ 200      =1  #define SEL_SHADOW        1
+ 201      =1  #define WIN_CH_BDSH_COLOR_EX  0x08
+ 202      =1  #define WIN_CH_BDSH_COLOR_EX0 0x00
+ 203      =1  
+ 204      =1  #define OSD_Win_Num(a)      0x9e, a-1
+ 205      =1  #define OSD_Win_Start_Addr    0xa0
+ 206      =1  #define OSD_Win_Attr(a)       a
+ 207      =1  #define OSD_Win_Start(h,v)       (BYTE)(((WORD)h>>8) | (((WORD)v>>8)<<4)),(BYTE)h, (BYTE)v
+ 208      =1  #define OSD_Win_Width(a)      a
+ 209      =1  #define OSD_Win_Height(a)     a
+ 210      =1  #define OSD_Win_Border(a)     a
+ 211      =1  #define OSD_Win_HBorder(a)      a
+ 212      =1  #define OSD_Win_VBorder(a)      a
+ 213      =1  #define OSD_Win_CH_Space(a)     a
+ 214      =1  #define OSD_Win_ZM_SAddr(h,v,a)   ((h<<6)|(v<<4)|(a>>8)), (BYTE)a
+ 215      =1  #define OSD_Win_Shadow(a)     a
+ 216      =1  #define OSD_Win_Blending(a)     a
+ 217      =1  #define OSD_Win_CH_BorderShadow(a)  a
+ 218      =1  
+ 219      =1  
+ 220      =1  #define SetOSDWindowNum(winno)    WriteTW88(TW88_WINNUM, winno-1)
+ 221      =1  
+ 222      =1  //#define  OSD_Window_Attr(Trans_en,Color,3D_Type,3D_en,W_en)       (((( Trans_en | Color ) | 3D_Type) | 3
+             -D_en) | W_en)
+ 223      =1  #define  OSD_Window_Attr(a,b,c,d,e)                 (((( a | b ) | c) | d) | e)
+ 224      =1  #define  OSD_WShadow_Attr(W_Shadow_en,Color,Width)          W_Shadow_en | Color | Width
+ 225      =1  //#define  OSD_Blending(en,level)                   en | (level & 0x0f)
+ 226      =1  //#define  OSD_Ch_Effect(Multi, Effect_En, ShadowBorder, Color)   Multi | Effect_En | ShadowBorder | Color 
+             - 
+ 227      =1  
+ 228      =1  
+ 229      =1  struct OSDStrInfo 
+ 230      =1  {
+ 231      =1    BYTE  cnt;
+ 232      =1    WORD  addr;
+ 233      =1    BYTE  attr;
+ 234      =1    DWORD str;
+ 235      =1  };
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 26  
+
+ 236      =1  /*
+ 237      =1  struct BarInfo {
+ 238      =1    struct RegisterInfo BarCnt;
+ 239      =1    BYTE  winno;
+ 240      =1    BYTE  xoff;
+ 241      =1    BYTE  yoff;
+ 242      =1    BYTE  color;
+ 243      =1    int   bar_cnt;
+ 244      =1  };
+ 245      =1  */
+ 246      =1  struct FontData {
+ 247      =1    BYTE  font[27];
+ 248      =1  } ;
+ 249      =1  
+ 250      =1  //====================================================================
+ 251      =1  //  Internal OSD Function
+ 252      =1  void CopyCharToOSDRAM_TW88(BYTE Addr, BYTE attr, BYTE ch);
+ 253      =1  void CopyUDCharToOSDRAM_TW88(BYTE Addr, BYTE attr, BYTE ch);
+ 254      =1  //BYTE GetOSDWindowWidth_TW88(BYTE winno);
+ 255      =1  WORD GetOSDWindowSA_TW88(BYTE winno);
+ 256      =1  void SetOSDWindowX_TW88(BYTE winno, BYTE x);
+ 257      =1  void SetOSDWindowY_TW88(BYTE winno, BYTE y);
+ 258      =1  void SetOSDWindowWidth_TW88(BYTE winno, BYTE w);
+ 259      =1  void SetOSDWindowSA_TW88(BYTE winno, WORD sa);
+ 260      =1  
+ 261      =1  void SetOSDItalicsAndUnderline(BYTE italics, BYTE underline);
+ 262      =1  
+ 263      =1  void SetOSDHBorderWidth_TW88(BYTE winno, BYTE w);
+ 264      =1  //BYTE GetOSDWindowColor_TW88(BYTE winno);
+ 265      =1  void SetOSDWindowColor_TW88(BYTE CCWin, BYTE color);
+ 266      =1  void EnableOSDRAMAndChangeFont(BYTE type);
+ 267      =1  void WriteCharToOSDRAM(WORD addr, BYTE ch, BYTE attr);
+ 268      =1  
+ 269      =1  
+ 270      =1  void ShowOSDWindowAll(BYTE on);
+ 271      =1  void ShowOSDWindow_TW88(BYTE winno, BYTE onoff);
+ 272      =1  void ClearOSD_TW88(void);
+ 273      =1  //void CreateOSDWindow_TW88(BYTE winno, BYTE x, BYTE y, BYTE w, BYTE h, WORD sa, BYTE attr);
+ 274      =1  /*not yet!!
+ 275      =1  //ljy012304...CC_ADJUST_POS
+ 276      =1  void SetOSDWindowXS_TW88(BYTE winno, BYTE xs);
+ 277      =1  void SetOSDWindowYS_TW88(BYTE winno, BYTE ys);
+ 278      =1  */
+ 279      =1  
+ 280      =1  //====================================================================
+ 281      =1  //  OSDMenu Functions
+ 282      =1  
+ 283      =1  //--------------------------------------------------------------------
+ 284      =1  //  Functions used in only Menu
+ 285      =1  #define   CONVERT_CODE      0x80
+ 286      =1  
+ 287      =1  void InitOSDWindow(BYTE *ptr);
+ 288      =1  
+ 289      =1  WORD GetOSDWindowX(BYTE winno);
+ 290      =1  WORD GetOSDWindowY(BYTE winno);
+ 291      =1  BYTE CreateOSDWindowOutline(BYTE winno, BYTE w, BYTE color);
+ 292      =1  void CreateOSDMenuWindow(BYTE, BYTE, BYTE, BYTE, BYTE, BYTE, BYTE);
+ 293      =1  void ClearOSDLine(BYTE winno, BYTE sx, BYTE sy, BYTE cnt, BYTE attr);
+ 294      =1  void WriteStringToAddr(WORD addr, BYTE *str, BYTE cnt);
+ 295      =1  void DrawAttrString(WORD addr, BYTE *str, BYTE cnt);
+ 296      =1  void DrawAttrCnt(WORD addr, BYTE color, BYTE cnt);
+ 297      =1  void ClearDataCnt(WORD, BYTE);
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 27  
+
+ 298      =1  #define   SetOSDWindowX(A, B)       SetOSDWindowX_TW88(A, B)
+ 299      =1  #define   SetOSDWindowY(A, B)       SetOSDWindowY_TW88(A, B)
+ 300      =1  
+ 301      =1  //--------------------------------------------------------------------
+ 302      =1  //  Functions used in Menu and others
+ 303      =1  #define   ShowOSDWindow(A, B)       ShowOSDWindow_TW88(A, B)
+ 304      =1  #define   ClearOSD()              ClearOSD_TW88()
+ 305      =1  
+ 306      =1  //================================================================
+ 307      =1  //  Font
+ 308      =1  void DownloadUDFont(void);
+ 309      =1  #ifdef Hs_debug
+ 310      =1  void DisplayROMFont(BYTE);
+ 311      =1  void DisplayRAMFont(BYTE);
+ 312      =1  #endif
+ 313      =1  void DownloadFont(BYTE cod, CODE_P BYTE *fontdata);
+ 314      =1  //void DisplayGrid( void );
+ 315      =1  //void DisplayCone( void );
+ 316      =1  //void DisplayJapanese( void );
+ 317      =1  void TestRAMFont( void );
+ 318      =1  #ifdef BANKING
+           =1 void DisplayMGrid( BYTE );
+           =1 void DisplayMessage( void );
+           =1 void DisplayChinese( void );
+           =1 void DisplayJapanese( void );
+           =1 void DisplayKorean( void );
+           =1 void DisplayGridBank0( BYTE n );
+           =1 void DisplayGridBank1( BYTE n );
+           =1 #endif
+ 327      =1  
+ 328      =1  //================================================================
+ 329      =1  //  OSD COLOR
+ 330      =1  void Change_OSDColorLookup(void);
+ 331      =1  void Reset_OSDColorLookup(void);
+ 332      =1  
+ 333      =1  //====================================================================
+ 334      =1  //        Conversion
+ 335      =1  //====================================================================
+ 336      =1  BYTE utoa(WORD value, BYTE *str, BYTE radix);
+ 337      =1  BYTE ltoa_K(long value, BYTE *str, BYTE);
+ 338      =1  BYTE strlen( BYTE *str );
+ 339      =1  
+ 340      =1  #define CStrlen(A)        strlen(A)
+ 341      =1  
+ 342      =1  void WaitEndofDisplayArea(void);
+ 343      =1  
+ 344      =1  #endif  // __OSD_BASIC__
+ 345      =1  
+  18          #include "CPU.h"
+   1      =1  #ifndef __CPU__
+           =1 #define __CPU__
+           =1 
+           =1 /*
+           =1 #ifdef INTERNAL_MCU
+           =1 #define I2C_SCL   P2_0
+           =1 #else
+           =1 #define I2C_SCL   P1_0
+           =1 #endif
+           =1 #define I2C_SDA   P1_1
+           =1 */
+           =1 #define I2C_SCL     P1_0
+           =1 #define I2C_SDA     P1_1
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 28  
+
+           =1 #ifdef SUPPORT_SDCARD  //ryan@20170824 
+           =1 #define BUF_MAX     8
+           =1 #define DVR_BUF_MAX   30
+           =1 #else
+           =1 #define BUF_MAX     20
+           =1 #define DVR_BUF_MAX   8
+           =1 #endif
+           =1 
+           =1 #ifdef REMO_RC5
+           =1 #define EnableRemoconInt()  { RemoDataReady = 0;  EX0 = 1;}
+           =1 #endif
+           =1 void  InitCPU(void);
+           =1 void  InitVars(void);
+           =1 void  InitTechwell(void);
+           =1 void  main_init (void);
+           =1 void  PowerDown( void );
+           =1 #if 0
+           =1 BYTE  OKSleepTime(void);
+           =1 #endif
+           =1 #ifdef REMO_RC5
+           =1 void  InitForRemo(void);
+           =1 #endif
+           =1 void  PowerLED(BYTE flag);
+           =1 void    Wait_ms(WORD Tms);
+           =1 BYTE    TW2835Command(char,char,char,char,char);
+           =1 
+           =1 #ifdef Monitor_debug
+           =1 BYTE RS_rx(void);
+           =1 #endif
+           =1 
+           =1 #endif
+  45      =1  
+  19          
+  20          
+  21          #define ID_ADDR   0xc5
+  22          #define ID_DATA   0xc6
+  23          
+  24          extern  BYTE  DebugLevel;
+  25          #ifdef  INTERNAL_MCU
+              extern  BYTE  xdata * data regTW88;
+              #endif
+  28          
+  29          
+  30          /*****************************************************************************/
+  31          /*                                                                           */
+  32          /*****************************************************************************/
+  33          
+  34          #define I2C_FAST
+  35          
+  36          #ifdef I2C_FAST
+  37           #define I2Cdelay()
+  38          #else
+               void I2Cdelay(void)
+               {
+                 BYTE i;
+                 for(i=0; i<1; i++){
+                 }
+               }
+              #endif
+  46          
+  47          #if (defined  QVGA) || (defined WQVGA)
+              void I2C_delay(void)
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 29  
+
+              {
+                 BYTE i;
+                 for(i=0; i<255; i++){
+                  i=i;
+                 }
+                 for(i=0; i<128; i++){
+                  i=i;
+                 }
+              }
+              #else
+  59           #define I2C_delay() 
+  60          #endif
+  61          #if 0
+              BYTE I2CWriteData_Wait(BYTE value);
+              #endif
+  64          #if defined( SUPPORT_PC ) || defined( SUPPORT_DTV )
+              void WriteADC_TW88(BYTE index, BYTE dat)
+              {
+                BYTE  page;
+              
+                page = ReadTW88( 0xff );    // save page
+                WriteTW88( 0xff, 0x01 );    // change page1
+                WriteTW88(index, dat);  
+                WriteTW88( 0xff, page );    // restore page
+              
+              }
+              
+              BYTE ReadADC_TW88(BYTE index)
+              {
+                BYTE  page, val;
+              
+                page = ReadTW88( 0xff );    // save page
+                WriteTW88( 0xff, 0x01 );    // change page1
+                val = ReadTW88( index );
+                WriteTW88( 0xff, page );    // restore page
+                
+                return val;
+              }
+              
+              
+              #endif  // SUPPORT_PC
+  90          
+  91          void WriteEEP(WORD index, BYTE dat)
+  92          {
+  93   1        BYTE addr;
+  94   1      
+  95   1        addr = (EEPROMI2CAddress | (index>>7)) & 0xfe;
+  96   1      
+  97   1        I2CStart();
+  98   1        I2CWriteData(addr);
+  99   1        I2CWriteData((BYTE)index);
+ 100   1        I2CWriteData(dat);
+ 101   1        I2CStop();
+ 102   1      
+ 103   1        #ifdef DEBUG_EEP
+                  dPrintf("Write %02xh to [Adrs(%02xh)Index(%02xh)\r\n", (WORD)dat, (WORD)addr, (WORD)index );
+                #endif
+ 106   1      
+ 107   1        delay(2);
+ 108   1      }
+ 109          
+ 110          BYTE ReadEEP(WORD index)
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 30  
+
+ 111          {
+ 112   1        BYTE val;
+ 113   1        BYTE addr;
+ 114   1      
+ 115   1        addr = (EEPROMI2CAddress | (index>>7)) & 0xfe;
+ 116   1      
+ 117   1        val = ReadI2C(addr,(BYTE)index);
+ 118   1      
+ 119   1        #ifdef DEBUG_OSD
+                  dPrintf("Read [Adrs:%02xh,Index:%02xh] %02xh\r\n", (WORD)addr, (WORD)index, (WORD)val);
+                #endif
+ 122   1        delay(2);
+ 123   1        return val;
+ 124   1      }
+ 125          
+ 126          BYTE ReadI2C(BYTE addr, BYTE index)
+ 127          {
+ 128   1        BYTE val;
+ 129   1      
+ 130   1        I2CStart();
+ 131   1        I2CWriteData(addr);
+ 132   1        I2CWriteData(index);
+ 133   1        I2CStart();
+ 134   1        I2CWriteData(addr | 0x01);
+ 135   1        val = I2CReadData();
+ 136   1        I2CStop();
+ 137   1      
+ 138   1        return val;
+ 139   1      }
+ 140          
+ 141          
+ 142          void WriteI2C(BYTE addr, BYTE index, BYTE val)
+ 143          {
+ 144   1        I2CStart();
+ 145   1        I2CWriteData(addr);
+ 146   1        I2CWriteData(index);
+ 147   1        I2CWriteData(val);
+ 148   1        I2CStop();
+ 149   1      }
+ 150          
+ 151          void WriteI2CnD(BYTE addr, BYTE index, BYTE val, BYTE cnt)
+ 152          {
+ 153   1        BYTE i;
+ 154   1      
+ 155   1        I2CStart();
+ 156   1        I2CWriteData(addr);
+ 157   1        I2CWriteData(index);
+ 158   1      
+ 159   1        for(i=0; i<cnt; i++){
+ 160   2          I2CWriteData(val);    //LJY050101
+ 161   2          I2C_delay();
+ 162   2        }
+ 163   1      
+ 164   1        I2CStop();
+ 165   1      }
+ 166          
+ 167          void WriteI2Cn(BYTE addr, BYTE index, BYTE *val, BYTE cnt)
+ 168          {
+ 169   1        BYTE i;
+ 170   1      
+ 171   1      
+ 172   1        I2CStart();
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 31  
+
+ 173   1        I2CWriteData(addr);
+ 174   1        I2CWriteData(index);
+ 175   1      
+ 176   1        for(i=0; i<cnt; i++){
+ 177   2          I2CWriteData(*(val+i)); 
+ 178   2          I2C_delay();
+ 179   2        }
+ 180   1        I2CStop();
+ 181   1      }
+ 182          
+ 183          void WriteI2Cn_(BYTE addr, BYTE *val, BYTE cnt)
+ 184          {
+ 185   1        BYTE i;
+ 186   1      
+ 187   1        I2CStart();
+ 188   1        I2CWriteData(addr);
+ 189   1      
+ 190   1        for(i=0; i<cnt; i++){
+ 191   2          I2CWriteData(*(val+i));   //LJY050101
+ 192   2        }
+ 193   1        I2CStop();
+ 194   1      }
+ 195          #if 0
+              //BYTE I2CWriteData_Wait(BYTE value);
+              
+              void I2CReadByteMSP(BYTE addr, BYTE index, BYTE *pd, BYTE cnt)
+              {
+                BYTE i;
+              
+                I2CStart();
+                I2CWriteData_Wait(addr);
+                I2CWriteData(index);
+                for(i=0; i<cnt; i++) {
+                  I2CWriteData(*(pd+i));
+                }
+                I2CStart();
+                I2CWriteData_Wait(addr | 0x01);
+                *pd = I2CReadDataWithACK();
+                *(pd+1) = I2CReadData();
+              
+                I2CStop();
+              }
+              
+              
+              
+              /*****************************************************************************/
+              /*                                                                           */
+              /*****************************************************************************/
+              
+              BYTE I2CWriteData_Wait(BYTE value)
+              {
+                WORD i;
+                BYTE ack;
+              
+                for(i=0; i<8; i++, value<<=1) {
+                  if(value & 0x80) I2C_SDA = 1;
+                  else       I2C_SDA = 0;
+                  I2Cdelay();
+                  I2C_SCL = 1;  I2Cdelay();
+                  I2C_SCL = 0;
+                }
+                I2C_SDA = 1;  I2Cdelay();
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 32  
+
+                I2C_SCL = 1;  I2Cdelay();
+                i=0;
+                  while(1) {
+                  if( I2C_SCL ) break;
+                  i++;
+                }
+              
+                ack = I2C_SDA;  //I2Cdelay();
+                I2C_SCL = 0;
+                return (1-ack);
+              }
+              #endif
+ 247          
+ 248          #ifndef QVGA
+ 249          void dd(void)
+ 250          {
+ 251   1      //BYTE i=0;
+ 252   1      //for(i=0; i<1; i++)
+ 253   1      //{}
+ 254   1      }
+ 255          #else
+              #define dd()  I2Cdelay()
+              #endif
+ 258          
+ 259          void I2CStart()
+ 260          {
+ 261   1        I2C_SDA = 1;  dd();
+ 262   1        I2C_SCL = 1;  dd();
+ 263   1        I2C_SDA = 0;  dd();
+ 264   1        I2C_SCL = 0;
+ 265   1      }
+ 266          
+ 267          void I2CStop()
+ 268          {
+ 269   1        I2C_SDA = 0;  dd();
+ 270   1        I2C_SCL = 1;  dd();
+ 271   1        I2C_SDA = 1;
+ 272   1      }
+ 273          
+ 274          void I2CWriteData(BYTE value)
+ 275          {
+ 276   1      /*
+ 277   1        int i;
+ 278   1      
+ 279   1        for(i=0; i<8; i++, value<<=1) {
+ 280   1          I2C_SCL = 0;
+ 281   1          I2Cdelay(); // HHY 2.04 in special case, it was unstable
+ 282   1          if(value & 0x80) I2C_SDA = 1;
+ 283   1          else       I2C_SDA = 0;
+ 284   1          I2Cdelay();
+ 285   1          I2C_SCL = 1;
+ 286   1        }
+ 287   1      */
+ 288   1      
+ 289   1        I2C_SCL=0;  I2C_SDA=(value & 0x80)? 1:0;  I2C_SCL=1;  dd();
+ 290   1        I2C_SCL=0;  I2C_SDA=(value & 0x40)? 1:0;  I2C_SCL=1;  dd();
+ 291   1        I2C_SCL=0;  I2C_SDA=(value & 0x20)? 1:0;  I2C_SCL=1;  dd();
+ 292   1        I2C_SCL=0;  I2C_SDA=(value & 0x10)? 1:0;  I2C_SCL=1;  dd();
+ 293   1      
+ 294   1        I2C_SCL=0;  I2C_SDA=(value & 0x08)? 1:0;  I2C_SCL=1;  dd();
+ 295   1        I2C_SCL=0;  I2C_SDA=(value & 0x04)? 1:0;  I2C_SCL=1;  dd();
+ 296   1        I2C_SCL=0;  I2C_SDA=(value & 0x02)? 1:0;  I2C_SCL=1;  dd();
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 33  
+
+ 297   1        I2C_SCL=0;  I2C_SDA=(value & 0x01)? 1:0;  I2C_SCL=1;  dd();
+ 298   1      
+ 299   1      
+ 300   1        I2C_SCL = 0;  // HHY 3.00
+ 301   1        I2C_SCL = 0;  // HHY 3.00
+ 302   1        I2C_SCL = 0;  //  I2Cdelay();
+ 303   1        I2C_SDA = 1;  //  I2Cdelay();
+ 304   1      
+ 305   1        I2C_SCL = 1;  // HHY 3.00
+ 306   1        I2C_SCL = 1;  // HHY 3.00
+ 307   1        I2C_SCL = 1;  //  I2Cdelay();
+ 308   1        I2C_SCL = 0;
+ 309   1      }
+ 310          
+ 311          BYTE I2CReadData()
+ 312          {
+ 313   1        int i;
+ 314   1        BYTE value=0;
+ 315   1      
+ 316   1        I2C_SDA = 1;  dd();
+ 317   1        I2C_SCL = 0;
+ 318   1        
+ 319   1        for(i=0; i<8; i++) {
+ 320   2          I2C_SCL = 1;
+ 321   2          value <<= 1;
+ 322   2          if(I2C_SDA) value |= 1;
+ 323   2          I2C_SCL = 0;
+ 324   2        }
+ 325   1        dd();
+ 326   1        
+ 327   1        I2C_SCL = 1;  // HHY 3.00
+ 328   1        I2C_SCL = 1;  // HHY 3.00
+ 329   1        I2C_SCL = 1;
+ 330   1        I2C_SCL = 0;
+ 331   1      
+ 332   1        return value;
+ 333   1      
+ 334   1      }
+ 335          //#if 1
+ 336          #ifdef ALC106  //Pinchi 20140925 add for AWT ML072Q
+              BYTE I2CReadDataWithACK()
+              {
+                int i;
+                BYTE value=0;
+              
+                I2C_SDA = 1;  I2Cdelay();
+                I2C_SCL = 0;
+              
+                for(i=0; i<8; i++) {
+                  I2C_SCL = 1;
+                  value <<= 1;
+                  if(I2C_SDA) value |= 1;
+                  I2C_SCL = 0;
+                }
+                I2C_SDA = 0;  I2Cdelay();   //ack
+                I2C_SCL = 1;  I2Cdelay();
+                I2C_SCL = 0;
+              
+                return value;
+              }
+              
+              WORD ReadI2CWORD(BYTE addr, BYTE index)
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 34  
+
+              {
+                WORD val;
+              
+                I2CStart();
+                I2CWriteData(addr);
+                I2CWriteData(index);
+                I2CStart();
+                I2CWriteData(addr | 0x01);
+                val = I2CReadDataWithACK();
+                val = val<<8;
+                val |= I2CReadData();
+                I2CStop();
+              
+                return val;
+              }
+              
+              void WriteALC106(WORD index, WORD  dat)
+              {
+                BYTE addr;
+                BYTE dat1,dat2;
+              
+                dat2=dat&0x00ff;
+                dat1=(dat>>8)&0x00ff;
+                  
+                addr = (ALC106I2CAddress | (index>>7)) & 0xfe;
+              
+                I2CStart();
+                I2CWriteData(addr);
+                I2CWriteData((BYTE)index);
+                I2CWriteData(dat1);
+                dd();
+                I2CWriteData(dat2);
+                I2CStop();
+              
+                #ifdef DEBUG_EEP
+                  Printf("Write %02xh to [Adrs(%02xh)Index(%02xh)\r\n", (WORD)dat, (WORD)addr, (WORD)index );
+                #endif
+              
+                delay(2);
+              }
+              
+              WORD ReadALC106(WORD index)
+              {
+                WORD val;
+                BYTE addr;
+              
+                addr = (ALC106I2CAddress | (index>>7)) & 0xfe;
+              
+                val = ReadI2CWORD(addr,(BYTE)index);
+                #ifdef DEBUG_OSD
+                  Printf("Read [Adrs:%02xh,Index:%02xh] %xh\r\n", (WORD)addr, (WORD)index, (WORD)val);
+                #endif
+                delay(2);
+                return val;
+              }
+              
+              #endif
+ 416          
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 35  
+
+ASSEMBLY LISTING OF GENERATED OBJECT CODE
+
+
+             ; FUNCTION Com002D (BEGIN)
+0000         L?0046:
+0000         L?0047:
+0000 9291              MOV     P1_1,C
+0002 D290              SETB    P1_0
+0004 120000      R     LCALL   dd
+0007 C290              CLR     P1_0
+0009 22                RET     
+000A         L?0048:
+000A 120000      E     LCALL   ?C?PLDXDATA
+000D 8E82              MOV     DPL,R6
+000F 758300            MOV     DPH,#00H
+0012 120000      E     LCALL   ?C?CLDOPTR
+0015 FF                MOV     R7,A
+0016 22                RET     
+0017         L?0049:
+0017         L?0050:
+0017 EF                MOV     A,R7
+0018 F0                MOVX    @DPTR,A
+0019 A3                INC     DPTR
+001A ED                MOV     A,R5
+001B F0                MOVX    @DPTR,A
+001C A3                INC     DPTR
+001D 22                RET     
+             ; FUNCTION Com002D (END)
+
+             ; FUNCTION _WriteEEP (BEGIN)
+                                           ; SOURCE LINE # 91
+0000 900000      R     MOV     DPTR,#index
+0003 EE                MOV     A,R6
+0004 F0                MOVX    @DPTR,A
+0005 A3                INC     DPTR
+0006 EF                MOV     A,R7
+0007 F0                MOVX    @DPTR,A
+0008 A3                INC     DPTR
+0009 ED                MOV     A,R5
+000A F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 92
+                                           ; SOURCE LINE # 95
+000B 900000      R     MOV     DPTR,#index
+000E E0                MOVX    A,@DPTR
+000F FE                MOV     R6,A
+0010 A3                INC     DPTR
+0011 E0                MOVX    A,@DPTR
+0012 7807              MOV     R0,#07H
+0014         ?C0042:
+0014 CE                XCH     A,R6
+0015 C3                CLR     C
+0016 13                RRC     A
+0017 CE                XCH     A,R6
+0018 13                RRC     A
+0019 D8F9              DJNZ    R0,?C0042
+001B 44A0              ORL     A,#0A0H
+001D 54FE              ANL     A,#0FEH
+001F 900000      R     MOV     DPTR,#addr
+0022 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 97
+0023 120000      R     LCALL   I2CStart
+                                           ; SOURCE LINE # 98
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 36  
+
+0026 900000      R     MOV     DPTR,#addr
+0029 E0                MOVX    A,@DPTR
+002A FF                MOV     R7,A
+002B 120000      R     LCALL   _I2CWriteData
+                                           ; SOURCE LINE # 99
+002E 900000      R     MOV     DPTR,#index
+0031 A3                INC     DPTR
+0032 E0                MOVX    A,@DPTR
+0033 FF                MOV     R7,A
+0034 120000      R     LCALL   _I2CWriteData
+                                           ; SOURCE LINE # 100
+0037 900000      R     MOV     DPTR,#dat
+003A E0                MOVX    A,@DPTR
+003B FF                MOV     R7,A
+003C 120000      R     LCALL   _I2CWriteData
+                                           ; SOURCE LINE # 101
+003F 120000      R     LCALL   I2CStop
+                                           ; SOURCE LINE # 107
+0042 7F02              MOV     R7,#02H
+0044 020000      E     LJMP    _delay
+             ; FUNCTION _WriteEEP (END)
+
+             ; FUNCTION _ReadEEP (BEGIN)
+                                           ; SOURCE LINE # 110
+;---- Variable 'index' assigned to Register 'R4/R5' ----
+0000 AD07              MOV     R5,AR7
+0002 AC06              MOV     R4,AR6
+                                           ; SOURCE LINE # 111
+                                           ; SOURCE LINE # 115
+0004 ED                MOV     A,R5
+0005 7807              MOV     R0,#07H
+0007         ?C0043:
+0007 CE                XCH     A,R6
+0008 C3                CLR     C
+0009 13                RRC     A
+000A CE                XCH     A,R6
+000B 13                RRC     A
+000C D8F9              DJNZ    R0,?C0043
+000E 44A0              ORL     A,#0A0H
+0010 54FE              ANL     A,#0FEH
+0012 FF                MOV     R7,A
+;---- Variable 'addr' assigned to Register 'R7' ----
+                                           ; SOURCE LINE # 117
+0013 120000      R     LCALL   _ReadI2C
+0016 900000      R     MOV     DPTR,#val
+0019 EF                MOV     A,R7
+001A F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 122
+001B 7F02              MOV     R7,#02H
+001D 120000      E     LCALL   _delay
+                                           ; SOURCE LINE # 123
+0020 900000      R     MOV     DPTR,#val
+0023 E0                MOVX    A,@DPTR
+0024 FF                MOV     R7,A
+                                           ; SOURCE LINE # 124
+0025 22                RET     
+             ; FUNCTION _ReadEEP (END)
+
+             ; FUNCTION _ReadI2C (BEGIN)
+                                           ; SOURCE LINE # 126
+0000 900000      R     MOV     DPTR,#addr
+0003 EF                MOV     A,R7
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 37  
+
+0004 F0                MOVX    @DPTR,A
+0005 A3                INC     DPTR
+0006 ED                MOV     A,R5
+0007 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 127
+                                           ; SOURCE LINE # 130
+0008 120000      R     LCALL   I2CStart
+                                           ; SOURCE LINE # 131
+000B 900000      R     MOV     DPTR,#addr
+000E E0                MOVX    A,@DPTR
+000F FF                MOV     R7,A
+0010 120000      R     LCALL   _I2CWriteData
+                                           ; SOURCE LINE # 132
+0013 900000      R     MOV     DPTR,#index
+0016 E0                MOVX    A,@DPTR
+0017 FF                MOV     R7,A
+0018 120000      R     LCALL   _I2CWriteData
+                                           ; SOURCE LINE # 133
+001B 120000      R     LCALL   I2CStart
+                                           ; SOURCE LINE # 134
+001E 900000      R     MOV     DPTR,#addr
+0021 E0                MOVX    A,@DPTR
+0022 4401              ORL     A,#01H
+0024 FF                MOV     R7,A
+0025 120000      R     LCALL   _I2CWriteData
+                                           ; SOURCE LINE # 135
+0028 120000      R     LCALL   I2CReadData
+002B 900000      R     MOV     DPTR,#val
+002E EF                MOV     A,R7
+002F F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 136
+0030 120000      R     LCALL   I2CStop
+                                           ; SOURCE LINE # 138
+0033 900000      R     MOV     DPTR,#val
+0036 E0                MOVX    A,@DPTR
+0037 FF                MOV     R7,A
+                                           ; SOURCE LINE # 139
+0038 22                RET     
+             ; FUNCTION _ReadI2C (END)
+
+             ; FUNCTION _WriteI2C (BEGIN)
+                                           ; SOURCE LINE # 142
+0000 900000      R     MOV     DPTR,#addr
+0003 120000      R     LCALL   L?0049
+0006 EB                MOV     A,R3
+0007 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 143
+                                           ; SOURCE LINE # 144
+0008 120000      R     LCALL   I2CStart
+                                           ; SOURCE LINE # 145
+000B 900000      R     MOV     DPTR,#addr
+000E E0                MOVX    A,@DPTR
+000F FF                MOV     R7,A
+0010 120000      R     LCALL   _I2CWriteData
+                                           ; SOURCE LINE # 146
+0013 900000      R     MOV     DPTR,#index
+0016 E0                MOVX    A,@DPTR
+0017 FF                MOV     R7,A
+0018 120000      R     LCALL   _I2CWriteData
+                                           ; SOURCE LINE # 147
+001B 900000      R     MOV     DPTR,#val
+001E E0                MOVX    A,@DPTR
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 38  
+
+001F FF                MOV     R7,A
+0020 120000      R     LCALL   _I2CWriteData
+                                           ; SOURCE LINE # 148
+0023 020000      R     LJMP    I2CStop
+             ; FUNCTION _WriteI2C (END)
+
+             ; FUNCTION _WriteI2CnD (BEGIN)
+                                           ; SOURCE LINE # 151
+0000 900000      R     MOV     DPTR,#addr
+0003 120000      R     LCALL   L?0049
+0006 EB                MOV     A,R3
+0007 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 152
+                                           ; SOURCE LINE # 155
+0008 120000      R     LCALL   I2CStart
+                                           ; SOURCE LINE # 156
+000B 900000      R     MOV     DPTR,#addr
+000E E0                MOVX    A,@DPTR
+000F FF                MOV     R7,A
+0010 120000      R     LCALL   _I2CWriteData
+                                           ; SOURCE LINE # 157
+0013 900000      R     MOV     DPTR,#index
+0016 E0                MOVX    A,@DPTR
+0017 FF                MOV     R7,A
+0018 120000      R     LCALL   _I2CWriteData
+                                           ; SOURCE LINE # 159
+001B E4                CLR     A
+001C 900000      R     MOV     DPTR,#i
+001F F0                MOVX    @DPTR,A
+0020         ?C0005:
+0020 900000      R     MOV     DPTR,#cnt
+0023 E0                MOVX    A,@DPTR
+0024 FF                MOV     R7,A
+0025 A3                INC     DPTR
+0026 E0                MOVX    A,@DPTR
+0027 C3                CLR     C
+0028 9F                SUBB    A,R7
+0029 5010              JNC     ?C0006
+                                           ; SOURCE LINE # 160
+002B 900000      R     MOV     DPTR,#val
+002E E0                MOVX    A,@DPTR
+002F FF                MOV     R7,A
+0030 120000      R     LCALL   _I2CWriteData
+                                           ; SOURCE LINE # 162
+0033 900000      R     MOV     DPTR,#i
+0036 E0                MOVX    A,@DPTR
+0037 04                INC     A
+0038 F0                MOVX    @DPTR,A
+0039 80E5              SJMP    ?C0005
+003B         ?C0006:
+                                           ; SOURCE LINE # 164
+003B 020000      R     LJMP    I2CStop
+             ; FUNCTION _WriteI2CnD (END)
+
+             ; FUNCTION _WriteI2Cn (BEGIN)
+                                           ; SOURCE LINE # 167
+0000 900000      R     MOV     DPTR,#addr
+0003 120000      R     LCALL   L?0050
+0006 120000      E     LCALL   ?C?PSTXDATA
+                                           ; SOURCE LINE # 168
+                                           ; SOURCE LINE # 172
+0009 120000      R     LCALL   I2CStart
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 39  
+
+                                           ; SOURCE LINE # 173
+000C 900000      R     MOV     DPTR,#addr
+000F E0                MOVX    A,@DPTR
+0010 FF                MOV     R7,A
+0011 120000      R     LCALL   _I2CWriteData
+                                           ; SOURCE LINE # 174
+0014 900000      R     MOV     DPTR,#index
+0017 E0                MOVX    A,@DPTR
+0018 FF                MOV     R7,A
+0019 120000      R     LCALL   _I2CWriteData
+                                           ; SOURCE LINE # 176
+001C E4                CLR     A
+001D 900000      R     MOV     DPTR,#i
+0020 F0                MOVX    @DPTR,A
+0021         ?C0009:
+0021 900000      R     MOV     DPTR,#cnt
+0024 E0                MOVX    A,@DPTR
+0025 FF                MOV     R7,A
+0026 A3                INC     DPTR
+0027 E0                MOVX    A,@DPTR
+0028 FE                MOV     R6,A
+0029 C3                CLR     C
+002A 9F                SUBB    A,R7
+002B 5011              JNC     ?C0010
+                                           ; SOURCE LINE # 177
+002D 900000      R     MOV     DPTR,#val
+0030 120000      R     LCALL   L?0048
+0033 120000      R     LCALL   _I2CWriteData
+                                           ; SOURCE LINE # 179
+0036 900000      R     MOV     DPTR,#i
+0039 E0                MOVX    A,@DPTR
+003A 04                INC     A
+003B F0                MOVX    @DPTR,A
+003C 80E3              SJMP    ?C0009
+003E         ?C0010:
+                                           ; SOURCE LINE # 180
+003E 020000      R     LJMP    I2CStop
+             ; FUNCTION _WriteI2Cn (END)
+
+             ; FUNCTION _WriteI2Cn_ (BEGIN)
+                                           ; SOURCE LINE # 183
+0000 900000      R     MOV     DPTR,#addr
+0003 EF                MOV     A,R7
+0004 F0                MOVX    @DPTR,A
+0005 A3                INC     DPTR
+0006 120000      E     LCALL   ?C?PSTXDATA
+                                           ; SOURCE LINE # 184
+                                           ; SOURCE LINE # 187
+0009 120000      R     LCALL   I2CStart
+                                           ; SOURCE LINE # 188
+000C 900000      R     MOV     DPTR,#addr
+000F E0                MOVX    A,@DPTR
+0010 FF                MOV     R7,A
+0011 120000      R     LCALL   _I2CWriteData
+                                           ; SOURCE LINE # 190
+0014 E4                CLR     A
+0015 900000      R     MOV     DPTR,#i
+0018 F0                MOVX    @DPTR,A
+0019         ?C0013:
+0019 900000      R     MOV     DPTR,#cnt
+001C E0                MOVX    A,@DPTR
+001D FF                MOV     R7,A
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 40  
+
+001E A3                INC     DPTR
+001F E0                MOVX    A,@DPTR
+0020 FE                MOV     R6,A
+0021 C3                CLR     C
+0022 9F                SUBB    A,R7
+0023 5011              JNC     ?C0014
+                                           ; SOURCE LINE # 191
+0025 900000      R     MOV     DPTR,#val
+0028 120000      R     LCALL   L?0048
+002B 120000      R     LCALL   _I2CWriteData
+                                           ; SOURCE LINE # 192
+002E 900000      R     MOV     DPTR,#i
+0031 E0                MOVX    A,@DPTR
+0032 04                INC     A
+0033 F0                MOVX    @DPTR,A
+0034 80E3              SJMP    ?C0013
+0036         ?C0014:
+                                           ; SOURCE LINE # 193
+0036 020000      R     LJMP    I2CStop
+             ; FUNCTION _WriteI2Cn_ (END)
+
+             ; FUNCTION dd (BEGIN)
+                                           ; SOURCE LINE # 249
+                                           ; SOURCE LINE # 250
+                                           ; SOURCE LINE # 254
+0000 22                RET     
+             ; FUNCTION dd (END)
+
+             ; FUNCTION I2CStart (BEGIN)
+                                           ; SOURCE LINE # 259
+                                           ; SOURCE LINE # 260
+                                           ; SOURCE LINE # 261
+0000 D291              SETB    P1_1
+0002 120000      R     LCALL   dd
+                                           ; SOURCE LINE # 262
+0005 D290              SETB    P1_0
+0007 120000      R     LCALL   dd
+                                           ; SOURCE LINE # 263
+000A C291              CLR     P1_1
+000C 120000      R     LCALL   dd
+                                           ; SOURCE LINE # 264
+000F C290              CLR     P1_0
+                                           ; SOURCE LINE # 265
+0011 22                RET     
+             ; FUNCTION I2CStart (END)
+
+             ; FUNCTION I2CStop (BEGIN)
+                                           ; SOURCE LINE # 267
+                                           ; SOURCE LINE # 268
+                                           ; SOURCE LINE # 269
+0000 C291              CLR     P1_1
+0002 120000      R     LCALL   dd
+                                           ; SOURCE LINE # 270
+0005 D290              SETB    P1_0
+0007 120000      R     LCALL   dd
+                                           ; SOURCE LINE # 271
+000A D291              SETB    P1_1
+                                           ; SOURCE LINE # 272
+000C 22                RET     
+             ; FUNCTION I2CStop (END)
+
+             ; FUNCTION _I2CWriteData (BEGIN)
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 41  
+
+                                           ; SOURCE LINE # 274
+;---- Variable 'value' assigned to Register 'R7' ----
+                                           ; SOURCE LINE # 275
+                                           ; SOURCE LINE # 289
+0000 C290              CLR     P1_0
+0002 EF                MOV     A,R7
+0003 30E703            JNB     ACC.7,?C0020
+0006 D3                SETB    C
+0007 8001              SJMP    ?C0021
+0009         ?C0020:
+0009 C3                CLR     C
+000A         ?C0021:
+                                           ; SOURCE LINE # 290
+000A 120000      R     LCALL   L?0046
+000D EF                MOV     A,R7
+000E 30E603            JNB     ACC.6,?C0022
+0011 D3                SETB    C
+0012 8001              SJMP    ?C0023
+0014         ?C0022:
+0014 C3                CLR     C
+0015         ?C0023:
+                                           ; SOURCE LINE # 291
+0015 120000      R     LCALL   L?0046
+0018 EF                MOV     A,R7
+0019 30E503            JNB     ACC.5,?C0024
+001C D3                SETB    C
+001D 8001              SJMP    ?C0025
+001F         ?C0024:
+001F C3                CLR     C
+0020         ?C0025:
+                                           ; SOURCE LINE # 292
+0020 120000      R     LCALL   L?0047
+0023 EF                MOV     A,R7
+0024 30E403            JNB     ACC.4,?C0026
+0027 D3                SETB    C
+0028 8001              SJMP    ?C0027
+002A         ?C0026:
+002A C3                CLR     C
+002B         ?C0027:
+                                           ; SOURCE LINE # 294
+002B 120000      R     LCALL   L?0047
+002E EF                MOV     A,R7
+002F 30E303            JNB     ACC.3,?C0028
+0032 D3                SETB    C
+0033 8001              SJMP    ?C0029
+0035         ?C0028:
+0035 C3                CLR     C
+0036         ?C0029:
+                                           ; SOURCE LINE # 295
+0036 120000      R     LCALL   L?0047
+0039 EF                MOV     A,R7
+003A 30E203            JNB     ACC.2,?C0030
+003D D3                SETB    C
+003E 8001              SJMP    ?C0031
+0040         ?C0030:
+0040 C3                CLR     C
+0041         ?C0031:
+                                           ; SOURCE LINE # 296
+0041 120000      R     LCALL   L?0047
+0044 EF                MOV     A,R7
+0045 30E103            JNB     ACC.1,?C0032
+0048 D3                SETB    C
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 42  
+
+0049 8001              SJMP    ?C0033
+004B         ?C0032:
+004B C3                CLR     C
+004C         ?C0033:
+                                           ; SOURCE LINE # 297
+004C 120000      R     LCALL   L?0047
+004F EF                MOV     A,R7
+0050 30E003            JNB     ACC.0,?C0034
+0053 D3                SETB    C
+0054 8001              SJMP    ?C0035
+0056         ?C0034:
+0056 C3                CLR     C
+0057         ?C0035:
+                                           ; SOURCE LINE # 300
+0057 120000      R     LCALL   L?0047
+                                           ; SOURCE LINE # 301
+005A C290              CLR     P1_0
+                                           ; SOURCE LINE # 302
+005C C290              CLR     P1_0
+                                           ; SOURCE LINE # 303
+005E D291              SETB    P1_1
+                                           ; SOURCE LINE # 305
+0060 D290              SETB    P1_0
+                                           ; SOURCE LINE # 306
+0062 D290              SETB    P1_0
+                                           ; SOURCE LINE # 307
+0064 D290              SETB    P1_0
+                                           ; SOURCE LINE # 308
+0066 C290              CLR     P1_0
+                                           ; SOURCE LINE # 309
+0068 22                RET     
+             ; FUNCTION _I2CWriteData (END)
+
+             ; FUNCTION I2CReadData (BEGIN)
+                                           ; SOURCE LINE # 311
+                                           ; SOURCE LINE # 312
+                                           ; SOURCE LINE # 314
+;---- Variable 'value' assigned to Register 'R7' ----
+0000 E4                CLR     A
+0001 FF                MOV     R7,A
+                                           ; SOURCE LINE # 316
+0002 D291              SETB    P1_1
+0004 120000      R     LCALL   dd
+                                           ; SOURCE LINE # 317
+0007 C290              CLR     P1_0
+                                           ; SOURCE LINE # 319
+;---- Variable 'i' assigned to Register 'R4/R5' ----
+0009 FD                MOV     R5,A
+000A FC                MOV     R4,A
+000B         ?C0037:
+                                           ; SOURCE LINE # 320
+000B D290              SETB    P1_0
+                                           ; SOURCE LINE # 321
+000D EF                MOV     A,R7
+000E 25E0              ADD     A,ACC
+0010 FF                MOV     R7,A
+                                           ; SOURCE LINE # 322
+0011 309103            JNB     P1_1,?C0040
+0014 4401              ORL     A,#01H
+0016 FF                MOV     R7,A
+0017         ?C0040:
+                                           ; SOURCE LINE # 323
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 43  
+
+0017 C290              CLR     P1_0
+                                           ; SOURCE LINE # 324
+0019 0D                INC     R5
+001A BD0001            CJNE    R5,#00H,?C0044
+001D 0C                INC     R4
+001E         ?C0044:
+001E ED                MOV     A,R5
+001F 6408              XRL     A,#08H
+0021 4C                ORL     A,R4
+0022 70E7              JNZ     ?C0037
+0024         ?C0038:
+                                           ; SOURCE LINE # 325
+0024 120000      R     LCALL   dd
+                                           ; SOURCE LINE # 327
+0027 D290              SETB    P1_0
+                                           ; SOURCE LINE # 328
+0029 D290              SETB    P1_0
+                                           ; SOURCE LINE # 329
+002B D290              SETB    P1_0
+                                           ; SOURCE LINE # 330
+002D C290              CLR     P1_0
+                                           ; SOURCE LINE # 332
+                                           ; SOURCE LINE # 334
+002F 22                RET     
+             ; FUNCTION I2CReadData (END)
+
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 44  
+
+NAME                                    CLASS   MSPACE  TYPE    OFFSET  SIZE
+====                                    =====   ======  ====    ======  ====
+
+
+_WriteI2CnD. . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  addr . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0000H  1
+  index. . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0001H  1
+  val. . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0002H  1
+  cnt. . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0003H  1
+  i. . . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0004H  1
+DWORD. . . . . . . . . . . . . . . . .  TYPEDEF  -----  U_LONG   -----  4
+CAM_R. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+P4 . . . . . . . . . . . . . . . . . .  SFR      DATA   U_CHAR   00E8H  1
+TriggerModeType. . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+CAM_BAR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CAR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ACR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CBR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BCR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+P1_0 . . . . . . . . . . . . . . . . .  ABSBIT   -----  BIT      0090H  1
+_delay . . . . . . . . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+P1_1 . . . . . . . . . . . . . . . . .  ABSBIT   -----  BIT      0091H  1
+FontData . . . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  27
+  font . . . . . . . . . . . . . . . .  MEMBER   -----  ARRAY    0000H  27
+RIGHT_TRIG . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+LAST_TRIG_NON. . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+_WriteI2Cn_. . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  addr . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0000H  1
+  val. . . . . . . . . . . . . . . . .  AUTO     XDATA  PTR      0001H  3
+  cnt. . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0004H  1
+  i. . . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0005H  1
+NORMALL_MODE . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+AVMode . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+SourceModeType . . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+CAM_NUM. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAMC_TRIG. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+LAST_TRIG_RIGHT. . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_RAB_H. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+OSDStrInfo . . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  8
+  cnt. . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  addr . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0001H  2
+  attr . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0003H  1
+  str. . . . . . . . . . . . . . . . .  MEMBER   -----  U_LONG   0004H  4
+CAM_BA . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_AB . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+BYTE . . . . . . . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+CAM_CA . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_AC . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+REVERSE_TRIG . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BC . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CB . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+I2CReadData. . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  i. . . . . . . . . . . . . . . . . .  * REG *  DATA   INT      0004H  2
+  value. . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0007H  1
+SourceModeTypeEnum . . . . . . . . . .  * TAG *  -----  ENUM     -----  -----
+struct_IdName. . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  17
+  Id . . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  Name . . . . . . . . . . . . . . . .  MEMBER   -----  ARRAY    0001H  16
+_WriteI2Cn . . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  addr . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0000H  1
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 45  
+
+NAME                                    CLASS   MSPACE  TYPE    OFFSET  SIZE
+====                                    =====   ======  ====    ======  ====
+
+
+  index. . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0001H  1
+  val. . . . . . . . . . . . . . . . .  AUTO     XDATA  PTR      0002H  3
+  cnt. . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0005H  1
+  i. . . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0006H  1
+CAM_RAB_T. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+_ReadI2C . . . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  addr . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0000H  1
+  index. . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0001H  1
+  val. . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0002H  1
+CAM_RAC_T. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+WORD . . . . . . . . . . . . . . . . .  TYPEDEF  -----  U_INT    -----  2
+CAM_RBC_T. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+LAST_TRIG_CAMC . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+LEFT_TRIG. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_AR . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BR . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_RB . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+PARK_TRIG. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CR . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+dd . . . . . . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+_I2CWriteData. . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  value. . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0007H  1
+Register . . . . . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+_WriteI2C. . . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  addr . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0000H  1
+  index. . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0001H  1
+  val. . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0002H  1
+LAST_TRIG_REVERSE. . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+I2CStart . . . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+No_TRIG. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+RegisterInfo . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  6
+  Min. . . . . . . . . . . . . . . . .  MEMBER   -----  INT      0000H  2
+  Max. . . . . . . . . . . . . . . . .  MEMBER   -----  INT      0002H  2
+  Default. . . . . . . . . . . . . . .  MEMBER   -----  INT      0004H  2
+_ReadEEP . . . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  index. . . . . . . . . . . . . . . .  * REG *  DATA   U_INT    0004H  2
+  val. . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0000H  1
+  addr . . . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0007H  1
+LAST_TRIG_LEFT . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_QUAD . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+I2CStop. . . . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+TRIGGER_NUM. . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+_WriteEEP. . . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  index. . . . . . . . . . . . . . . .  AUTO     XDATA  U_INT    0000H  2
+  dat. . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0002H  1
+  addr . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0003H  1
+SEQ. . . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+LongRegisterInfo . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  6
+  Min. . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0000H  2
+  Max. . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0002H  2
+  Default. . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0004H  2
+CAM_RAC_T2 . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABR_T3 . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_RBC_T2 . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABR_T4 . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_A. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_B. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+C51 COMPILER V9.60.0.0   I2C                                                               06/22/2022 16:23:02 PAGE 46  
+
+NAME                                    CLASS   MSPACE  TYPE    OFFSET  SIZE
+====                                    =====   ======  ====    ======  ====
+
+
+CAM_C. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+VGA_TRIG . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CAB. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BAC. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABC. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+AWT_LAST_TRIGGER . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    603    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----      29
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

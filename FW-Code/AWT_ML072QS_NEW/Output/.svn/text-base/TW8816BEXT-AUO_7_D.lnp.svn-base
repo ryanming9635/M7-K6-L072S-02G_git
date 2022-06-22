@@ -1,0 +1,25 @@
+".\Output\adc.obj",
+".\Output\cpu.obj",
+".\Output\dispinfo.obj",
+".\Output\etc_eep.obj",
+".\Output\I2c.obj",
+".\Output\keyremo.obj",
+".\Output\Main.obj",
+".\Output\Measure.obj",
+".\Output\Osdbasic.obj",
+".\Output\osdmenu.obj",
+".\Output\pc_eep.obj",
+".\Output\Printf.obj",
+".\Output\table.obj",
+".\Output\TW88.obj",
+".\Output\udfont.obj",
+".\Output\HS_keyremo.obj",
+".\Output\HS_DisplayOSD.obj",
+".\Output\audio.obj",
+".\Output\Loader.obj",
+".\Output\HS_DVRProtocol.obj",
+".\Output\Debug.obj" 
+TO ".\Output\TW8816BEXT-AUO_7_D" 
+PRINT(".\Source\TW8816BEXT-AUO_7_D.m51") RAMSIZE(256) 
+CODE( 0X0000-0XFFFF )
+XDATA( 0X0000-0X00FF )

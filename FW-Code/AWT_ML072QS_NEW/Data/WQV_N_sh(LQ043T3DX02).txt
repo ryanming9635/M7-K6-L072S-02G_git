@@ -1,0 +1,135 @@
+/*===========================================================================*/
+/*                    Register Setting for TW8804	                     */
+/*===========================================================================*/
+//	Input	: NTSC
+//	Panel	: WQVGA (Sharp "LQ043T3DX02 480*272 for PSP" and 3 kind of Driver)
+//-----------------------------------------------------------------------------
+//	Below listed registers should not be set.
+//	0x02, 0x06, 
+//
+//
+
+TW88I2CAddress, 54,
+0xff, 0x01,
+0xc1, 0x25, // ADC PLL=27Mhz
+
+0xff, 0x00,
+
+//------------ Decoder (19) ---------------------------------------------------
+
+0x1c, 0x08,				// Standard, shadow 		** N/P
+0x07, 0x02,				// Cropping H				** N/P, panel
+0x08, 0x15,				// V delay L				** N/P, panel
+0x09, 0xf0,				// V active L				** N/P, panel?
+0x0a, 0x1b,				// H delay L				** N/P, panel
+0x0b, 0xd0,				// H active L				** N/P, panel?
+0x0c, 0xcc,				// Control Reg 1
+0x0d, 0x15,				// FreeRun=NTSC
+
+0x10, 0x00,				// Brightness
+0x11, 0x60,				// Contrast
+0x12, 0x62,				// Sharpness Ctrl 1
+0x13, 0x80,				// Chroma(U) gain
+0x14, 0x80,				// chroma(V) gain
+0x15, 0x00,				// Hue
+0x16, 0xc3,				// Sharpness Ctrl 2
+0x17, 0x82,				// V peaking Ctrl 1			
+0x18, 0x44,				// Coring Ctrl				
+
+/*
+//0x20, 0x50,				// Clamping gain
+0x21, 0x22,				// Individual AGC gain
+0x23, 0xf0,				// White Peak Threshold
+//0x24, 0x3c,				// Clamp level
+0x25, 0x38,				// Sync amplitude
+0x26, 0x66,				// Sync Miss Count
+
+0x28, 0x00,				// V control Reg			
+0x29, 0x00,				// V control Reg 2
+0x2a, 0x70,				// Color killer level
+0x2b, 0x44,				// Comb filter ctrl
+0x2c, 0x40,				// Luma delay/H sync ctrl
+0x2d, 0x14,				// Misc.1
+0x2e, 0xa5,				// Misc.2
+0x2f, 0xe0,				// Misc.3	
+//0x38, 0x00,
+*/
+
+0x20, 0x20,//0x50, // Clamp Gain for TW8806B
+
+
+0x35, 0x02, // Y Clamp Current 
+
+//---------- Input/Output (3)-----------------------------------------------------
+
+0x40, 0x00,				// Input
+0x41, 0x20,				// Output
+0x44, 0x08,				// Input control
+
+//------------ Zoom (4)-----------------------------------------------------------
+
+0x63, 0x01,				// H/V scale up/dn H		** N/P panel
+0x60, 0x00,				// H/V scale up/dn H		** N/P panel
+0x61, 0xbb,				// H-scale up offset		** N/P panel
+0x62, 0xd7,				// V-scale up offset		** N/P panel
+
+//--------- Color Adjust(7) ------------------------------------------------------
+/*
+0x70, 0x60,				// R contrast
+0x71, 0x96,				// R contrast
+0x72, 0xb9,				// G contrast
+0x73, 0xe7,				// B contrast
+0x74, 0x6c,				// R brightness
+0x70, 0x20,				// R contrast
+0x71, 0x93,				// R contrast
+0x72, 0x88,				// G contrast
+0x73, 0x7a,				// B contrast
+0x74, 0x80,				// R brightness
+0x75, 0x80,				// G brightness
+0x76, 0x80,				// B brightness
+*/
+0x77, 0x34,				// B brightness
+
+
+0xDA, 0x3D,
+0xDB, 0xC3,
+0xDC, 0xFC,
+0xDD, 0xDF,
+0xDE, 0x5F,
+0xDF, 0x5F,
+
+//--------- Display control (15)---------------------------------------------------
+
+0xb0, 0x40,				//
+0xb1, 0x01,				//							**     panel
+0xb6, 0x12,				//							**     panel
+0xb2, 0x25,				//							**     panel
+0xb3, 0x1c,				//							**     panel
+0xb4, 0x02,				//							** N/P panel
+0xb5, 0xe0,				//							**     panel
+0xbb, 0x11,				//							** N/P panel
+0xb7, 0x36,				//							** N/P panel
+0xb8, 0x1b,				//							**
+0xb9, 0x02,				//							**     panel
+0xba, 0x10,				//							**     panel
+0xbc, 0x00,				// Dithering
+0xbd, 0x00,				//							** N/P panel
+0xbe, 0x02,				//							** N/P panel
+
+//--------- Misc. Input -------------------------------------------------------
+
+//--------- Output Interface --------------------------------------------------
+
+//--------- PLL (6)---------------------------------------------------------------
+0xf9, 0x00,
+0xfa, 0x61,//0x8f,//64,				// 10.50000MHz				** N/P panel
+0xfb, 0x4b,//0x00,				//							** N/P panel
+0xfd, 0x00,				//							** N/P panel
+0xfc, 0x00,				//							** N/P panel
+0xfe, 0x00,				//							** N/P panel
+
+//-----------------------------------------------------------------------------
+0xff, 0xff
+
+
+

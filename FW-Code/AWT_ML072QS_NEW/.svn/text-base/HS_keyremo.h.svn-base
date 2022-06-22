@@ -1,0 +1,51 @@
+#ifndef	_HS_keyremo_
+#define	_HS_keyremo_
+
+//
+// KeyRemo.h
+// Default function for Key Input and Remocon Input
+//
+//=============================================================================
+//		                    Operation Key Mapping
+//=============================================================================
+
+
+
+#define  SelectMode 0
+#define  JumpMode	1
+
+
+
+
+extern BYTE NowModeState;
+extern BYTE TriggerFlag;
+extern bit	ParkFlag;
+extern BYTE  Attr_A,Attr_B,Attr_C,Attr_R; 
+extern BYTE TimeStep;
+extern BYTE SEQFlag;
+extern BYTE SEQIndex;
+extern BYTE TriggerMode;
+extern bit AVFlag;
+extern bit VGAAudio;
+
+
+
+//BYTE TW2835Command(char,char,char,char,char);
+void SetSourceMode(BYTE Index,char ,char ,char ,char );
+void SetSelectMode(void);
+//void PriorityOffSelectMode(void);
+void SetJumpMode(void);
+void SetNowMode(void);
+void SetRearSource(void);
+void SetLeftSource(void);
+void SetRightSource(void);
+
+
+BYTE CheckTrigger(void);
+void TriggerHandler(BYTE T_Flag);
+void SEQMode(void);
+
+
+
+
+#endif

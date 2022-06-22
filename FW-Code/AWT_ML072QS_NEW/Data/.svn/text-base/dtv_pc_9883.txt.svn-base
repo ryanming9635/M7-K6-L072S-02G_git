@@ -1,0 +1,312 @@
+/*---------------------------------------------------------------------------*/
+/*                          PC Mode Initial Setup                            */
+/*---------------------------------------------------------------------------*/
+#define ADC_IF	0x00
+
+CODE BYTE PC_RGB_AD9883_Reg[] = {
+
+	ADCI2CAddress, 9,
+	0x05, 0x0a,					// clamp place			
+	0x06, 0x08,					// clamp duration
+	0x07, 0x31,					// H sync pulse width	
+	0x0e, 0x40,					// sync control
+	0x0f, 0x4e,					// coast seclection		
+	0x10, 0xb8,					// SOG threshold
+	0x11, 0x20,					// sync separator threshold
+	0x12, 0x00,					// pre-coast		
+	0x13, 0x00,					// post-coast		
+	
+	TW88I2CAddress, 3,
+	0x40, 0x40,					// invert field for DTV input
+	0x44, 0x0d,					// field detection method, YPbPr / RGB 
+	0x45, 0x11,					// even, odd field detection
+
+	0xff, 0xff
+};
+
+/*---------------------------------------------------------------------------*/
+/*                          DTV Mode Initial Setup                           */
+/*---------------------------------------------------------------------------*/
+
+CODE BYTE DTV_YPbPr_480I_Reg[] = {
+	
+	ADCI2CAddress, 9,			//--- AD9883
+	0x05, 0x08,					// clamp place
+	0x06, 0x08,					// clamp duration
+	0x07, 0x88,					//** H sync pulse width
+	0x0e, 0x5b,					// sync control
+	0x0f, 0x4e,					// coast seclection
+	0x10, 0xc5,					// SOG threshold
+	0x11, 0x20,					// sync separator threshold
+	0x12, 0x0d,					// pre-coast
+	0x13, 0x08,					// post-coast *** macro vision
+
+	TW88I2CAddress, 7,//4,
+	0x40, 0xc0,					// invert field for DTV input
+	0x44, 0xea,					// field detection method, YPbPr / RGB, Coarst
+	0x45, 0x4c, //66,					// even, odd field detection
+	0x65, 0x9c,					// Vscale Offset
+
+//	0xfc, 0x24,//5a, Erase to fix white line in whole screen for sharp No-Ticon when power on with no-input.(101205-RYU)
+	0x60, 0xdc,
+	0x62, 0x7c,
+	0xb9, 0x23,
+	0xff, 0xff
+};
+
+CODE BYTE DTV_YPbPr_576I_Reg[] = {
+	
+	ADCI2CAddress, 9,			//--- AD9883
+
+	0x05, 0x08,					// clamp place
+	0x06, 0x08,					// clamp duration
+	0x07, 0x30,					//** H sync pulse width
+	0x0e, 0x5b,					// sync control
+	0x0f, 0x6e,					// coast seclection
+	0x10, 0xa5,					// SOG threshold
+	0x11, 0x22,					// sync separator threshold
+	0x12, 0x10,					// pre-coast
+	0x13, 0x08,					// post-coast
+	
+	TW88I2CAddress, 4,
+	0x40, 0xc0,					// invert field for DTV input
+	0x44, 0xea,					// field detection method, YPbPr / RGB 
+	0x45, 0x4a,					// even, odd field detection
+	0x65, 0x80,					// Vscale Offset
+	0xff, 0xff
+};
+
+CODE BYTE DTV_YPbPr_1080I_Reg[] = {
+ 	
+	ADCI2CAddress, 9,			//--- AD9883
+	0x05, 0x40,					// clamp place
+	0x06, 0x40,					// clamp duration
+	0x07, 0x88,					//** H sync pulse width
+	0x0e, 0x5b,					// sync control
+	0x0f, 0x6e,					// coast seclection
+	0x10, 0xa5,					// SOG threshold
+	0x11, 0x22,					// sync separator threshold
+	0x12, 0x10,					// pre-coast
+	0x13, 0x10,					// post-coast
+	
+	TW88I2CAddress, 4,
+	0x40, 0xc0,					// invert field for DTV input
+	0x44, 0xea,					// field detection method, YPbPr / RGB 
+	0x45, 0xb9,					// even, odd field detection
+	0x65, 0x80,					// Vscale Offset
+
+	0xff, 0xff
+};
+
+CODE BYTE DTV_YPbPr_1080I50A_Reg[] = {
+	
+	ADCI2CAddress, 9,			//--- AD9883
+	0x05, 0x40,					// clamp place
+	0x06, 0x40,					// clamp duration
+	0x07, 0x88,					//** H sync pulse width
+	0x0e, 0x5b,					// sync control
+	0x0f, 0x6e,					// coast seclection
+	0x10, 0xa5,					// SOG threshold
+	0x11, 0x20,					// sync separator threshold
+	0x12, 0x10,					// pre-coast
+	0x13, 0x10,					// post-coast
+	
+	TW88I2CAddress, 4,
+	0x40, 0xc0,					// invert field for DTV input
+	0x44, 0xea,					// field detection method, YPbPr / RGB 
+	0x45, 0xb9,					// even, odd field detection
+	0x65, 0x9c,					// Vscale Offset
+
+	0xff, 0xff
+};
+
+CODE BYTE DTV_YPbPr_720P_Reg[] = {
+	
+	ADCI2CAddress, 9,			//--- AD9883
+	0x05, 0x40,					// clamp place
+	0x06, 0x40,					// clamp duration
+	0x07, 0x88,					//** H sync pulse width
+	0x0e, 0x5b,					// sync control
+	0x0f, 0x6e,					// coast seclection
+	0x10, 0xa5,					// SOG threshold
+	0x11, 0x20,					// sync separator threshold
+	0x12, 0x20,					// pre-coast
+	0x13, 0x0d,					// post-coast
+	
+	TW88I2CAddress, 4,
+	0x40, 0x80,					// invert field for DTV input
+	0x44, 0xea,					// field detection method, YPbPr / RGB 
+	0x45, 0x11,					// even, odd field detection
+	0x65, 0x80,					// Vscale Offset
+
+	0xff, 0xff
+};
+
+CODE BYTE DTV_YPbPr_720P50_Reg[] = {
+	
+	ADCI2CAddress, 9,			//--- AD9883
+	0x05, 0x40,					// clamp place
+	0x06, 0x40,					// clamp duration
+	0x07, 0x88,					//** H sync pulse width
+	0x0e, 0x5b,					// sync control
+	0x0f, 0x6e,					// coast seclection
+	0x10, 0xa5,					// SOG threshold
+	0x11, 0x20,					// sync separator threshold
+	0x12, 0x20,					// pre-coast
+	0x13, 0x0d,					// post-coast
+	
+	TW88I2CAddress, 4,
+	0x40, 0x80,					// invert field for DTV input
+	0x44, 0xea,					// field detection method, YPbPr / RGB 
+	0x45, 0x11,					// even, odd field detection
+	0x65, 0x9c,					// Vscale Offset
+
+	0xff, 0xff
+};
+
+
+CODE BYTE DTV_YPbPr_480P_Reg[] = {
+	
+	ADCI2CAddress, 9,			//--- AD9883
+	0x05, 0x08,					// clamp place
+	0x06, 0x08,					// clamp duration
+	0x07, 0x88,					//** H sync pulse width
+	0x0e, 0x5b,					// sync control
+	0x0f, 0x6e,					// coast seclection
+	0x10, 0xa5,					// SOG threshold
+	0x11, 0x20,					// sync separator threshold
+	0x12, 0x11,					// pre-coast
+	0x13, 0x17,					// post-coast
+	
+	TW88I2CAddress, 4,
+	0x40, 0x80,					// invert field for DTV input
+	0x44, 0xea,					// field detection method, YPbPr / RGB 
+	0x45, 0x11,					// even, odd field detection
+	0x65, 0x80,					// Vscale Offset
+
+	0xff, 0xff
+};
+
+CODE BYTE DTV_YPbPr_576P_Reg[] = {
+	
+	ADCI2CAddress, 9,			//--- AD9883
+	0x05, 0x08,					// clamp place
+	0x06, 0x08,					// clamp duration
+	0x07, 0x88,					//** H sync pulse width
+	0x0e, 0x5b,					// sync control
+	0x0f, 0x6e,					// coast seclection
+	0x10, 0xa5,					// SOG threshold
+	0x11, 0x20,					// sync separator threshold
+	0x12, 0x20,					// pre-coast
+	0x13, 0x20,					// post-coast
+	
+	TW88I2CAddress, 4,
+	0x40, 0x80,					// invert field for DTV input
+	0x44, 0xea,					// field detection method, YPbPr / RGB 
+	0x45, 0x11,					// even, odd field detection
+	0x65, 0x9c,					// Vscale Offset
+
+	0xff, 0xff
+};
+
+CODE BYTE DTV_RGB_480I_AD9883_Reg[] = {
+	
+	ADCI2CAddress, 9,			//--- AD9883
+	0x05, 0x08,					// clamp place
+	0x06, 0x08,					// clamp duration
+	0x07, 0x88,					//** H sync pulse width
+	0x0e, 0x40,					// sync control
+	0x0f, 0x4e,					// coast seclection
+	0x10, 0xb8,					// SOG threshold
+	0x11, 0x20,					// sync separator threshold
+	0x12, 0x20,					// pre-coast
+	0x13, 0x01,					// post-coast
+	
+	TW88I2CAddress, 4,
+	0x40, 0xc0,					// invert field for DTV input
+	0x44, 0xee,					// field detection method, YPbPr / RGB 
+	0x45, 0x46,					// even, odd field detection
+	0x65, 0x9c,					// Vscale Offset
+
+	0xff, 0xff
+};
+
+CODE BYTE DTV_RGB_576I_AD9883_Reg[] = {
+	
+	ADCI2CAddress, 9,			//--- AD9883
+	0x05, 0x08,					// clamp place
+	0x06, 0x08,					// clamp duration
+	0x07, 0x40,					//** H sync pulse width
+	0x0e, 0x40,					// sync control
+	0x0f, 0x4e,					// coast seclection
+	0x10, 0xb8,					// SOG threshold
+	0x11, 0x20,					// sync separator threshold
+	0x12, 0x20,					// pre-coast
+	0x13, 0x0c,					// post-coast
+	
+	TW88I2CAddress, 4,
+	0x40, 0xc0,					// invert field for DTV input
+	0x44, 0xee,					// field detection method, YPbPr / RGB 
+	0x45, 0x09,					// even, odd field detection
+	0x65, 0x9c,					// Vscale Offset
+
+	0xff, 0xff
+};
+
+CODE BYTE DTV_RGB_1080I_AD9883_Reg[] = {
+	
+	ADCI2CAddress, 9,			//--- AD9883
+	0x05, 0x08,					// clamp place
+	0x06, 0x08,					// clamp duration
+	0x07, 0x88,					//** H sync pulse width
+	0x0e, 0x40,					// sync control
+	0x0f, 0x4e,					// coast seclection
+	0x10, 0xb8,					// SOG threshold
+	0x11, 0x20,					// sync separator threshold
+	0x12, 0x10,					// pre-coast
+	0x13, 0x10,					// post-coast
+	
+	TW88I2CAddress, 4,
+	0x40, 0xc0,					// invert field for DTV input
+	0x44, 0xee,					// field detection method, YPbPr / RGB 
+	0x45, 0xf1,					// even, odd field detection
+	0x65, 0x9c,					// Vscale Offset
+
+	0xff, 0xff
+};
+
+CODE BYTE DTV_RGB_720P50_AD9883_Reg[] = {
+	
+	ADCI2CAddress, 9,			//--- AD9883
+	0x05, 0x08,					// clamp place
+	0x06, 0x08,					// clamp duration
+	0x07, 0x88,					//** H sync pulse width
+	0x0e, 0x40,					// sync control
+	0x0f, 0x4e,					// coast seclection
+	0x10, 0xb8,					// SOG threshold
+	0x11, 0x20,					// sync separator threshold
+	0x12, 0x0b,//0x10,					// pre-coast
+	0x13, 0x1b,//0x10,					// post-coast
+	
+	TW88I2CAddress, 4,
+	0x40, 0xc0,					// invert field for DTV input
+	0x44, 0xee,					// field detection method, YPbPr / RGB 
+	0x45, 0xf1,					// even, odd field detection
+	0x65, 0x80,					// Vscale Offset
+
+	0xff, 0xff
+};
+
+//=============================================================================
+
+
+
+
+
+
+
+
+
+
+
+

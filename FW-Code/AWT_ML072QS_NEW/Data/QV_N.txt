@@ -1,0 +1,116 @@
+/*===========================================================================*/
+/*                    Register Setting for TW8800/TW8801                     */
+/*===========================================================================*/
+//	Input	: NTSC
+//	Panel	: QVGA
+//-----------------------------------------------------------------------------
+//	Below listed registers should not be set.
+//	0x02, 0x06, 
+//
+//
+
+TW88I2CAddress, 70,
+
+0xff, 0x01,
+0xc1, 0x25, // ADC PLL=27Mhz
+
+0xff, 0x00,
+
+//------------ Decoder (32) ---------------------------------------------------
+
+0x1c, 0x08,				// Standard, shadow 		** N/P
+
+0x04, 0x00,				// Luminance Gamma
+0x07, 0x02,				// Cropping H				** N/P, panel
+0x08, 0x18,				// V delay L				** N/P, panel
+0x09, 0xf0,				// V active L				** N/P, panel?
+0x0a, 0x31,				// H delay L				** N/P, panel
+0x0b, 0xd0,				// H active L				** N/P, panel?
+0x0c, 0xcc,				// Control Reg 1
+0x0d, 0x85,				// FreeRun=NTSC
+
+0x10, 0x00,				// Brightness
+0x11, 0x60,				// Contrast
+0x12, 0x61,				// Sharpness Ctrl 1
+0x13, 0xc0,				// Chroma(U) gain
+0x14, 0xa0,				// chroma(V) gain
+0x15, 0x00,				// Hue
+0x16, 0xc3,				// Sharpness Ctrl 2
+0x17, 0x81,				// V peaking Ctrl 1			
+0x18, 0x44,				// Coring Ctrl				
+
+0x20, 0x50, // Clamp Gain for TW8806B
+0x21, 0x82,				// Individual AGC gain
+0x23, 0xf8,				// White Peak Threshold
+0x25, 0x38,				// Sync amplitude
+0x26, 0x4a,				// Sync Miss Count
+
+0x28, 0x00,				// V control Reg			
+0x29, 0x00,				// V control Reg 2
+0x2a, 0xa0,				// Color killer level
+0x2b, 0x44,				// Comb filter ctrl
+0x2c, 0x40,				// Luma delay/H sync ctrl
+0x2d, 0x00,				// Misc.1
+0x2e, 0x91,				// Misc.2
+0x2f, 0xe0,				// Misc.3	
+0x31, 0x14,				// Clamp Ctrl 2
+0x35, 0x02, // Y Clamp Current 
+
+//---------- Input/Output -----------------------------------------------------
+
+0x40, 0x00,				// Input
+0x41, 0x20,				// Output
+0x44, 0x18,				// Input control
+
+//------------ Zoom -----------------------------------------------------------
+
+0x63, 0x07,				// H/V scale up/dn H		** N/P panel
+0x60, 0x00,				// H-scale up L				** N/P panel
+0x61, 0x0e,				// H-scale dn L				** N/P panel
+0x62, 0x00,				// V-scale up L				** N/P panel
+0x64, 0x00,				// H-scale up offset		** N/P panel
+0x65, 0x80,				// V-scale up offset		** N/P panel
+
+
+0x77, 0x00,
+//--------- Display control ---------------------------------------------------
+0x95, 0x10,				// OSD for QVGA
+
+0xb0, 0x48,				//
+0xbb, 0x00,				//PVR-H:PVP-H							**     panel
+0xb7, 0xfd,				//PVR-L							**     panel
+0xb8, 0x00,				//V Sync							**     panel
+0xb9, 0x06,				//V Back Porch							** N/P panel
+0xba, 0xf0,				//PVR-L							**     panel
+0xb6, 0x91,				//PHR-H:PHP-H							** N/P panel
+0xb2, 0xaa,				//PHP-L							** N/P panel
+0xb3, 0x05,				//H sync							**
+0xb4, 0x23,				//H Back Porch							**     panel
+0xb5, 0x40,				//PHR-L							**     panel
+
+0xbc, 0x21,				// Dithering
+0xbe, 0x00,				//Auto Calc.
+//--------- Misc. Input -------------------------------------------------------
+
+0xc0, 0xd5,				// Initial Counter			** N/P panel
+0xc1, 0x00,				//							** N/P panel
+0xc2, 0x75,				//							** N/P panel
+
+//--------- Output Interface --------------------------------------------------
+
+
+//--------- PLL ---------------------------------------------------------------
+0xf9, 0x00,
+0xfa, 0x3f,				// 6.7000MHz				** N/P panel
+0xfb, 0x86,				//							** N/P panel
+0xfc, 0x00,				//							** N/P panel
+0xfd, 0x00,				//							** N/P panel
+0xfe, 0x00,				//							** N/P panel
+
+//-----------------------------------------------------------------------------
+0xff, 0x80,
+0xd1, 0xff,
+0xff, 0xff
+
+
+

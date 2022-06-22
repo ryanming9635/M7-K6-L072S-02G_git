@@ -1,0 +1,22 @@
+".\Output\adc.obj",
+".\Output\cpu.obj",
+".\Output\dispinfo.obj",
+".\Output\etc_eep.obj",
+".\Output\I2c.obj",
+".\Output\keyremo.obj",
+".\Output\Main.obj",
+".\Output\Measure.obj",
+".\Output\Osdbasic.obj",
+".\Output\osdmenu.obj",
+".\Output\pc_eep.obj",
+".\Output\Printf.obj",
+".\Output\table.obj",
+".\Output\TW88.obj",
+".\Output\udfont.obj",
+".\Output\HS_keyremo.obj",
+".\Output\HS_DisplayOSD.obj",
+".\Output\audio.obj",
+".\Output\Debug.obj",
+".\Output\HS_DVRProtocol.obj" 
+TO ".\Output\AWT_ML072Q" 
+PRINT(".\Source\AWT_ML072Q.m51") RAMSIZE(256) 

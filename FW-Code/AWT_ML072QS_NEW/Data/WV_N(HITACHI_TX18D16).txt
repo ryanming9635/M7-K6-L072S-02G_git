@@ -1,0 +1,137 @@
+/*===========================================================================*/
+/*                    Register Setting for TW8816     08/02/07               */
+/*===========================================================================*/
+//	Input	: NTSC
+//	Panel	: WVGA TX18D16VM2BAA_DP HITACHI T-CON LESS PANEL Ver0.00
+//-----------------------------------------------------------------------------
+
+TW88I2CAddress, 106+34,
+0xff, 0x01,
+0xc0,0x25, // ADC PLL=27Mhz
+
+0xff, 0x00,
+//------------ Decoder (23) ---------------------------------------------------
+
+0x1c, 0x08,				// Standard, shadow 		** N/P
+0x04, 0x00,				// Luminance Gamma
+0x07, 0x02,				// Cropping H				** N/P, panel
+0x08, 0x16,				// V delay L				** N/P, panel
+0x09, 0xf0,				// V active L				** N/P, panel?
+0x0a, 0x18,				// H delay L				** N/P, panel
+0x0b, 0xd0,				// H active L				** N/P, panel?
+0x0c, 0xcc,				// Control Reg 1
+0x10, 0xf8,				// Brightness
+0x11, 0x5a,				// Contrast
+0x12, 0x62,				// Sharpness Ctrl 1
+0x13, 0x80,				// Chroma(U) gain
+0x14, 0x80,				// chroma(V) gain
+0x15, 0x00,				// Hue
+0x16, 0xc3,				// Sharpness Ctrl 2
+0x17, 0x83,				// V peaking Ctrl 1			
+0x18, 0x44,				// Coring Ctrl				
+0x20, 0x50, // Clamp Gain for TW8806B
+0x35, 0x02, // Y Clamp Current 
+0x21, 0x44,				// AGC gain
+0x23, 0xd8,				// White Peak Threshold
+0x27, 0x2A, // Default Changed from 0x32 
+0x2c, 0x40,				// Pre-Filter Select
+
+//---------- Input/Output (4+2) -------------------------------------------------
+
+0x40, 0x00,				// Input
+0x41, 0x20,				// Output
+0x43, 0x04,				// Input routing
+0x44, 0x08,				// Input control
+0x4e, 0x70,				// Input control
+0x4f, 0x01,				// GPIO0_Lo: Enable
+
+//------------ Zoom (7) -------------------------------------------------------
+
+0x63, 0x00,				// H/V scale up/dn H		** N/P panel
+0x60, 0xdf,				// H-scale up L				** N/P panel
+0x61, 0x80,				// H-scale dn L				** N/P panel
+0x62, 0x7a,				// V-scale up L				** N/P panel
+0x64, 0x00,				// H-scale up offset, remove error
+0x65, 0x80,				// V-scale up offset
+0x66, 0x00,				// H non-display area
+
+//--------- Image Adjust (18) ------------------------------------------------
+
+0x70, 0x60,				// YCbCr/ Hue
+0x71, 0x80,				// Y  contrast
+0x72, 0x80,				// Cb contrast
+0x73, 0x80,				// Cr contrast
+0x74, 0x80,				// Y  brightness
+0x75, 0x80,				// Cb brightness
+0x76, 0x80,				// Cr brightness
+0x70, 0x20,				// RGB/ Hue
+0x71, 0x80,				// R contrast
+0x72, 0x80,				// G contrast
+0x73, 0x80,				// B contrast
+0x74, 0x80,				// R brightness
+0x75, 0x80,				// G brightness
+0x76, 0x80,				// B brightness
+0x77, 0x34,				// Sharpness=0
+0x79, 0x00,				// Edge Enhancement=enable
+0x7B, 0x00,				// should be 0x00
+
+//---------- BW/Blue Stretch(4) --------------------------------------------------
+
+0x86, 0x00,
+0x87, 0xff,
+0x89, 0x40,
+0x7c, 0x1d,
+
+//--------- Color Enhancement (6) ----------------------------------------------
+0xda, 0x9f,
+0xdb, 0x39,
+0xdc, 0xf0,
+0xdd, 0xf6,
+0xde, 0xf0,
+0xdf, 0xf0,
+
+//--------- Display control (15) ----------------------------------------------
+
+0xbd, 0x04,
+0xb0, 0x48,				// Output Signal Config.
+0xb1, 0x00,				// clock delay, en coast	** panel
+0xbb, 0x12,				//							**     panel
+0xb7, 0x0d,				//							**     panel
+0xb8, 0x11,				//							**     panel
+0xb9, 0x2c,				//							** N/P panel
+0xba, 0xe0,				//							**     panel
+0xb6, 0x33,				// PHR-H, PHP-H				** N/P panel
+0xb2, 0x82,				// PHP-L					** N/P panel
+0xb3, 0x0a,				// H sync					**
+0xb4, 0x0a,				// H back porch				**     panel
+0xb5, 0x20,				// PHR-L					**     panel
+0xbc, 0x21,				// Dithering
+0xbe, 0x02,				// Auto Calc.
+
+//--------- Misc. Input (3) --------------------------------------------------
+
+0xc0, 0x00,				// Initial Counter			** N/P panel
+0xc1, 0x00,				//							** N/P panel
+0xc2, 0x00,				//							** N/P panel
+
+//--------- PLL (5) -----------------------------------------------------------
+//0xf9, 0x01,				// Charge Pump Current[7:5]=000
+//0xfa, 0x19,				// 35.700MHz
+//0xfb, 0x64,				//							** N/P panel
+//0xfc, 0x48,				// SS Frequency
+//0xfd, 0x00,				// SS Gain[7:4]=0; VCO=01:27~54Mhz
+//0xfe, 0x00,				//							** N/P panel
+0xf9, 0x00,
+0xfa, 0xCC,				// 12.6/2=6.3MHz	** N/P panel
+0xfb, 0x00,				//			** N/P panel
+0xfc, 0x40,				//			** N/P panel
+0xfd, 0x30,				//			** N/P panel
+0xfe, 0x08,				//			** N/P panel
+
+//------------------------------------------------------------------------------
+
+0xff, 0x00,
+
+0xff, 0xff		// end of data
+
+

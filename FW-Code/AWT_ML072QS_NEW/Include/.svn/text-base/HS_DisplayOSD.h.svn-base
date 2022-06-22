@@ -1,0 +1,32 @@
+#ifndef _HS_DisplayOSD_
+#define _HS_DisplayOSD_
+
+
+
+
+
+#define		NORMAL_Record  	0x01
+#define		Manual_Record	0x02
+#define		ALARM_Record	0x04
+#define		OverWrite_Record	0x80
+
+void DisplayGaugeOSD(void);
+void ClearGAUGEINFO(void);
+void DisplaylockOSD(void); 
+void DisplayactvOSD(void); 
+
+
+void DisplayNumber(BYTE addr,WORD val,BYTE type);
+
+//#ifdef SUPPORT_SDCARD
+void DisplayDVRStatus(void);
+void DisplayFormatOSD(void);
+void DisplayFormatOkOSD(void);
+void DisplayFormatFailOSD(void);
+void DisplayFWUpDate(void);
+void DisplayFWUpDateOK(void);
+void DisplayFWUpDateFail(void);
+void DisplayFWVersion(void) ;
+void DisplayDVRnotReady(void);
+//#endif		//#ifdef SUPPORT_SDCARD
+#endif

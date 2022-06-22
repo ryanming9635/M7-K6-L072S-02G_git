@@ -1,0 +1,90 @@
+#ifndef	__TYPEDEFS__
+#define	__TYPEDEFS__
+
+
+#define DATA		data
+#define PDATA		pdata
+#define IDATA		data
+#define CODE		code
+#define CODE_P
+#define PDATA_P
+#define IDATA_P
+#define DATA_P
+
+#define INTERRUPT( num, name ) name() interrupt num
+
+#define _between(x, a, b)	(a<=x && x<=b)
+#define _swap(a, b)			{ a^=b; b^=a; a^=b; }
+
+typedef	unsigned char	Register;
+typedef	unsigned char	BYTE;
+typedef	unsigned short	WORD;
+typedef	unsigned long	DWORD;
+
+#define	TRUE	1
+#define	FALSE	0
+
+//VInputStdDetectMode
+#define AUTO	0
+
+//VInputStd
+#define NTSC	1			
+#define PAL		2
+#define SECAM	3
+#define NTSC4	4
+#define PALM	5
+#define PALN	6
+#define PAL60	7
+
+#define MAXINPUTSTD	PAL60+1	// 
+
+#define UNKNOWN	0xfe
+#define NOINPUT	0	//0xff
+
+
+
+
+#define NIL			0xff
+
+enum SourceModeTypeEnum
+{	
+	AVMode, 	   // 0
+	VGAMode,       // 1
+	CAM_D,         // 2
+	CAM_A,         // 3
+	CAM_B,         // 4
+	CAM_C,         // 5
+	CAM_R,         // 6
+	CAM_AB,        // 7
+	CAM_CR,        // 8
+	CAM_AR,        // 9
+	CAM_RB,        // 10
+	CAM_AC,        // 11
+ 	CAM_CB,        // 12
+	CAM_RAB_T,     // 13
+	CAM_RAB_H,     // 14
+
+	CAM_QUAD,      // 15
+	CAM_ABR_T3,    // 16
+	CAM_ABR_T4,    // 17
+	SEQ,           // 18
+	CAM_BA,			//19
+	
+	CAM_BC,
+	CAM_BR,
+	CAM_CA,
+	CAM_ABC,
+	CAM_ABR,
+	CAM_ACR,
+	CAM_BAC,
+	CAM_BAR,
+	CAM_BCR,
+	CAM_CAB,
+	CAM_CAR,
+	CAM_CBR,	
+	CAM_NUM
+};
+
+typedef unsigned char SourceModeType;
+
+#endif	/* __TYPEDEFS__ */

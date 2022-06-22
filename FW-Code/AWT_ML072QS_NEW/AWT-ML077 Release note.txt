@@ -1,0 +1,8 @@
+
+// AWT ML077Q / ML077S Release note
+1. A0.01 => first release version
+2. A0.02 => fix ID608 of Mantis
+#608 : On standby trigger and release then press <POWER> key to turn on ,
+       but the screen keep trigger source not original source .
+3. A0.03 => a. modify the AV video path and audio path to meet hardware of ML077
+            b. modify the T char of C trigger from TW8816 to TW2836 display 

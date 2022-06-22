@@ -1,0 +1,15 @@
+---- PW_SecondNumber Matches (14 in 1 files) ----
+Osdmenu.c:BYTE	PW_SecondNumber=0			;
+Osdmenu.c:		val = PW_SecondNumber;
+Osdmenu.c:		val = PW_SecondNumber;
+Osdmenu.c:		PW_SecondNumber = val;
+Osdmenu.c:								Printf("\r\nPW_SecondNumber=%02x",(WORD)PW_SecondNumber);
+Osdmenu.c:									&&ReadEEP(EEP_SecondNumber)==PW_SecondNumber
+Osdmenu.c:								Printf("\r\nPW_SecondNumber=%02x",(WORD)PW_SecondNumber);
+Osdmenu.c:								if(  PW_SecondNumber!= 6) break;
+Osdmenu.c:								&&ReadEEP(EEP_SecondNumber)==PW_SecondNumber
+Osdmenu.c:								&&PW_SecondNumber==6
+Osdmenu.c:								WriteEEP(EEP_SecondNumber,PW_SecondNumber);
+Osdmenu.c:								PW_SecondNumber=0;
+Osdmenu.c:		&&ReadEEP(EEP_SecondNumber)==PW_SecondNumber
+Osdmenu.c:		&&PW_SecondNumber==6

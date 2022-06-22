@@ -1,0 +1,15 @@
+---- Minute Matches (14 in 5 files) ----
+CPU.c:extern BYTE	year1,year2,month,day,hour,minute,second;
+CPU.c:			minute++;
+CPU.c:		if(minute==60)
+CPU.c:			minute=0;
+HS_DisplayOSD.c:BYTE	year1,year2,month=0,day=0,hour=0,minute=0,second=0;
+HS_DisplayOSD.c:	DisplayNumber(DVRStatus_ADDR+14,minute,4);
+Menu.h (include):       		Minute,
+Osdmenu.c:extern BYTE	year1,year2,month,day,hour,minute,second;
+Osdmenu.c:	case Minute:
+Osdmenu.c:		val = minute;
+Osdmenu.c:  case Minute:
+Osdmenu.c:	  val = minute;
+Osdmenu.c:		minute=val;
+Osdmenu.h (include):#define Minute				0x24

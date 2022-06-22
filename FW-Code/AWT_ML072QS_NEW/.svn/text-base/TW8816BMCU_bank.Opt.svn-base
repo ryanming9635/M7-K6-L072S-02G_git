@@ -1,0 +1,79 @@
+### uVision2 Project, (C) Keil Software
+### Do not modify !
+
+ cExt (*.c)
+ aExt (*.s*; *.src; *.a*)
+ oExt (*.obj)
+ lExt (*.lib)
+ tExt (*.txt; *.h; *.inc)
+ pExt (*.plm)
+ CppX (*.cpp)
+ DaveTm { 0,0,0,0,0,0,0,0 }
+
+Target (Target 1), 0x0000 // Tools: 'MCS-51'
+GRPOPT 1,(COMMON),1,0,0
+GRPOPT 2,(BANK0),0,0,0
+GRPOPT 3,(BANK1),0,0,0
+
+OPTFFF 1,1,2,0,0,0,0,0,<.\L51_BANK.A51><L51_BANK.A51> 
+OPTFFF 1,2,2,0,0,0,0,0,<.\STARTUP.A51><STARTUP.A51> 
+OPTFFF 1,3,1,956301314,0,99,99,0,<.\CPU.c><CPU.c> { 44,0,0,0,2,0,0,0,3,0,0,0,255,255,255,255,255,255,255,255,252,255,255,255,226,255,255,255,0,0,0,0,0,0,0,0,212,3,0,0,97,1,0,0 }
+OPTFFF 2,4,1,0,0,0,0,0,<.\I2c.c><I2c.c> 
+OPTFFF 2,5,1,0,0,0,0,0,<.\monitor.c><monitor.c> 
+OPTFFF 2,6,1,0,0,0,0,0,<.\Main.c><Main.c> 
+OPTFFF 2,7,1,0,0,0,0,0,<.\keyremo.c><keyremo.c> 
+OPTFFF 2,8,1,0,0,0,0,0,<.\Printf.c><Printf.c> 
+OPTFFF 2,9,1,0,0,0,0,0,<.\TW88.c><TW88.c> 
+OPTFFF 2,10,1,0,0,0,0,0,<.\Measure.c><Measure.c> 
+OPTFFF 2,11,1,0,0,0,0,0,<.\audio.c><audio.c> 
+OPTFFF 2,12,1,0,0,0,0,0,<.\pc_eep.c><pc_eep.c> 
+OPTFFF 2,13,1,0,0,0,0,0,<.\dispinfo.c><dispinfo.c> 
+OPTFFF 2,14,1,0,0,0,0,0,<.\osdmenu.c><osdmenu.c> 
+OPTFFF 2,15,1,0,0,0,0,0,<.\Osdbasic.c><Osdbasic.c> 
+OPTFFF 2,16,1,0,0,0,0,0,<.\table.c><table.c> 
+OPTFFF 2,17,1,0,0,0,0,0,<.\etc_eep.c><etc_eep.c> 
+OPTFFF 2,18,1,0,0,0,0,0,<.\spi.c><spi.c> 
+OPTFFF 2,19,1,0,0,0,0,0,<.\Debug.c><Debug.c> 
+OPTFFF 2,20,1,0,0,0,0,0,<.\adc.c><adc.c> 
+OPTFFF 2,21,1,0,0,0,0,0,<.\udfont.c><udfont.c> 
+OPTFFF 3,22,1,0,0,0,0,0,<.\Loader.c><Loader.c> 
+OPTFFF 3,23,1,0,0,0,0,0,<.\Grid\Japanese.c><Japanese.c> 
+OPTFFF 3,24,1,0,0,0,0,0,<.\Grid\Chinese.c><Chinese.c> 
+OPTFFF 3,25,1,0,0,0,0,0,<.\osdgrid.c><osdgrid.c> 
+OPTFFF 3,26,1,0,0,0,0,0,<.\Grid\Message.c><Message.c> 
+OPTFFF 3,27,1,0,0,0,0,0,<.\Grid\GMULTI_LL0.c><GMULTI_LL0.c> 
+OPTFFF 3,28,1,0,0,0,0,0,<.\Grid\GMULTI_LL1.c><GMULTI_LL1.c> 
+OPTFFF 3,29,1,0,0,0,0,0,<.\Grid\GMULTI_LL2.c><GMULTI_LL2.c> 
+OPTFFF 3,30,1,0,0,0,0,0,<.\Grid\GMULTI_LL3.c><GMULTI_LL3.c> 
+OPTFFF 3,31,1,0,0,0,0,0,<.\Grid\GMULTI_LL4.c><GMULTI_LL4.c> 
+OPTFFF 3,32,1,0,0,0,0,0,<.\Grid\GMULTI_LL5.c><GMULTI_LL5.c> 
+OPTFFF 3,33,1,0,0,0,0,0,<.\Grid\GMULTI_LL6.c><GMULTI_LL6.c> 
+OPTFFF 3,34,1,0,0,0,0,0,<.\Grid\GMULTI_LL7.c><GMULTI_LL7.c> 
+OPTFFF 3,35,1,0,0,0,0,0,<.\Grid\GMULTI_LL8.c><GMULTI_LL8.c> 
+OPTFFF 3,36,1,0,0,0,0,0,<.\Grid\GMULTI_RR1.c><GMULTI_RR1.c> 
+OPTFFF 3,37,1,0,0,0,0,0,<.\Grid\GMULTI_RR2.c><GMULTI_RR2.c> 
+OPTFFF 3,38,1,0,0,0,0,0,<.\Grid\GMULTI_RR3.c><GMULTI_RR3.c> 
+OPTFFF 3,39,1,0,0,0,0,0,<.\Grid\GMULTI_RR4.c><GMULTI_RR4.c> 
+OPTFFF 3,40,1,0,0,0,0,0,<.\Grid\GMULTI_RR5.c><GMULTI_RR5.c> 
+OPTFFF 3,41,1,0,0,0,0,0,<.\Grid\GMULTI_RR6.c><GMULTI_RR6.c> 
+OPTFFF 3,42,1,0,0,0,0,0,<.\Grid\GMULTI_RR7.c><GMULTI_RR7.c> 
+OPTFFF 3,43,1,0,0,0,0,0,<.\Grid\GMULTI_RR8.c><GMULTI_RR8.c> 
+OPTFFF 3,44,1,0,0,0,0,0,<.\Grid\Korean.c><Korean.c> 
+
+
+TARGOPT 1, (Target 1)
+ CLK51=33000000
+  OPTTT 0,1,1,0
+  OPTHX 0,65535,0,0,0
+  OPTLX 120,65,8,<.\Source\>
+  OPTOX 16
+  OPTLT 1,1,1,0,1,1,0,1,0,0,0,0
+  OPTXL 1,1,1,1,1,1,1,0,0
+  OPTFL 1,0,1
+  OPTDL (S8051.DLL)()(DP51.DLL)(-p320)(S8051.DLL)()(TP51.DLL)(-p320)
+  OPTDBG 509,-1,()()()()()()()()()() (BIN\MON51.DLL)()()()
+  OPTDF 0x0
+  OPTLE <>
+  OPTLC <>
+EndOpt
+

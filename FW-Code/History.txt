@@ -1,0 +1,42 @@
+*******************************************************************
+AWT-ML072S Monitor Firmware History and Release Notice
+
+2017						by Ryan Chen.
+*******************************************************************
+
+Version 0.0.1.3
+	ML072S_A0.01_A685_20171219.BIN
+        1)TW8806轉換TW8816平台軟體修改。
+
+Version 0.0.3.3	
+	ML072S_A0.03_7EF1_20180109.BIN
+	1) 修改聲音不正確輸出。	
+	2) 修正SEQ模式時Menu OSD會動作問題。
+
+Version 0.0.4.3	
+	ML072S_A0.04_8E7F_20180115.BIN
+	1)修改Power off時上電，CAM OUT會輸出錯誤問題。
+	2)修改Sharpness 問題，NTSC無法正確顯示問題。
+	3)PCBA V2.0轉換到PCBA V1.0測試。
+
+Version 0.0.5.3
+	ML072S_A0.05_8E5C_20180116.BIN
+	1)修正螢幕顯示畫面顏色太曝問題。	
+
+Version 0.0.6.3
+	ML072S_A0.06_A963_20180122.BIN
+	1)修正Trigger CAM A時螢幕顯示畫面混亂問題。
+	2)修正Trigger CAM R時，4:3 調整畫面置中。
+
+Version 0.0.7.3
+	ML072S_A0.07_A529_20180122.BIN
+	1)修正power off時無法正確快速Trigger問題。
+
+Version 0.0.8.3
+	ML072S_A0.08_7025_20180123.BIN
+	1)修正 trigger release 的時間正確性。
+
+
+Version 0.0.9.3
+	ML072S_A0.09_6FCF_20180125.BIN
+	1)修正 trigger polling方式。

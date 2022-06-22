@@ -1,0 +1,370 @@
+;===========================================================================*/
+;                    Register Setting for TW8816     08/02/07               */
+;===========================================================================*/
+;	Input	: NTSC
+;	Panel	: WVGA A070VW01 AUO T-CON LESS PANEL Ver0.00
+;	Fix PC input position
+;-----------------------------------------------------------------------------
+
+;TW88I2CAddress  125+6+4+8 
+
+w ff 00 
+;------------ Decoder (23) ---------------------------------------------------
+
+w 1c 07 		; Standard  shadow 		** N/P
+;w 02 40 
+w 04 00 				; Luminance Gamma
+;w 06 03 
+w 07 02 				; Cropping H				** N/P  panel
+w 08 16 				; V delay L				** N/P  panel
+w 09 f0 				; V active L				** N/P  panel?
+w 0a 22 		; H delay L				** N/P  panel
+w 0b d0 				; H active L				** N/P  panel?
+w 0c cc 				; Control Reg 1
+;w 0d 15 
+;w 0e 80 
+;w 0f 00 
+w 10 00 			; Brightness
+w 11 63 			; Contrast
+w 12 52 				; Sharpness Ctrl 1
+w 13 80 			; Chroma(U) gain
+w 14 80 			; chroma(V) gain
+w 15 00 				; Hue
+w 17 30 				; V peaking Ctrl 1			
+w 18 44 				; Coring Ctrl				
+;w 1a 00 
+;w 1d 7f 
+;w 1e 08 
+;w 1f 00 
+w 20 50  ; Clamp Gain for TW8806B
+w 35 00 
+w 21 42 
+w 22 f0 
+w 23 D8 
+;w 24 BC 
+;w 25 B8 
+;w 26 44 
+w 27 2A 
+;w 28 00 
+;w 29 15 
+;w 2A 78 
+;w 2B 44 
+w 2C 30 
+;w 2D 14 
+;w 2E A5 
+;w 2F E0 
+;w 33 05 
+;w 34 1A 
+w 38 80 
+;/---------- Input/Output (4+2) -------------------------------------------------
+w 40 00 
+w 41 20 
+w 42 03 
+;w 43 20 
+w 44 24 
+;w 45 54 
+;w 46 20 
+;w 47 00 
+;w 48 CF 
+;w 49 20 
+;w 4A 13 
+;w 4B 13 
+;w 4C 00 
+;w 4D 30 
+w 4E 70 
+w 4F 18 
+;w 50 01 
+;w 51 20 
+;w 52 FF 
+;w 53 10 
+;w 54 20 
+;w 55 FA 
+;w 56 00 
+;w 57 00 
+;w 58 00 
+;w 59 00 
+;w 5A 00 
+;w 5B 00 
+;w 5C 06 
+;w 5D 30 
+;------------ Zoom (7) -------------------------------------------------------
+
+w 63 00 				; H/V scale up/dn H		** N/P panel
+w 60 da 				; H-scale up L				** N/P panel
+w 61 80 				; H-scale dn L				** N/P panel
+w 62 7b 				; V-scale up L				** N/P panel
+w 64 00 				; H-scale up offset  remove error
+w 65 80 				; V-scale up offset
+w 66 00 				; H non-display area
+;w 67 00 
+;w 68 00 
+;w 69 00 
+;w 6A 00 
+;w 6B 00 
+;w 6C 00 
+;w 6D 00 
+;w 6E 00 
+
+;--------- Image Adjust (18) ------------------------------------------------
+
+w 70 60 				; YCbCr/ Hue
+w 71 80 				; Y  contrast
+w 72 80 				; Cb contrast
+w 73 80 				; Cr contrast
+w 74 80 				; Y  brightness
+w 75 80 				; Cb brightness
+w 76 80 				; Cr brightness
+w 77 30 				; Sharpness=0
+;w 78 3B 
+w 79 00 				; Edge Enhancement=enable
+;w 7A 30 
+w 7B 00 				; should be 00
+;w 7C 1D 
+;w 7D 08 
+;w 7E F6 
+;w 7F 08 
+
+;---------- BW/Blue Stretch(4) --------------------------------------------------
+
+;w 80 10 
+;w 81 0D 
+;w 82 03 
+;w 83 00 
+;w 84 67 
+;w 85 94 
+w 86 20 
+w 87 FF 
+;w 88 CA 
+w 89 40 
+w 7C 1D 
+;w 8A 0A 
+;w 8B 04 
+;w 92 06 
+;w 94 00 
+;w 95 00 
+;w 96 C2 
+;w 97 00 
+;w 98 37 
+;w 99 A7 
+;w 9A 00 
+;w 9B 88 
+;w 9C 1F 
+;w 9D DB 
+;w 9E 02 
+;w 9F 30 
+;w A0 00 
+;w A1 0B 
+;w A2 0C 
+;w A3 11 
+;w A4 03 
+;w A5 91 
+;w A6 08 
+;w A7 00 
+;w A8 00 
+;w A9 00 
+;w AA A0 
+;w AB 00 
+;w AC 00 
+;w AD 40 
+;w AE 00 
+
+;--------- Color Enhancement (6) ----------------------------------------------
+;w D0 C1 
+;w D1 08 
+;w D2 FF 
+;w D3 07 
+;w D4 00 
+;w D5 3F 
+;w D6 00 
+;w D7 00 
+;w D8 00 
+w da 9f 
+w db 39 
+w dc f0 
+w dd f6 
+w de f0 
+w df f0 
+
+;--------- Display control (15) ----------------------------------------------
+
+w b0 40 				; Output Signal Config.
+w b1 C0 				; clock delay  en coast	** panel
+w bb 12 				;							**     panel
+w b7 0D 				;							**     panel
+w b8 01 				;							**     panel
+w b9 36 				;							** N/P panel
+w ba e0 				;							**     panel
+w b6 35 				; PHR-H  PHP-H				** N/P panel
+w b2 22 				; PHP-L					** N/P panel
+w b3 1b 				; H sync					**
+w b4 1b 				; H back porch				**     panel
+w b5 20 				; PHR-L					**     panel
+w bc 21 				; Dithering
+;w bd 0c 
+w be c2 				; Auto Calc.
+;w bf 00 
+
+;--------- Misc. Input (3) --------------------------------------------------
+
+w c0 00 				; Initial Counter			** N/P panel
+w c1 00 				;							** N/P panel
+w c2 00 				;							** N/P panel
+;w c3 00 				; Initial Counter			** N/P panel
+;w c4 40 				;							** N/P panel
+;w c5 00 				;							** N/P panel
+;w c6 00 				; Initial Counter			** N/P panel
+;w c8 00 				;							** N/P panel
+;w c9 ff 				;							** N/P panel
+;w ca 00 				; Initial Counter			** N/P panel
+
+
+;w e0 10 
+
+;--------- PLL (5) -----------------------------------------------------------
+;w f0 00 
+;w f1 00 
+;w f2 36 
+;w f8 00 
+w f9 00 
+w fa CC 				; 12.6/2=6.3MHz	** N/P panel
+w fb 00 				;			** N/P panel
+w fc 40 				;			** N/P panel
+w fd 30 				;			** N/P panel
+w fe 08 				;			** N/P panel
+
+;--------- TCON ASIC Register (16) ---------------------------------------
+w ff 01 
+
+w 30 F2 
+w 31 Ad 
+w 32 04 
+w 33 80 
+w 34 84 
+w 35 00 
+w 36 20 
+w 40 00 
+w 41 00 
+w 42 00 
+w 43 00 
+w 57 55 
+w 58 f4 
+w 59 0a 
+w 5A 00 
+w 76 00 
+w 77 5A 
+w 78 00 
+w 79 7F 
+w 7A 01 
+w 7B 00 
+
+w 80 20 
+w 81 00 
+w 82 07  ;02
+w 83 1f 
+w 84 44                
+w 85 00 
+w 8A 12 
+w 8B 4D 
+w 8C 00 
+w 8d 00 
+w 8e 02 
+w 8f 0d ;02 11-30-05-RYU Ticon Vertical Ragion is wider than PVR
+
+;--------- Latch Pulse (12) -----------------------------------------------
+w 90 03 
+w 91 49 
+w 92 03 
+w 93 49 
+w 94 00 
+w 95 01 
+w 9a 00 
+w 9b 29 
+w 9c 00 
+w 9d 01 
+
+;--------- Row Clock (08) -----------------------------------------------
+w a0 04 
+w a1 42 
+w a2 00 
+w a3 52 
+w a4 00 
+
+;--------- Row Starting Puls (05) -----------------------------------------------
+w a5 38 
+w a6 00 
+w a7 01 
+
+w AC 03 
+w AD F6 
+w AE 00 
+w AF 6A 
+w B0 02 
+
+;--------- Charp Pump & Vcom (8) -------------------------------------------------
+;w f0 30 
+;w f1 87 
+;w f2 00 
+;w f3 22 
+w b1 30 
+w b2 87 
+w b3 00 
+w b4 02 
+
+w C0 25 
+w C1 f4 
+w C2 03 
+w C3 04 
+w C4 20 
+w C5 09 
+w C6 27 
+w C7 04 
+w C8 00 
+w C9 00 
+w CA 00 
+w CB d7 
+w CC 10 
+w CD 00 
+w D0 00 
+w D1 F0 
+w D2 F0 
+w D3 F0 
+w D4 a0 
+w D5 08 
+w D6 10 
+w D7 00 
+w D8 47 
+w D9 10 
+w DA 10 
+w F0 00 
+w F1 00 
+w F2 00 
+w F3 00 
+         
+
+w ff 00 
+
+;w ff ff		; end of data
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,1563 @@
+/*****************************************************************************/
+/*                                                                           */
+/*                    TW880x Demo Board   Techwell,Inc                       */
+/*                                                                           */
+/* CPU        : Winbond 78E62BP-40                                           */
+/* LANGUAGE   : Tasking C / Keil C                                           */
+/* PROGRAMMER : Jooyeon Lee / Harry Han                                      */
+/*                                                                           */
+/*****************************************************************************/
+/* See 'Release.txt' for firmware revision history                           */
+
+#include "Config.h"
+
+#include "reg.h"
+#include "typedefs.h"
+#include "main.h"
+#include "tw88.h"
+#include "i2c.h"
+#include "adc.h"
+#include "osdbasic.h"
+#include "dispinfo.h"
+#include "debug.h"
+#include "etc_eep.h"
+#include "measure.h"
+#include "Printf.h"
+#include "audio.h"
+#include "osdmenu.h"
+#include "pc_eep.h"
+#include "KeyRemo.h"
+#include "Monitor.h"
+#include "CPU.h"
+#include "HS_keyremo.h"
+#include "HS_DisplayOSD.h"
+#include "rgbmix.h"			
+#include "panel.h"
+#include "HS_IOdef.h"
+#include "HS_DVRProtocol.h"
+#include <math.h>
+
+//bit	AccessEnable = 1;
+
+void Loader(BYTE);
+
+extern	CODE BYTE NTSC_Regs[];
+extern	CODE BYTE PAL_Regs[];
+extern	CODE BYTE DVI_Regs[];
+#ifdef ADD_ANALOGPANEL
+extern CODE BYTE NTSC_Regs_Analog[];
+extern CODE BYTE PAL_Regs_Analog[];
+#endif
+
+#ifdef SUPPORT_COMPONENT
+extern CODE BYTE COMP_YPbPr_480I_Reg[];
+extern CODE BYTE COMP_YPbPr_576I_Reg[];
+ #ifndef WQVGA
+extern CODE BYTE COMP_YPbPr_480P_Reg[];
+extern CODE BYTE COMP_YPbPr_576P_Reg[];
+extern CODE BYTE COMP_YPbPr_1080I_Reg[];
+extern CODE BYTE COMP_YPbPr_720P_Reg[];
+ #endif
+#endif
+
+#ifdef SUPPORT_GAMMA
+extern CODE BYTE GammaRed[];
+extern CODE BYTE GammaBlue[];
+extern CODE BYTE GammaGreen[];
+#endif
+
+BYTE CAMNumber;
+BYTE PelcoChoiceFLAG;
+BYTE Baud_rate;
+
+BYTE	SelectModeType;
+//BYTE	JumpModeType;
+BYTE	Priority;
+BYTE	PowerFlag;
+bit VGAflag=0;
+bit GetDATETIMEflag;
+extern DATA BYTE	RS2_in;
+extern bit DVR_Ready;
+extern bit 	GetDVRStatusflag;
+
+extern DATA BYTE   	RS_buf2[BUF_MAX];
+
+BYTE DVR_AudioRecord;
+bit		PowerDownStart=0;
+extern BYTE	PowerDownWait;
+bit	AccPowerDown=0;
+extern bit CAM_PTZ_RUN_flag;
+DATA BYTE PWMLevel=0;
+
+extern  DATA  WORD  tic_pc;
+extern void CheckPanelImage(void);
+extern CODE BYTE Init_Osd_DisplayDVRstatus[];
+
+
+		BYTE  InputSelection;
+//		IDATA BYTE	InputSelectionInx = 0;
+///	    bit	  PcDetectFlag = 1;
+//		bit	  PowerMode = ON;
+		IDATA WORD  IVF;
+		IDATA DWORD	IHF;
+		BYTE  VInputStd;
+
+		bit   Range4Coarse=0;
+		//bit	  AutoDetect=0;
+		BYTE  VInputStdDetectMode;
+		//BYTE  CheckBuf;
+		BYTE  SEQTime;
+		BYTE  AutoDayNight;
+
+CODE struct struct_IdName	struct_InputSelection[]={
+	{ UNKNOWN			,	"" },				//don't remove or change this.
+	{ CH_TW2835,	"CVBS" },			//don't remove or change this.
+	{ CH_CAMD  ,   "CAM D"},
+	{ CH_AV    ,    "AV  "},
+												// you can change the order of the followings
+	#ifdef SUPPORT_SVIDEO
+	{ SVIDEO			,	"S-Video" },
+	#endif
+
+	#ifdef SUPPORT_COMPONENT
+	{ COMPONENT	,			"Component" },
+	#endif
+
+	#ifdef SUPPORT_DTV
+	{ DTV	,				"DTV-SOG" },
+	#endif
+
+	#ifdef SUPPORT_PC
+	{ PC				,	"VGA"},
+	#endif
+
+	#ifdef SUPPORT_DVI
+	{ DIGITALVGA		,	"DVI" },
+	#endif
+
+	{0					,	""},				//don't remove or change this.
+};
+
+
+CODE struct struct_IdName struct_VInputStd[]={
+	{ UNKNOWN			,	"" },				//don't remove or change this.
+	{ NTSC,					"NTSC"},			//don't remove or change this.
+
+	#ifdef SUPPORT_PAL
+	{ PAL,					"PAL"},
+	#endif
+
+	#ifdef SUPPORT_SECAM
+	{ SECAM,				"SECAM"},
+	#endif
+
+	#ifdef SUPPORT_PALM
+	{ PALM,					"PALM"},
+	#endif
+
+	#ifdef SUPPORT_PALN
+	{ PALN,					"PALN"},
+	#endif
+
+	#ifdef SUPPORT_PAL60
+	{ PAL60,				"PAL60"},
+	#endif
+
+	#ifdef SUPPORT_NTSC4
+	{ NTSC4,				"NTSC4.43"},
+	#endif
+
+	{0					,	""},				//don't remove or change this.
+};
+
+
+
+//===================== OSD ===================================================
+	    WORD  OSDLastKeyInTime;		// in ms
+//===================== Button Key ============================================
+
+//================= Etc. ======================================================
+#ifdef WIDE_SCREEN
+		BYTE  WideScreenMode;
+#endif
+		BYTE	DebugLevel;
+
+		bit   Flag4AutoPanelRegs = 0;
+		bit   I2CAutoIncFlagOn = 0;
+#ifdef SUPPORT_COMPONENT
+	    BYTE  ComponentMode;
+		WORD  OLD_hpn;
+#endif
+//extern  bit		    OnChangingValue;
+//extern  BYTE	TVInputSel;
+#ifdef SUPPORT_DEBUG
+extern  bit Debug_On;
+#endif
+
+#ifdef NO_INITIALIZE
+		bit		NoInitAccess=0;
+#endif
+
+	    //bit   DisplayInputHold = 0;		//william-981029
+
+#if 0	//william-981105
+//////////////////////////////////////////////////////////////////////////////
+
+//=============================================================================
+//		Prompt				                                               
+//=============================================================================
+
+void CheckDipSwitch(void)
+{
+	static bit BW_STATUS=0, EDGE_STATUS=0;
+			//----- Check DIP Switch ---------------
+
+			if( EDGE_STATUS != DIP_EDGE_ENHANCE ) {
+				if( DIP_EDGE_ENHANCE==0 ) {
+					EDGE_STATUS = 0;
+					WriteTW88(0xdd, ReadTW88(0xdd) | 0x80);
+					//Printf("\r\nEnable Color Enhancement");
+				}
+				else {
+					EDGE_STATUS = 1;
+					WriteTW88(0xdd, ReadTW88(0xdd) & 0x7f);
+					//Printf("\r\nDisable Color Enhancement");
+				}
+			}
+			
+			if( BW_STATUS != DIP_BW_STRETCH ) {
+				if( DIP_BW_STRETCH==0 ) {
+					BW_STATUS = 0;
+					#ifdef WQVGA
+					WriteTW88(0x86, 0x0c);
+					WriteTW88(0x87, 0xff);
+					#else
+					WriteTW88(0x86, 0x20);
+					WriteTW88(0x87, 0xe0);
+					#endif
+					//Printf("\r\nEnable Black/White Stretch");
+				}
+				else {
+					BW_STATUS = 1;
+					WriteTW88(0x86, 0x00);
+					WriteTW88(0x87, 0xff);
+					//Printf("\r\nDisable Black/White Stretch");
+				}
+			}
+			if( AutoDetect != DIP_AUTO_DETECT ) {
+				AutoDetect = DIP_AUTO_DETECT;
+				//if ( AutoDetect )
+					//Puts("\r\nAutoDetect Mode Enabled" );
+				//else
+					//Puts("\r\nAutoDetect Mode Disabled" );
+			}
+}
+#endif
+#ifdef SUPPORT_GAMMA
+
+#include "Gamma.c"
+
+void DownLoadGamma(void)
+{
+		// Red
+		WriteI2C(TW88I2CAddress, 0xf0, 0xe8|1 ); 
+		WriteI2C(TW88I2CAddress, 0xf1, 0x00); //  Start Address
+		WriteI2C(TW88I2CAddress, 0xf2, GammaRed[0]); //  
+		WriteI2Cn(TW88I2CAddress, 0xf2, &GammaRed[1], 255);
+		// Blue
+		WriteI2C(TW88I2CAddress, 0xf0, 0xe8|2 ); 
+		WriteI2C(TW88I2CAddress, 0xf1, 0x00); //  Start Address
+		WriteI2C(TW88I2CAddress, 0xf2, GammaGreen[0]); //  
+		WriteI2Cn(TW88I2CAddress, 0xf2, &GammaGreen[1], 255);
+		// Red
+		WriteI2C(TW88I2CAddress, 0xf0, 0xe8|3 ); 
+		WriteI2C(TW88I2CAddress, 0xf1, 0x00); //  Start Address
+		WriteI2C(TW88I2CAddress, 0xf2, GammaBlue[0]); //  
+		WriteI2Cn(TW88I2CAddress, 0xf2, &GammaBlue[1], 255);
+
+}
+#endif
+
+void I2CDeviceInitialize( CODE_P BYTE *RegSet)
+{
+	int	cnt=0;
+	BYTE addr, index, val;
+
+	addr = *RegSet;
+	#ifdef DEBUG_TW88
+	dPrintf("\r\nI2C address : %02x", (WORD)addr);
+	#endif
+	cnt = *(RegSet+1);
+	RegSet+=2;
+
+	while (( RegSet[0] != 0xFF ) || ( RegSet[1]!= 0xFF )) {			// 0xff, 0xff is end of data
+		index = *RegSet;
+		val = *(RegSet+1);
+		WriteI2C(addr, index, val);
+
+		#ifdef DEBUG_TW88
+		dPrintf("\r\n    addr=%02x  index=%02x   val=%02x", (WORD)addr, (WORD)index, (WORD)val );
+		#endif
+
+		RegSet+=2;
+	}
+	WriteTW88(0xff, 0x00);		// set page 0
+}
+
+extern CODE struct RegisterInfo UserRange;
+extern CODE struct RegisterInfo VideoContrastRange;
+extern CODE struct RegisterInfo VideoBrightnessRange;
+extern CODE struct RegisterInfo VideoSaturationRange;
+extern CODE struct RegisterInfo VideoHueRange;
+extern CODE struct RegisterInfo VideoSharpnessRange;
+extern CODE struct RegisterInfo DigitalVideoSaturationRange;
+
+#ifdef ADD_ANALOGPANEL
+BYTE IsAnalogOn(void)
+{
+	if(DIP_PANEL_SWITCH==0) return 1;
+	else return 0;
+}
+#endif
+
+void InitVideoData(BYTE src)
+{
+
+	#ifdef DEBUG_DECODER
+	Printf("\r\n++(InitVideoData)src:%02x", (WORD)src);
+	#endif
+
+	#ifdef ADD_ANALOGPANEL
+	if(IsAnalogOn())
+		I2CDeviceInitialize(NTSC_Regs_Analog);
+	else
+	#endif
+	I2CDeviceInitialize(NTSC_Regs);
+	WriteTW88(0xff, 0);
+					
+	switch( src ) {
+
+	#ifdef SUPPORT_PAL
+	case PAL:			
+		#ifdef ADD_ANALOGPANEL
+			if(IsAnalogOn())
+				I2CDeviceInitialize(PAL_Regs_Analog);
+			else
+		#endif
+		I2CDeviceInitialize(PAL_Regs);	
+		break;
+	#endif
+	#ifdef SUPPORT_SECAM
+	case SECAM:		
+		#ifdef ADD_ANALOGPANEL
+			if(IsAnalogOn())
+				I2CDeviceInitialize(PAL_Regs_Analog);
+			else
+		#endif
+		I2CDeviceInitialize(PAL_Regs);	
+		break;
+	#endif
+	#ifdef SUPPORT_PALN
+	case PALN:		
+		#ifdef ADD_ANALOGPANEL
+			if(IsAnalogOn())
+				I2CDeviceInitialize(PAL_Regs_Analog);
+			else
+		#endif
+		I2CDeviceInitialize(PAL_Regs);	
+		break;
+	#endif
+
+	#ifdef SUPPORT_NTSC4
+	case NTSC4:
+	#endif
+	#ifdef SUPPORT_PALM
+	case PALM:
+	#endif
+	#ifdef SUPPORT_PAL60
+	case PAL60:
+	#endif
+	case NTSC:
+
+	case UNKNOWN:
+	case NOINPUT:	src = NTSC;						break;
+	}
+
+	if( InputSelection == TV ) 
+	{
+		if( VInputStdDetectMode==AUTO ) SetAutoDetectStd();
+		else							ClearAutoDetectStd(src-1);
+	}
+	else // Always Auto Detect.
+		SetAutoDetectStd();
+		
+	//----- Set Panel Characteristics
+///	SetPanelSingleDouble(PIXEL_SINGLE);
+
+
+	WriteDecoder(V_CONTROL2, 0x15);			// Set CC line number of Even Field
+//	WriteDecoder(CC_ODDLINE, 0x15);			// Set CC line number of Odd Field
+	WriteTW88(0x5c, 0x06);			// change error tolerance and enable V/HSYNC change/loss detection
+
+//	DefaultPanelAttributeForVideo();
+
+	SetVideoMode( GetVideoModeEE());		// 02212008 change for ??????? by ybae
+	#ifdef DEBUG
+	dPrintf("\r\n SetVideoMode: %d", (WORD)GetVideoModeEE() );
+	#endif
+
+	#ifdef WIDE_SCREEN
+	Set4WideScreen(GetWideModeEE());
+	#endif
+
+}
+
+/*********************************/
+BYTE IsNoInput(void)
+{
+	if( ReadDecoder(CSTATUS) & 0x80 ) return 1;
+	return 0;
+}
+
+#ifdef ID_CHECK_BY_FW
+BYTE Is50Hz(void)
+{
+	if( ReadDecoder(CSTATUS) & 0x01 ) return 1;
+	return 0;
+}
+
+BYTE Slock(void)
+{
+	if( ReadDecoder(CSTATUS) & 0x20 ) return 1;
+	return 0;
+}
+#endif	// ID_CHECK_BY_FW
+
+#ifdef SUPPORT_COMPONENT
+void CheckDecoderComponent(void)
+{
+	CODE_P BYTE *reg=0;
+	BYTE mode;
+	WORD	width, height;
+	DWORD	scale;
+
+	extern CODE BYTE COMPONENT_STR[][15] ;
+
+	if( InputSelection != COMPONENT ) return;
+
+	mode = ((ReadDecoder(CVFMT) & 0x70) >> 4);
+	if( mode == ComponentMode ) return;
+	Printf("\n\rCheckDecoderComponent==> Changed component Mode: %2x-> %2x (%s)", (WORD)ComponentMode, (WORD)mode,COMPONENT_STR[mode]);
+
+	ComponentMode = mode;
+	switch (mode)
+	{
+	case YPBPR_576i:	
+		#ifdef ADD_ANALOGPANEL
+			if(IsAnalogOn())
+			reg = COMP_YPbPr_576I_Reg;	
+			else
+		#endif
+			reg = COMP_YPbPr_576I_Reg;	
+			width = 700;
+			height = 280;
+		break;
+	#if (defined WQVGA) || (defined QVGA)
+
+	#else
+	case YPBPR_480p:	reg = COMP_YPbPr_480P_Reg;		width = 630;	height = 480;	break;
+	case YPBPR_576p:	reg = COMP_YPbPr_576P_Reg;		width = 630;	height = 576;	break;
+	case YPBPR_720p:	reg = COMP_YPbPr_720P_Reg;		width = 413;	height = 720;	break;
+	case YPBPR_1080i:	reg = COMP_YPbPr_1080I_Reg;		width = 624;	height = 540;	break;
+	#endif
+	default:			reg = COMP_YPbPr_480I_Reg;		width = 700;	height = 235;	break;
+
+	}
+
+	//InitVideoData(NTSC);
+
+	I2CDeviceInitialize(reg);
+
+	scale = width;
+	scale *= 0x10000L;
+	scale /= PWIDTH;
+	XScale2(scale);
+	#ifdef DEBUG_COMPONENT
+	dPrintf("\r\nH scale: %xh - %xh", (WORD)(scale>>8), (WORD)(scale & 0xff));
+	#endif
+
+	scale = height;
+	scale *= 0x10000L;
+	scale /= PHEIGHT;
+	YScale2(scale);
+	#ifdef DEBUG_COMPONENT
+	dPrintf("\r\nV scale: %xh - %xh", (WORD)(scale>>8), (WORD)(scale & 0xff));
+	#endif
+
+	delay(50);
+	
+	//william-981029>>>>>>>
+	//if( IsNoInput() )	DisplayInputHold = 1;		// Hold  Input Information in no signal.
+	//else 
+	//DisplayInputHold = 0;
+	//william-981029>>>>>
+
+	ClearOSDInfo();
+
+	DisplayInput();
+}
+#endif
+void CheckDecoderInput(void)
+{
+
+#ifdef ID_CHECK_BY_FW
+
+	BYTE std, changed=0;
+
+	static DATA BYTE no_cnt=0, secam_cnt=0, check_cnt=0;
+
+	//if( InputSelection == TV ) return;
+	if( InputSelection == COMPONENT ) return;
+	if( ( InputSelection == TV ) && (VInputStdDetectMode != AUTO) ) return;
+
+	if( IsNoInput() ) {
+//		if( VInputStd==NOINPUT ) return;
+		no_cnt++;
+		if( no_cnt>=10 ) {
+			no_cnt = 0;
+			
+			SetVInputStd( NOINPUT );
+			InitVideoData(NTSC);	
+
+			#ifdef DEBUG_DECODER
+			Printf("\r\nDecoder No Input");
+			#endif
+
+		}
+		return;
+	}
+	else {
+		no_cnt = 0;
+	}
+
+
+	switch( VInputStd ) {
+
+	//--------------------------------------------------------------------------------------
+	case NOINPUT:
+
+		WriteDecoder(SDT, 0x0f);		// 0x1c
+		//WriteTW88(0xb6, 0x87);
+		//delay(50);
+
+		switch( ReadDecoder(SDT) & 0x70 ) {
+		case 0x00:	std = NTSC;	break;
+		case 0x10:	std = PAL;	break;
+		case 0x20:	std = SECAM;	break;
+		}
+		changed = 1;
+		check_cnt = 0;
+		secam_cnt = 0;
+		break;
+		
+	//--------------------------------------------------------------------------------------
+	case NTSC:
+		if( Is50Hz() ) {
+			if( !Slock() ) secam_cnt++;
+			if( ++check_cnt>=10 ) {
+				if( secam_cnt>=7 ) {
+					std = SECAM;
+					changed = 1;
+				}
+				else {
+					std = PAL;
+					changed = 1;
+				}
+				check_cnt = 0;
+				secam_cnt = 0;
+			}
+		}
+		break;
+
+	//--------------------------------------------------------------------------------------
+	case PAL:
+
+		if( !Is50Hz() ) {
+			std = NTSC;
+			changed = 1;
+			check_cnt = 0;
+			secam_cnt = 0;
+		}
+
+		if( ReadTW88(0x30) & 0x10 ) secam_cnt++;
+		if( ++check_cnt>=10*10 ) {
+			if( secam_cnt>=7 ) {
+				std = SECAM;
+				changed = 1;
+			}
+			check_cnt = 0;
+			secam_cnt = 0;
+		}
+		break;
+
+	//--------------------------------------------------------------------------------------
+	case SECAM:
+
+		if( !Is50Hz() ) {
+			std = NTSC;
+			changed = 1;
+			check_cnt = 0;
+			secam_cnt = 0;
+		}
+
+		if( !(ReadTW88(0x30) & 0x80) ) secam_cnt++;
+		if( ++check_cnt>=10*10 ) {
+
+			#ifdef DEBUG_DECODER
+			Printf("%4d", secam_cnt);
+			#endif
+
+			if( secam_cnt<=7*10 ) {
+				std = PAL;
+				changed = 1;
+			}
+			check_cnt = 0;
+			secam_cnt = 0;
+		}
+		break;
+	
+
+	default:
+		break;
+
+	}
+
+	if( changed ) {
+		SetVInputStd( std );
+		InitVideoData(std);
+		//DisplayInput();
+
+		switch( std ) {
+		case NTSC:	WriteDecoder(SDT, 0x08);	break;
+		case PAL:	WriteDecoder(SDT, 0x09);	break;
+		case SECAM:	WriteDecoder(SDT, 0x0a);	break;
+		}
+		
+		#ifdef DEBUG_DECODER
+		Printf("\r\n-------> Source changed %d", (WORD)VInputStd);
+		#endif
+		delay(99);
+	}
+		
+#else // not ID_CHECK_BY_FW
+
+	BYTE std1, std, cnt=0, trycnt=0, ChangedNoinput;
+
+		#ifdef DEBUG_DECODER
+		Printf("\r\n====>CheckDecoderInput<====");
+		#endif
+	// LJY101002
+	// Algorithm I 
+	//if( InputSelection == TV ) return;
+	//if( InputSelection == COMPONENT ) return;
+	if( ( InputSelection == TV ) && (VInputStdDetectMode != AUTO) ) return;
+
+	//if( VInputStdDetectMode==AUTO ) {
+		std1 = NOINPUT;
+		while(1) {						// keep checking until it's stable.(check cnt)
+			std = DetectDecoderInput();
+			#ifdef DEBUG_DECODER
+			Printf("\r\nDetectDecoderInput: 0x%X, NOINPUT: 0x%x", (WORD)std, (WORD)std1);
+			#endif
+			trycnt++;
+			if( trycnt>= 200 )			// so many try, but unstable
+				break;
+
+			if( std!=UNKNOWN && std!=VInputStd ) 
+				{
+				//changed!!
+				if( std == std1 )		// same as previous one.
+					cnt++;
+				else
+				{					// ooh.. different from previous one.
+					cnt = 0;
+					std1 = std;
+				}
+
+				if( cnt >= 2) { //100 ) {
+			#ifdef REFERENCE
+			#else
+					//ClearOSDInfo();
+			#endif 
+					//LCDPowerOFF();
+					if(  std == NOINPUT  ) 		//some input->NOINPUT
+						{			
+						SetVInputStd( std );
+						ChangedNoinput = 1;		// Diaplay Input Information for no signal.
+						}
+					else if( VInputStd==NOINPUT ) //NOINPUT->some input
+						{		
+						SetVInputStd( std );
+						InitVideoData(std);	
+						ChangedNoinput = 0;		// Diaplay Input Information for no signal.
+						}
+					else 
+						{								//some input1->some input2
+//						LCDPowerOFF();
+						//PanelMute(1);
+
+						SetVInputStd( std );
+						InitVideoData(std);	
+						delay(50);
+//						LCDPowerON(0);
+						ChangedNoinput = 0;		// Diaplay Input Information for no signal.
+						}
+					
+					//LCDPowerON(0);
+			#ifdef REFERENCE
+			#else
+					delay(0xff);
+			#endif 
+					//DisplayInput();		//william-981029
+					//DisplayInputHold = ChangedNoinput;		//william-981029
+					break;
+				}
+			}
+			#if 0		//william-981029
+			else
+			{
+				if(  std == NOINPUT  )			// NOINPUT->NOINPUT
+					DisplayInputHold = 1;		// Hold input information in no signal.
+				else
+					DisplayInputHold = 0;		// clear 
+				break;
+
+			}
+			#endif
+		}
+		//Printf("\r\nDisplayInputHold=%02x",(WORD)DisplayInputHold);
+	//}
+	
+#endif	// ID_CHECK_BY_FW
+
+}
+
+BYTE ReadVInputSTD(void)
+{
+	BYTE std;
+	
+	if( IsNoInput() ) return 1; // Noinput!!
+	
+	std = ReadDecoder(SDT) & 0xf0;
+	if( std & 0x80 ) return 1; // Detection in progress..
+	else 
+		return ((( std & 0x70 ) >> 4 ) + 1 );
+}
+
+BYTE GetVInputStdInx(void)
+{
+	BYTE i, std;
+
+	std = ReadVInputSTD();
+
+	switch( std ) {
+
+	case NTSC4:
+	case PALM:
+	case PAL60:
+	case NTSC:		IVF = 60;		IHF = 15723;	break;	// 15734
+
+	case SECAM:
+	case PALN:
+	case PAL:		IVF = 50;		IHF = 15723;	break;  // 15625
+	default:		IVF = 0;		IHF = 0;		break;
+	}
+
+	for(i=0; ; i++) {
+		if( struct_VInputStd[i].Id ==std )
+			return i;
+		if( struct_VInputStd[i].Id ==0 )
+			break;
+	}
+	return 0;
+}
+
+#ifdef WIDE_SCREEN
+BYTE GetVInputStd(void)
+{
+	return VInputStd;
+}
+#endif
+
+void SetVInputStd(BYTE newd)
+{
+	VInputStd = newd;
+
+	#ifdef DEBUG
+	//Printf("\r\n(SetVInputStd) VInputStd:(%s)", struct_VInputStd[GetVInputStdInx()].Name);
+	Printf("\r\n(SetVInputStd) VInputStd:%d(%s)", (WORD)newd, struct_VInputStd[GetVInputStdInx()].Name);
+	#endif
+
+	switch( VInputStd ) {
+
+	#ifdef SUPPORT_NTSC4
+	case NTSC4:
+	#endif
+	#ifdef SUPPORT_PALM
+	case PALM:
+	#endif
+	#ifdef SUPPORT_PAL60
+	case PAL60:
+	#endif
+	case NTSC:		IVF = 60;		IHF = 15723;	break;	// 15734
+
+	#ifdef SUPPORT_SECAM
+	case SECAM:
+	#endif
+	#ifdef SUPPORT_PALN
+	case PALN:
+	#endif
+	#ifdef SUPPORT_PAL
+	case PAL:		IVF = 50;		IHF = 15723;	break;  // 15625
+	#endif
+
+	default:		IVF = 0;		IHF = 0;		break;
+	}
+}
+
+BYTE GetInputSelection(void)
+{
+	return InputSelection;
+}
+
+BYTE GetNextInputSelection(void)
+{
+	BYTE i;
+
+	for (i=1; ;i++)
+		if( struct_InputSelection[i].Id==InputSelection )  break;
+	i++;
+	if( struct_InputSelection[i].Id == 0 ) i=1;
+
+	return struct_InputSelection[i].Id;
+}
+
+void PowerDown_XTAL(bit flag)
+{
+	if( flag ) P3_7 = 1;
+	else      P3_7 = 0;
+}
+
+void Audio_Select(BYTE flag)
+{
+	switch(flag)
+	{
+		case 0:
+			TW2835Cmd("\n\raudioselect 0\n\r");	
+			break;
+		case 1:
+			TW2835Cmd("\n\raudioselect 1\n\r");	
+			break;	
+		case 2:
+			TW2835Cmd("\n\raudioselect 2\n\r");	
+			break;
+		case 3:
+			TW2835Cmd("\n\raudioselect 3\n\r");	
+			break;
+	}
+
+}
+void ChangeInput(BYTE newsel)
+{
+	
+
+//	extern	CODE struct _PCMDATA PCMDATA[];
+	#ifdef DEBUG
+	BYTE i;
+	#endif
+	#if (defined SUPPORT_PC) || (defined SUPPORT_DTV)
+	BYTE ret;
+	#endif
+
+	if( InputSelection==newsel ) return;
+
+	//DisplayInputHold = 0; // Refresh Input info.	//william-981029
+	ClearOSDInfo();
+
+	LCDPowerOFF(); 
+	//LCDPowerON(0); 
+
+	//PanelMute(1);
+
+	InputSelection = newsel;
+	
+	
+
+		#ifdef DEBUG
+		for (i=1; ;i++)
+			if( struct_InputSelection[i].Id==InputSelection )  break;
+		Printf("\r\n ->->->->->->->->->->-> Changed Input: %s(%02x)", struct_InputSelection[i].Name, (WORD)InputSelection);
+		#endif
+
+		InitVideoData(VInputStd);
+
+		switch(InputSelection) {
+
+			#ifdef SUPPORT_PC
+			case PC:		
+
+						AVGAInput();				// load data and input mux selection to PC 							
+						AutoPHPCalDisable();
+						tic_pc = 0;
+						ret = DetectAndSetForVGAInput(1);
+						Audio_Select(2);
+					 	VGAAudio=1;
+					    	ChangeVol(0);			//william-v1.1-991208
+						//Audio_Select1=1;                           
+             					//Audio_Select2=0;  
+						//ret = DetectAndSetForVGAInput(0);
+
+						break;
+
+			#endif
+	 
+			case CH_TW2835:
+					    COMPOSITE1Input();
+						//ExtAudio();
+					    Audio_Select(0);
+					    VGAAudio=0;
+					    ChangeVol(0);			//william-v1.1-991208
+					    //Audio_Select1=0;                           
+             			           //Audio_Select2=0;  
+						break;
+			case CH_CAMD:
+				        COMPOSITE2Input();
+					  Audio_Select(1);
+					  VGAAudio=0;
+					  ChangeVol(0);			//william-v1.1-991208
+						//Audio_Select1=0;                           
+             					//Audio_Select2=1;  
+						break;
+			case CH_AV:
+				        COMPOSITE3Input();
+					 Audio_Select(2);	
+					 VGAAudio=0;
+					 ChangeVol(0);			//william-v1.1-991208
+						//Audio_Select1=1;                           
+             			              //Audio_Select2=0;  
+						break;
+		
+		}
+	CheckPanelImage();		//william-981111 		changesource load panelimage
+	SaveInputSelectionEE(InputSelection);		// HHY 1.31
+//#ifdef WIDE_SCREEN
+//	WideScreenMode = WIDESCREEN_WIDE;
+//#endif
+	//InitOSDMenu();  // Standby OSD Menu
+
+	#ifdef DEBUG_PAUSE
+	Pause("Detect and Set {CR}");
+	#endif
+
+	#if (defined SUPPORT_PC) || (defined SUPPORT_DTV)
+	if( InputSelection==PC || InputSelection==DTV ) {
+		if( ret==TRUE ) {
+			ret = ReadDecoder(ACNTL);
+			ret |= 0x80;	// Software Reset
+			WriteDecoder(ACNTL, ret);
+			delay(30);
+			WriteTW88( 0xff, 1);
+			WriteTW88( 0xCD, 1 );	// init LLPLL
+			WriteTW88( 0xff, 0 );
+			//DisplayInput();
+		}
+		else {
+		    //CheckDipSwitch();//andy AWT 981015		
+			LCDPowerON(0);
+			delay(100);
+			WriteTW88( 0xd0, 0xff);	// clear status
+			WriteTW88( 0xd1, 0xff);	// clear status
+			return;
+		}
+		
+	}
+	else 
+	#endif
+	{
+		//DisplayInput();
+
+		#ifdef SUPPORT_COMPONENT
+		if( InputSelection == COMPONENT ){
+			delay(30);
+			ComponentMode = 0xff;
+			CheckDecoderComponent();
+		}
+		else 
+		#endif
+		{ 
+			delay(30);
+			CheckDecoderInput();
+		}
+//william-981110		
+//Printf("\r\nSetPanelBrightnessReg");
+//	SetPanelBrightnessReg(RED,  0x80);
+//	SetPanelBrightnessReg(GREEN,0x80);
+//	SetPanelBrightnessReg(BLUE, 0x80);
+//	SetPanelContrastReg(0,0x80);
+//	SetPanelContrastReg(1,0x80);
+//	SetPanelContrastReg(2,0x80);
+//william-981110	
+	}
+	//----- Check DIP Switch ---------------
+	//CheckDipSwitch();                      //andy AWT 981015		
+	//Pause("\r\nBeforn LCD ON");
+	//delay(250);
+
+
+	
+	DisplayInput();
+	LCDPowerON(0);
+	
+	delay(100);
+	WriteTW88( 0xd0, 0xff);	// clear status
+	WriteTW88( 0xd1, 0xff);	// clear status
+}
+
+void PowerOff(void)
+{
+	Printf("\r\n++(PowerOff)__");
+//	PowerMode = OFF;
+
+	//AudioOff();
+	AudioMute(0);
+	ClearOSDInfo();
+	LCDPowerOFF();
+	PowerLED(OFF);
+}
+
+void WaitPowerOn(void)
+{
+
+	BYTE ikey,val;
+	BYTE VGATrigger=0;
+	//BYTE AutoKey, _RemoDataCode;
+
+	while(1) 
+	{
+		ACCPowerControl();
+		if(RS2_in!=0 && !(GetDisplayedOSD() & MENU))
+			{
+			DvrReceivePaser();	
+			RS2_in=0;
+			}
+
+		if(GetDVRStatusflag==1)
+			{
+			Hs_DvrTxCmdPaser(GetDVRStatus);
+			Hs_DvrTxCmdPaser(GetDVRParam);
+			Hs_DvrTxCmdPaser(GetDATETIME);
+			//Hs_DvrTxCmdPaser(GetDVRVersion);		
+			GetDVRStatusflag=0;
+			}
+		//--------------Check Trigger ---------------------
+		
+		val=CheckTrigger();
+		if(val!=0)
+		{	
+			TriggerHandler(val);
+			if(!(TriggerMode==0x08&&ReadEEP(EEP_TriggerVGA)==1))
+			{
+				LCDPowerON(0);	
+				AudioMute(1);
+			}
+		}
+		else
+		{
+			PowerOff();
+			AudioMute(0);
+			//PowerLED(OFF);
+			//clrBacklight();
+			//Wait_ms(100);
+			//Panel_Disable();
+			TriggerHandler(val);
+		//if(TriggerMode!=0x08)	
+		}
+#if 1	
+		if(TriggerMode==0x06)
+			{
+			PowerFlag=1;
+			WriteEEP(EEP_Powerflag,PowerFlag);//2007.3.28 Justin
+			VGATrigger=1;
+			
+			break;
+			}
+#endif		
+		if( (ikey = GetKey(0)) ) {
+			#ifdef POWERKEY
+			if( ikey==POWERKEY && CheckTrigger()==0)
+				{
+				PowerFlag=1;
+				WriteEEP(EEP_Powerflag,PowerFlag);//2007.3.28 Justin
+				break;		//poweron
+				}
+			#endif
+		}
+		#if 0
+		if( IsRemoDataReady(&_RemoDataCode, &AutoKey) )	{
+			if( _RemoDataCode==REMO_STANDBY && !AutoKey )		//POWERON
+				break;		//poweron
+		
+		}
+		#endif
+
+	}
+
+	#ifdef DEBUG_MAIN
+	dPuts("\r\n++(PowerOn)__");
+	#endif
+//	PowerMode = ON;
+      // SetNowMode();
+	PowerLED(ON);
+	AudioMute(1);
+	//Panel_Enable();
+	//Wait_ms(200);
+	//SetBacklight();
+	
+	
+//	AudioOn();			//SetMSPVol();
+if(SelectModeType==VGAMode)
+	cLastSyncLoss=0;		//pc mode update SyncLoss
+	LCDPowerON(0);
+if(VGATrigger==0)
+	DisplayInput();
+
+
+}
+
+void SetOSDLastKeyInTime(void)
+{
+	OSDLastKeyInTime = GetTime_ms();
+}
+
+WORD GetOSDLastKeyInTime(void)
+{
+	return OSDLastKeyInTime ;
+}
+
+//=============================================================================
+//
+//=============================================================================
+#ifdef SUPPORT_PATTERN
+CODE BYTE PATTERN[7][] = {
+	{TW88I2CAddress,7, 0x61,0x5f, 0x64,0xff, 0x65,0x00, 0x66,0x00, 0x67,0xff, 0x68,0x00, 0x69,0x00, 0xff,0xff},	// Red
+	{TW88I2CAddress,7, 0x61,0x5f, 0x64,0x00, 0x65,0xff, 0x66,0x00, 0x67,0x00, 0x68,0xff, 0x69,0x00, 0xff,0xff},	// Green
+	{TW88I2CAddress,7, 0x61,0x5f, 0x64,0x00, 0x65,0x00, 0x66,0xff, 0x67,0x00, 0x68,0x00, 0x69,0xff, 0xff,0xff},	// Blue
+	{TW88I2CAddress,7, 0x61,0x5f, 0x64,0xff, 0x65,0xff, 0x66,0xff, 0x67,0xff, 0x68,0xff, 0x69,0xff, 0xff,0xff},	// White
+	{TW88I2CAddress,7, 0x61,0x5f, 0x64,0x00, 0x65,0x00, 0x66,0x00, 0x67,0xff, 0x68,0xff, 0x69,0xff, 0xff,0xff},	// Gray
+	{TW88I2CAddress,7, 0x61,0x5f, 0x64,0x00, 0x65,0x00, 0x66,0x00, 0x67,0x00, 0x68,0x00, 0x69,0x00, 0xff,0xff},	// Black
+	{TW88I2CAddress,7, 0x61,0x00, 0x64,0xc0, 0x65,0xc0, 0x66,0xc0, 0x67,0x88, 0x68,0x88, 0x69,0x88, 0xff,0xff}	// Gray scale
+};
+#endif // SUPPORT_PATTERN
+
+void AdjustAutoDayNight(BYTE val)
+{
+
+	BYTE page;
+	BYTE PWMLevelTemp;
+	val=0xff-val;
+
+	if(val>=0&&val<100)
+		PWMLevelTemp=0;
+	else if(val>=100&&val<140)
+		PWMLevelTemp=20;
+	else if(val>=140&&val<180)
+		PWMLevelTemp=50;
+	else if(val>=180&&val<220)
+		PWMLevelTemp=90;
+	else if(val>=220&&val<256)
+		{
+		#ifdef AWT
+		PWMLevelTemp=100;
+		#else
+		PWMLevelTemp=115;
+		#endif
+		}
+	//else
+	//	PWMLevelTemp=0;
+	if(PWMLevel>PWMLevelTemp)
+		PWMLevel-=1;
+	else if(PWMLevel<PWMLevelTemp)
+		PWMLevel+=1;
+	
+	//Printf("\r\nLADC0=%02x",(WORD)val);
+	page = ReadTW88( 0xff );
+	WriteTW88( 0xff, 0x00 );		// set page 0
+	WriteTW88( 0xbe, ((ReadTW88(0xbe) & 0xcf) | 0x10) );	// set active Low control, if want active high clear 
+	//WriteTW88( 0xc4, ((ReadTW88(0xc4) & 0x80)|(val>>2)) );	// set pwm number
+	WriteTW88( 0xc4, ((ReadTW88(0xc4) & 0x80)|(PWMLevel)) );	// set pwm number
+	WriteTW88( 0xff, page );
+
+}
+
+void Hs_InitVars(void)
+{
+	SEQFlag=0;
+	SEQTime=0;
+	TriggerMode=8;		//No_TRIG
+	AccPowerDown=1;
+
+
+}
+
+void LoadEEPROM (void)
+{
+	BYTE val;
+	 PowerFlag = ReadEEP(EEP_Powerflag);
+	 SelectModeType = ReadEEP(EEP_SelectMode);
+	 NowModeState = ReadEEP(EEP_NowModeState);
+	 TimeStep = ReadEEP(EEP_TimeStep);
+	 Priority = ReadEEP(EEP_PRIORITY);	 
+	 AutoDayNight= ReadEEP(EEP_AutoMode);
+   	 PelcoChoiceFLAG = ReadEEP(EEP_PELCO);
+	 CAMNumber = ReadEEP(EEP_CAMNUMBER);  
+	 Baud_rate = ReadEEP(EEP_Baud_rate);
+	
+	 val = ReadEEP(EEP_COSDMode);   //OSD ON & OFF 切換		 //william-980428												
+	   if(val==0) 					
+	   {
+		  Attr_A|=0x02;  //*** BIT1: Channel OSD  set 1
+		  Attr_B|=0x02;
+		  Attr_C|=0x02;
+		  Attr_R|=0x02;
+		  //displayhold_flag=0;
+	   }
+	   
+	   else 						  
+	   {
+		  Attr_A&=0x0d;  //*** BIT1: Channel OSD  set 0
+		  Attr_B&=0x0d;
+		  Attr_C&=0x0d;
+		  Attr_R&=0x0d;
+	   }											  
+	
+	   val = ReadEEP(EEP_CAMAMode);   //CAM Mirror開關設定															  
+	   if(val==0)					  //ON				
+		 Attr_A|=0x01;				  //*** BIT0: Horizontal Mirror  set 1
+	   else 						  //OFF 		   
+		 Attr_A&=0x0E;				  //*** BIT0: Horizontal Mirror  set 0
+	
+	   val = ReadEEP(EEP_CAMBMode); 									   
+	   if(val==0)					 //ON			   
+		 Attr_B|=0x01;				 
+	   else 						 //OFF							  
+		 Attr_B&=0x0E;		   
+	
+	   val = ReadEEP(EEP_CAMCMode); 															
+	   if(val==0)					 //ON						   
+		 Attr_C|=0x01;						  
+	   else 						 //OFF							 
+		 Attr_C&=0x0E;					 
+	
+	   val = ReadEEP(EEP_CAMRMode); 															
+	   if(val==0)					 //ON						   
+		 Attr_R|=0x01;						  
+	   else 						 //OFF							 
+		 Attr_R&=0x0E; 
+		
+		val=ReadEEP(EEP_CAMOutMode);
+  		CAMOutDSel(val);             //設定CAMOut動作   
+
+		
+		AudioVol = GetAudioVolEE();
+		PCAudioVol = GetPCAudioVolEE();
+		DVR_AudioRecord = ReadEEP(EEP_AudioRecord); 
+		DVRAodioSel(DVR_AudioRecord);
+
+		
+	//if(PowerFlag)
+		
+}
+
+void ACCPowerControl(void)
+{
+
+if(ACC_B==1 && AccPowerDown==1)
+	{	
+	Hs_DvrTxCmdPaser(Halt_Start);
+	PowerDownStart=1;
+	AccPowerDown=0;
+
+	if(DVR_Ready==1)			
+		{
+		if(PowerDownWait>29)
+			{
+			if(ACC_B==1)	
+				{
+			#ifdef BJTSwitch	
+				PPWR=0;
+			#else
+				PPWR=1;
+			#endif
+				}
+			else
+				{
+				PowerDownStart=0;
+				PowerDownWait=0;
+				AccPowerDown=1;
+				}		
+			}
+		}
+	else
+		{
+		if(ACC_B==1)
+			{
+		#ifdef BJTSwitch	
+			PPWR=0;
+		#else
+			PPWR=1;
+		#endif
+			}
+		else
+			{
+			PowerDownStart=0;
+			PowerDownWait=0;
+			AccPowerDown=1;
+			}
+		}
+	}
+
+
+
+if(((PowerDownWait%10)==0) && PowerDownWait!=0)
+	AccPowerDown=1;
+
+}
+
+
+	//bit CCFL_status;	
+void main_loop(void)
+{
+	//static bit AUTO_STATUS=0;
+	BYTE val;
+	
+	TW2835Cmd("  \n\r");
+
+	//ClearDataCnt(DVRStatus_ADDR,30);	   
+	//DrawAttrCnt(DVRStatus_ADDR, DEFAULT_COLOR, 30 ); 
+	//InitOSDWindow(Init_Osd_DisplayDVRstatus);
+
+	//---------------------------------------------------------------
+	//			             Main Loop
+	//---------------------------------------------------------------
+	while(1) {
+		
+		ACCPowerControl();
+		//Hs_DvrTxCmdPaser(GetDVRVersion);	
+		//-------------- Check Serial Port -----------------
+		#ifdef SERIAL
+		#ifdef Hs_debug
+		while( RS_ready() ) 
+			Monitor();				// for new monitor functions
+		#endif	
+			//DebugKeyIn( RS_rx() );	// Input - Serial Port
+
+		#endif // SERIAL
+
+		//if ( AccessEnable == 0 ) continue;
+
+		//-------------- Chip Manual Test  ---------------------
+		#ifdef CHIP_MANUAL_TEST
+		ChipManualTest();
+		#endif
+		
+	#ifdef SUPPORT_SDCARD
+		if(RS2_in!=0 && !(GetDisplayedOSD() & MENU))
+			{
+			DvrReceivePaser();	
+			RS2_in=0;
+			}
+		
+		if(GetDVRStatusflag==1)
+			{
+			Hs_DvrTxCmdPaser(GetDVRStatus);
+			Hs_DvrTxCmdPaser(GetDVRParam);
+			Hs_DvrTxCmdPaser(GetDATETIME);
+			//Hs_DvrTxCmdPaser(GetDVRVersion);		
+			GetDVRStatusflag=0;
+			}
+
+		if(GetDATETIMEflag==1)
+		{
+			Hs_DvrTxCmdPaser(GetDATETIME);
+			GetDATETIMEflag=0;
+		}
+
+		if((GetDisplayedOSD() & INPUTINFO) && DVR_Ready==1)
+			DisplayDVRStatus();
+	#endif
+
+		//--------------Check Trigger ---------------------
+        
+		val=CheckTrigger();
+		TriggerHandler(val);
+
+		//-------------- Check Key in --------------------------
+
+		if(TriggerFlag==0)					 //當非倒車左右轉停車時為真
+		 { 
+			if(SEQFlag) 						// SEQ Mode
+			   { 
+				  if(SEQTime>=TimeStep) 
+				  	{
+					SEQMode();
+				    SEQTime=0;
+				  	}
+				}
+			 }
+
+		//--------------AUTO DAY & NIGHT-------------
+		if(AutoDayNight==0)
+		{
+			val=ReadDecoder(LADC0);
+			AdjustAutoDayNight(val);
+		}
+		
+		if( !CheckKeyIn() ) break;			// POWEROFF
+
+
+
+		CheckAndClearOSD();
+		//============== Check each input status ===============
+		
+		switch ( GetInputSelection() ) {
+
+		case CH_TW2835:
+	    case CH_CAMD:
+		case CH_AV:		
+			//----- Check Decoder ----------------
+
+			if(!( GetDisplayedOSD() & MENU ) )
+				{		
+					CheckDecoderInput();	
+				}
+		
+			break;
+
+		#ifdef SUPPORT_PC
+		case PC:
+			//if ( AutoDetect == 0 ) break;
+			//----- Check PC input changed -------
+				CheckPCinput();
+			break;
+		#endif
+
+		}
+	if(CAM_PTZ_RUN_flag&&(P2_4&&P2_5&&P2_6&&P2_7))
+	{
+		CAM_TxCommand_toRS485(CAM_PTZ_STOP);
+		CAM_PTZ_RUN_flag=0;
+	}
+	}
+
+}
+
+void main(void)
+{
+BYTE i;
+WORD  TW2835Check=0;
+#ifdef BJTSwitch
+	PPWR=1;
+#else
+	PPWR=0;
+#endif
+	RS232Select=0;
+	clrBacklight();
+	Wait_ms(1000);
+	TW88HWReset = 0;			//TW88 HW reset by port pin, internal MCU no meaning
+	Wait_ms(200);
+	TW88HWReset = 0;	
+	InitCPU();
+#ifdef Hs_debug
+	SetMonAddress(TW88I2CAddress);
+#endif
+	InitVars();
+	Hs_InitVars();
+	InitTechwell();
+	Hs_Protocol_Init();
+	LCDPowerOFF();
+	
+	main_init();
+	
+
+
+	PowerUp = 0;
+
+	//Wait_ms(3000);
+	Wait_ms(400);
+    	//TW2835Cmd("\n\r");
+	
+	//TW2835Cmd("\n\rver\n\r");
+
+#if 0
+//WaitCnt=GetTime_ms();
+//while(abs(WaitCnt-GetTime_ms())<8000)
+while(TW2835Check==0)
+{
+	TW2835Cmd("\n\rver\n\r");
+ 	for(i=0;i<8;i++) 
+	{  
+		if(RS_buf2[i]=='A' /*&& DVR_buf[(i+1)]=='S'*/)
+		{
+		 if( RS_buf2[i+1]=='C'  ) 
+		 	{
+		 	if( RS_buf2[i+2]=='K'  ) 
+				TW2835Check=1;
+		 	 //break;
+		 	}
+		}
+	}
+}	
+#endif
+
+
+	//Wait_ms(100);
+	//TW2835Cmd("\n\rbusw 0 1 A1 11\n\r");
+	//Wait_ms(100);
+    	//TW2835Cmd("\n\rbusw 0 1 A2 D7\n\r");  
+	//Wait_ms(100);
+	
+LoadEEPROM();
+//william-v1.1-991208
+#if 1
+for(i=0;i<20;i++) 
+{
+	TW2835Check=TW2835Command(CAM_A,Attr_A,Attr_B,Attr_C,Attr_R);
+	if(TW2835Check==TRUE)
+		break;
+	Wait_ms(100);
+}
+#endif
+	
+	Wait_ms(1000);
+   if(NowModeState==JumpMode && ReadEEP(EEP_JUMPMode)==14)			//解jump 為 VGA 重開機 AV out 會有雜訊
+	TW2835Cmd("\n\ravout 0\n\r");
+	SetNowMode();
+	ChangeVol(0);
+
+
+
+	while(1) {
+	if(PowerFlag)
+		main_loop();		//exit when power off
+		
+		PowerOff();
+		//AudioMute(0);
+		//PowerLED(OFF);
+		//clrBacklight();
+		//Wait_ms(100);
+		//Panel_Disable();
+		WaitPowerOn();
+		//ChangeInput( GetInputSelectionEE() );		//WILLIAM-981029
+	}
+}
+

@@ -1,0 +1,486 @@
+//
+#include "Config.h"
+
+#include "typedefs.h"
+#include "Debug.h"
+#include "main.h"
+
+#include "osdbasic.h"
+#include "printf.h"
+
+#include "osdmenu.h"
+#include "dispinfo.h"
+#include "tw88.h"
+#include "i2c.h"
+#include "etc_eep.h"
+#include "audio.h"
+#include "measure.h"
+#include "pc_eep.h"
+#include "RegMap.h"
+#include "panel.h"
+#include "HS_DisplayOSD.h"
+#include "HS_keyremo.h"
+//----------------------------------------------------------------------
+//extern  CODE  BYTE InputSelectionString[][16];
+extern  CODE  struct struct_IdName struct_InputSelection[];
+extern  CODE  struct struct_IdName struct_VInputStd[];
+
+static	DATA WORD  OSDDisplayedTime;		//in ms
+IDATA BYTE  DisplayedOSD = 0;
+//	    DATA BYTE  DisplayedOSD = 0;
+//extern	IDATA struct BarInfo BarInfo;
+extern  bit   TVChManual;
+//extern  bit		DisplayInputHold;		//william-981029
+
+//extern	BYTE	DummyChannel;
+#ifdef SUPPORT_COMPONENT
+extern  BYTE  ComponentMode;
+#endif
+extern CODE BYTE Init_Osd_DisplayLogo[];
+extern CODE BYTE Init_Osd_DisplayInput[];
+#ifdef ADD_ANALOGPANEL
+extern CODE BYTE Init_Osd_DisplayLogo_A[];
+extern CODE BYTE Init_Osd_DisplayInput_A[];
+#endif
+
+extern CODE BYTE Init_Osd_BarWindow[];
+extern CODE BYTE Init_Osd_DisplayPCInfo[];
+extern CODE BYTE *StrVolume[];
+#ifdef E_Wintek
+extern CODE BYTE *StrVolume2[];
+#endif
+extern bit SpeedDomeMode;
+
+#ifdef TW9908
+CODE BYTE TW9908String[]=	{ "   TW9908   "};
+CODE BYTE TW9905String[]=	{ "   TW9905   "};
+#endif
+
+CODE BYTE TW8806String[]=	{ "   TW8806   "};
+
+CODE BYTE TechwellString[]=	{ "Techwell,Inc" };
+
+#ifdef SUPPORT_COMPONENT
+CODE BYTE COMPONENT_STR[][15] = {
+    "YPbPr 480i",	// 0
+    "YPbPr 576i",	// 1
+    "YPbPr 480p",	// 2
+    "YPbPr 576p",	// 3
+    "YPbPr 1080i",	// 4
+    "YPbPr 720p",	// 5
+	"YPbPr 720p50",	
+    "YPbPr 1080i50",
+};
+#endif
+//================================================================
+//					Display information
+//================================================================
+void DisplayLogo(void)
+{
+	BYTE CODE *str;
+	//ClearOSDInfo();
+
+	#ifdef TW9908
+	if( (ReadDecoder(0) & 0xf8) == 0x28 ) str = TW9905String;
+	else                                  str = TW9908String;
+	#else
+	str = TW8806String;
+	#endif
+
+	InitOSDWindow(Init_Osd_DisplayLogo);
+	#ifdef ADD_ANALOGPANEL
+	if(IsAnalogOn())
+		InitOSDWindow(Init_Osd_DisplayLogo_A);
+	#endif
+	
+	ClearDataCnt(LOGO_ADDR, 12*2); // Total 12*2 Char.
+
+	DrawAttrCnt(LOGO_ADDR, CH_COLOR_WHITE, 12 );	 
+	DrawAttrCnt(LOGO_ADDR+12, CH_COLOR_RED, 12 );
+
+	WriteStringToAddr(LOGO_ADDR, str, 12);
+	WriteStringToAddr(LOGO_ADDR+12*1, TechwellString,12);
+
+	ShowOSDWindow(TECHWELLOGO_OSDWIN,TRUE);
+	
+}
+
+void ClearLogo(void)
+{
+	ShowOSDWindow(TECHWELLOGO_OSDWIN,FALSE);
+	#ifdef DEBUG_OSD
+	dPrintf("\r\n++(ClearLogo)");
+	#endif
+}
+
+
+void ClearDisplayedOSD( BYTE newd )
+{
+	DisplayedOSD &= (~(newd));
+}
+
+void SetDisplayedOSD( BYTE newd )
+{
+	DisplayedOSD |= newd;
+}
+
+BYTE GetDisplayedOSD(void)
+{
+	return DisplayedOSD;
+}
+
+void ClearOSDInfo(void)
+{
+	BYTE dt;
+
+	ClearLogo();
+	dt = GetDisplayedOSD(); 
+	#ifdef DEBUG_OSD
+	Printf("\r\n++(ClearOSDInfo): DisplayedOSD:%2x",(WORD) GetDisplayedOSD());
+	#endif
+	#ifdef SUPPORT_PC
+	if( dt & PCINFO)		ClearPCInfo();
+	#endif
+
+	if( (dt & TVVOL) || ( dt & TVCHN) )	ClearTVInfo();
+
+	if( dt & MUTE )			ClearMuteInfo();
+	if( dt & INPUTINFO )	ClearInput();
+	if( dt & MENU )			CloseOSDMenu();
+	if( dt & GAUGEINFO)     ClearGAUGEINFO();   
+}
+
+void DisplayInput(void)
+{
+CODE BYTE Str_CAM_E[] = {'C','A','M',0};
+CODE BYTE *Str_CAM[] = {Str_CAM_E};
+	BYTE len;
+	BYTE *Str;
+	BYTE	inputs, len1, len2,i, SystemAddr;
+	Printf("\r\n++(DisplayInput): DisplayedOSD:%2x",(WORD) GetDisplayedOSD());
+
+
+	
+	//Printf("\r\n++(DisplayInput): DisplayInputHold:%2x",(WORD) DisplayInputHold);
+	
+	SystemAddr=INPUTINFO1_ADDR;
+
+
+	ClearOSDInfo();
+
+	InitOSDWindow(Init_Osd_DisplayInput);
+	ClearDataCnt(INPUTINFO_ADDR, 255); // Total 42 Char.
+	DrawAttrCnt(INPUTINFO_ADDR, OSD_INFO_COLOR, 255 );	
+	DisplayedOSD |= INPUTINFO;
+
+	inputs = GetInputSelection();
+	
+	if(ReadEEP(EEP_COSDMode)==1||inputs==CH_TW2835)		//Display Off		william-991221
+	return;	
+
+
+	#if defined( SUPPORT_PC ) || defined( SUPPORT_DTV )
+	if( inputs==PC || inputs==DTV )
+		len2 = strlen( GetPCInputSourceName() );
+	else
+	#endif
+		len2 = strlen( struct_VInputStd[GetVInputStdInx()].Name );
+
+
+	for (i=1; ;i++)
+		if( struct_InputSelection[i].Id==inputs )  break;
+
+	len1 = strlen(struct_InputSelection[i].Name);
+	
+
+	WriteStringToAddr(INPUTINFO_ADDR, struct_InputSelection[i].Name, len1); 
+	Str = Str_CAM[GetOSDLang()];
+	len = strlen(Str);
+	if(SpeedDomeMode==1)
+	{
+		DrawAttrCnt(INPUTINFO_ADDR+len1,OSD_INFO_COLOR,len);
+		WriteStringToAddr(INPUTINFO_ADDR+len1,Str,len);
+	}
+	else
+	{
+		ClearDataCnt(INPUTINFO_ADDR+len1, len); // Total 42 Char.
+		DrawAttrCnt(INPUTINFO_ADDR+len1, OSD_INFO_COLOR, len );
+	}
+#if 0
+	#if defined( SUPPORT_PC ) || defined( SUPPORT_DTV )
+	if( inputs==PC || inputs==DTV )
+		WriteStringToAddr(SystemAddr, GetPCInputSourceName(), len2); 
+	else
+	#endif
+	{
+		if( IsNoInput() == 0 ) 
+		WriteStringToAddr(SystemAddr, struct_VInputStd[GetVInputStdInx()].Name, len2); 
+	}
+#endif
+	ShowOSDWindow(INPUTINFO_OSDWIN-1,TRUE);
+
+
+
+if(ReadEEP(EEP_DVRDisplay)==0)
+	ShowOSDWindow(DVRStatus_OSDWIN,TRUE);
+else
+	ShowOSDWindow(DVRStatus_OSDWIN,FALSE);
+
+	//ShowOSDWindow(INPUTINFO_OSDWIN,TRUE);
+	ShowOSDWindowAll(1);
+
+
+	OSDDisplayedTime = GetTime_ms();	
+}
+
+
+
+
+BYTE ClearInput(void)
+{
+		
+	ShowOSDWindowAll(0);
+	ShowOSDWindow(INPUTINFO_OSDWIN-1,FALSE);
+	//ShowOSDWindow(INPUTINFO_OSDWIN,FALSE);
+
+	DisplayedOSD &= (~(INPUTINFO));
+	#ifdef DEBUG_OSD
+	Printf("\r\n++(ClearInput)");
+	#endif
+
+	return 1;
+//	ClearBlending();
+}
+
+void DisplayVol(void)
+{
+	BYTE CODE *Str ;
+	BYTE len;
+
+	#ifdef DEBUG_OSD
+	dPuts("\r\n++(DisplayVol)");
+	#endif
+	
+	if(( DisplayedOSD & TVVOL ) == 0 ) 
+	{
+
+	ClearOSDInfo();
+	#ifdef REFERENCE
+	Change_OSDColorLookup();
+	#endif
+	delay(10);
+
+
+	InitOSDWindow(Init_Osd_BarWindow);
+
+	ClearDataCnt(OSDMENU_BARADDR, 50); // Total 25*2 Char.
+	DrawAttrCnt(OSDMENU_BARADDR, BG_COLOR_CYAN | CH_COLOR_WHITE, 25 );	 
+	DrawAttrCnt(OSDMENU_BARADDR+25, BG_COLOR_WHITE | CH_COLOR_CYAN, 25 );
+#ifdef E_Wintek
+	Str = StrVolume2[GetOSDLang()];
+#else
+	Str = StrVolume[GetOSDLang()];
+#endif
+	len=CStrlen(Str);
+	WriteStringToAddr(OSDMENU_BARADDR, Str, len);  
+
+	ShowOSDWindow(OSDBARWINDOW,TRUE);
+	ShowOSDWindow(DVRStatus_OSDWIN,FALSE);
+	ShowOSDWindowAll(1);
+
+	}
+	//if((NowModeState==SelectMode&&SelectModeType==VGAMode)||(NowModeState==JumpMode&&((ReadEEP(EEP_JUMPMode)==14)||SelectModeType==VGAMode)))		//william-v1.1-20110114
+	if(VGAAudio)
+	DisplayVolumebar(PCAudioVol);
+	else	
+	DisplayVolumebar(AudioVol);
+
+	DisplayedOSD |= TVVOL;
+	OSDDisplayedTime = GetTime_ms();
+
+}
+#if 0
+void DisplayMuteInfo(void)
+{
+	BYTE CODE	*Str ;
+	BYTE len;
+	extern CODE BYTE Init_Osd_DisplayMuteInfo[];
+	extern CODE BYTE *MuteOnStr[];
+
+	ClearOSDInfo();
+	InitOSDWindow(Init_Osd_DisplayMuteInfo);
+
+	Str = MuteOnStr[GetOSDLang()];
+	len = strlen(Str);
+	WriteStringToAddr(MUTEINFO_ADDR, Str, len);  
+	DrawAttrCnt(MUTEINFO_ADDR, BACK_COLOR|CH_COLOR_RED, len );	 
+
+	ShowOSDWindow(TVINFO_OSDWIN,TRUE);
+	ShowOSDWindowAll(1);
+	DisplayedOSD |= MUTE;
+}
+#endif
+void ClearMuteInfo(void)
+{
+	ShowOSDWindow(TVINFO_OSDWIN,FALSE);
+	DisplayedOSD &= (~(MUTE));
+}
+
+BYTE CheckAndClearOSD(void)
+{
+	WORD	ctime,  stime, diff;
+	BYTE	dt;
+	BYTE	Result=0;
+
+	dt = GetDisplayedOSD();
+	if ( dt & ( MENU | INPUTINFO | TVVOL ) ) {
+
+		if( dt & MENU )	{ 
+			stime = GetOSDLastKeyInTime();	
+			diff =  20 * 100; //GetOSDDuration()
+		}
+		else { 
+			stime = OSDDisplayedTime;	
+			diff = 2 * 100;	
+		}
+	
+		ctime = GetTime_ms();			
+
+		if( DiffTime_ms( stime, ctime ) >= diff ) {
+
+
+
+			if( dt & TVVOL )	
+				{
+				cLastSyncLoss=0;		//pc mode update SyncLoss
+				Result = ClearTVInfo();
+				DisplayInput();
+				}
+
+			if( dt & MENU )			
+				{
+				cLastSyncLoss=0;		//pc mode update SyncLoss
+				Result = CloseOSDMenu();
+				DisplayInput();
+				}
+		#if 0		//william-981029
+			if( Result == 1){
+				if( DisplayInputHold ) DisplayInput();
+				else {
+
+					if( IsAudioMuteOn() )	DisplayMuteInfo();
+				}
+			}
+		#endif	
+		
+			
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+#if defined( SUPPORT_PC ) || defined (SUPPORT_TV)
+
+void SetWindowStart(WORD x, WORD y)
+{
+	WriteDecoder(TW88_WINSTART_HI, (x>>8) | ((y>>8)<<4));
+	WriteDecoder(TW88_WINXSTART, (BYTE)x);
+	WriteDecoder(TW88_WINYSTART, (BYTE)y);
+}
+#endif
+
+#if defined( SUPPORT_PC ) || defined( SUPPORT_DTV )
+
+void SetWindowWidth(BYTE width)
+{
+	WriteDecoder(TW88_WINWIDTH, width);
+}
+
+void DisplayPCInfo(BYTE CODE *ptr)
+{
+	WORD xstart, ystart;
+	BYTE len;
+
+	#ifdef DEBUG_PC
+	Printf("\r\n==== DisplayPCInfo (%s) ====", ptr);
+	#endif
+
+	Clear_bypass();								// HHY 1.52
+
+	AutoPHPCalDisable();
+	SetPHP( GetPHR() + 0x100 ); // for Sharp-NoTicon by RYU-101205	// Set PHP
+
+	PanelFreeRun(1);							// FreeRun
+	// WriteDecoder(0x06, 0x80);		// Soft Reset
+	PanelBlack(1);
+
+	len  = strlen(ptr);
+
+	xstart = ( PHR_ - len*PCINFO_ZOOM*FONT_WIDTH ) / 2;
+	ystart =  PVR_ / 3;
+	
+	InitOSDWindow(Init_Osd_DisplayPCInfo);
+	SetWindowStart(xstart, ystart);
+	SetWindowWidth(len);
+
+	ClearDataCnt(PCMEASUREINFO_ADDR, len);
+	DrawAttrCnt(PCMEASUREINFO_ADDR, CH_COLOR_RED,len);	 
+
+	WriteStringToAddr(PCMEASUREINFO_ADDR, (BYTE CODE *)ptr, len);
+	ShowOSDWindow(PCINFO_OSDWIN,TRUE);
+	ShowOSDWindowAll(1);
+	
+	DisplayedOSD |=PCINFO;
+
+}
+
+void ClearPCInfo(void)
+{
+	if( !(DisplayedOSD & PCINFO) )		return;			//ljy070803
+
+	DisplayedOSD &= (~(PCINFO));
+	ShowOSDWindow(PCINFO_OSDWIN,FALSE);
+	dPuts("\r\n== ClearPCInfo ==");
+
+//	PanelMute(0);								// HHY 1.63
+}
+
+extern CODE BYTE AutoAdjustInfo[]; 
+
+void DisplayAutoAdjust(void)
+{
+	InitOSDWindow(Init_Osd_BarWindow);
+	ClearDataCnt(OSDMENU_BARADDR, 50); // Total 25*2 Char.
+	DrawAttrCnt(OSDMENU_BARADDR, BG_COLOR_CYAN | CH_COLOR_WHITE, 50 );
+	WriteStringToAddr(OSDMENU_BARADDR, AutoAdjustInfo, 25);
+	ShowOSDWindow(OSDBARWINDOW,TRUE);
+	ShowOSDWindowAll(1);
+}
+void ClearAutoAdjust(void)
+{
+	ShowOSDWindow(OSDBARWINDOW,FALSE);
+}
+
+#endif	// SUPPORT_PC
+
+//==================================================================
+//						TV Info
+//==================================================================
+
+BYTE ClearTVInfo(void)
+{
+	
+	if( DisplayedOSD & TVVOL )
+	{	ShowOSDWindow(OSDBARWINDOW, FALSE);
+		DisplayedOSD &= (~(TVVOL));
+	}
+	else
+	{
+		ShowOSDWindow(TVINFO_OSDWIN, FALSE);
+		DisplayedOSD &= (~(TVCHN));
+	}
+	return 1;
+}
+

@@ -1,0 +1,18 @@
+---- EEP_JUMPMode Matches (17 in 7 files) ----
+Audio.c://if((NowModeState==SelectMode&&SelectModeType==VGAMode)||(NowModeState==JumpMode&&((ReadEEP(EEP_JUMPMode)==14)||SelectModeType==VGAMode)))		//william-v1.1-20110114
+Audio.c://if((NowModeState==SelectMode&&SelectModeType==VGAMode)||(NowModeState==JumpMode&&((ReadEEP(EEP_JUMPMode)==14)||SelectModeType==VGAMode)))		//william-v1.1-20110114
+Audio.c://if((NowModeState==SelectMode&&SelectModeType==VGAMode)||(NowModeState==JumpMode&&((ReadEEP(EEP_JUMPMode)==14)||SelectModeType==VGAMode)))		//william-v1.1-20110114
+Dispinfo.c:	//if((NowModeState==SelectMode&&SelectModeType==VGAMode)||(NowModeState==JumpMode&&((ReadEEP(EEP_JUMPMode)==14)||SelectModeType==VGAMode)))		//william-v1.1-20110114
+Etc_eep.h (include):#define  EEP_JUMPMode           0xae
+HS_keyremo.c:	 val=ReadEEP(EEP_JUMPMode);
+HS_keyremo.c:     val=ReadEEP(EEP_JUMPMode);
+Main.c:   if(NowModeState==JumpMode && ReadEEP(EEP_JUMPMode)==14)			//解jump 為 VGA 重開機 AV out 會有雜訊
+Osdmenu.c://if((NowModeState==SelectMode&&SelectModeType==VGAMode)||(NowModeState==JumpMode&&((ReadEEP(EEP_JUMPMode)==14)||SelectModeType==VGAMode)))		//william-v1.1-20110114
+Osdmenu.c:        val = ReadEEP(EEP_JUMPMode);
+Osdmenu.c:			 WriteEEP( EEP_JUMPMode,0);
+Osdmenu.c:			WriteEEP(EEP_JUMPMode,13); 
+Osdmenu.c:		val=ReadEEP(EEP_JUMPMode);
+Osdmenu.c:		WriteEEP( EEP_JUMPMode,val);  
+Osdoper.c:		WriteEEP(EEP_JUMPMode,0);	  // JUMPMode...... QUAL
+Osdoper.c:		WriteEEP(EEP_JUMPMode,13);		// JUMPMode...... QUAL
+Osdoper.c:	   WriteEEP(EEP_JUMPMode,0);	  // JUMPMode...... QUAL

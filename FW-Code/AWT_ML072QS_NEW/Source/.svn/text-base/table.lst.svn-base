@@ -1,0 +1,1760 @@
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 1   
+
+
+C51 COMPILER V8.16, COMPILATION OF MODULE TABLE
+OBJECT MODULE PLACED IN .\Output\table.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE table.c COMPACT OPTIMIZE(9,SIZE) BROWSE INCDIR(.\Include\) DEBUG OBJECTEXTE
+                    -ND CODE LISTINCLUDE SYMBOLS PRINT(.\Source\table.lst) OBJECT(.\Output\table.obj)
+
+line level    source
+
+   1          #include "Config.h"
+   1      =1  /*****************************************************************************/
+   2      =1  /*                           System Configurations                           */
+   3      =1  /*                                                      rev 0.10 include auto test                                               */
+   4      =1  // 0.11 change DTV, PC input initial download data correct for Charge Pump
+   5      =1  // 0.12 correct phase measurement routine '>>3'
+   6      =1  // 0.13 enable function for SPI control... only EXT MCU case
+   7      =1  // 0.14 corrected PC measurement......
+   8      =1  // 0.0a test function only for CVBS, SVIDEO
+   9      =1  // 0.15 corrected DTV scaler setting for panel resolutions
+  10      =1  // 0.0b panel for AND 640x480 TICON panel
+  11      =1  // 0.16 corrected COMPONENT scaler setting for panel resolutions        11/21/2007
+  12      =1  // 0.0c automatic chip test
+  13      =1  // 0.17 add monitor function, osd grid for writing grid
+  14      =1  // 0.18 add component, dtv pc for analogpanel, 12/06/2007
+  15      =1  // 0.19 correct pal input for CES, 12/20/2007
+  16      =1  // 0.1a CCFL control, 12/28/2007
+  17      =1  // 0.19 Multi Grid for Banking on Internal MCU  01/17/2008
+  18      =1  // 0.20 CCFL contol for backlight brightness    01/21/2008
+  19      =1  // 0.21 CCFL contol for backlight brightness    01/25/2008
+  20      =1  // 0.22 phase setting 02/07/2008
+  21      =1  // 0.221 display input correction 04/03/2008
+  22      =1  // 0.23 PC, DTV mode, no signal display
+  23      =1  // 0.24 PC Auto Color adjustment
+  24      =1  // 0.25 revised PC Auto Clock adjustment - find divide number and phase
+  25      =1  // 0.26 Digital RGB for TW8826
+  26      =1  // 0.27 Correct LVDS control                                    08/22/2008
+  27      =1  // 0.28 Add WSVGA resolution                                    10/23/2008
+  28      =1  // 0.29 Add NEW GRID                                                    11/14/2008
+  29      =1  // 0.30 Fix DTV input                                                   12/10/2008
+  30      =1  // 0.31 Add 1080i23, 24, 25A, 25B                               01/20/2009
+  31      =1  // 0.32 TCON setting FIX all mode                               01/22/2009
+  32      =1  // 0.33 autodetect is auto on/off by dip sw1    02/02/2009
+  33      =1  // 0.34 Fix autocolor function and clamp position 02/08/2009
+  34      =1  /*****************************************************************************/
+  35      =1  #ifndef __CONFIG_H__
+  36      =1  #define __CONFIG_H__
+  37      =1  
+  38      =1  //#define INTERNAL_MCU -- defined by Project Compiler session
+  39      =1  
+  40      =1  
+  41      =1  //-----------------------------------------------------------------------------
+  42      =1  //              Firmware Version
+  43      =1  //-----------------------------------------------------------------------------
+  44      =1  #define FWVER                   0x140                   // Rev 0.14
+  45      =1  //-----------------------------------------------------------------------------
+  46      =1  //              Compiler
+  47      =1  //-----------------------------------------------------------------------------
+  48      =1  #define KEILC                                           // Keil C 5.0
+  49      =1  //-----------------------------------------------------------------------------
+  50      =1  //              MPU Clock
+  51      =1  //-----------------------------------------------------------------------------
+  52      =1  #ifndef INTERNAL_MCU
+  53      =1  //#define CLOCK_11M                                     // 11.0592MHz
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 2   
+
+  54      =1  #define CLOCK_22M                                       // 22.1184MHz
+  55      =1  #else                                                           // INTERNAL_MCU
+           =1 #define CLOCK_27M                                       // 27MHz
+           =1 #define REG_START_ADDRESS       0xc000          // register start 0xc000, for page0, 0xc100-page1 
+           =1 #endif
+  59      =1  //-----------------------------------------------------------------------------
+  60      =1  //              TW88 Version
+  61      =1  //-----------------------------------------------------------------------------
+  62      =1  #define TW8816
+  63      =1  //-----------------------------------------------------------------------------
+  64      =1  //              Options for Backlight control
+  65      =1  //-----------------------------------------------------------------------------
+  66      =1  //#define       BACKLIGHT_CCFL
+  67      =1  //#define       BACKLIGHT_LED
+  68      =1  #define BACKLIGHT_PWM
+  69      =1  
+  70      =1  //-----------------------------------------------------------------------------
+  71      =1  //              Panel Resolution
+  72      =1  //-----------------------------------------------------------------------------
+  73      =1  // ---- Select Default Panel
+  74      =1  //
+  75      =1  //#define UXGA                                          // 1600 x 1200
+  76      =1  //#define SXGA                                          // 1280 x 1024
+  77      =1  //#define XGA  // 1024 x 768
+  78      =1  #ifdef XGA
+           =1         #define LVDS                                    
+           =1         #define PWIDTH  1024
+           =1         #define PHEIGHT 768
+           =1 #endif
+  83      =1  //#define SVGA                                          //  800 x 600
+  84      =1  //#define VGA                                           //  640 x 480
+  85      =1  #ifdef VGA
+           =1         #define PWIDTH  640
+           =1         #define PHEIGHT 480
+           =1         //#define       HITACHI_640_B_160               //--> 640 x 160
+           =1         #define AND_640_480
+           =1 #endif
+  91      =1  //#define WXGA                                          // 1280 x 768 (15:9) // 1366 x 768 (16:9)
+  92      =1  #ifdef WXGA
+           =1     //#define WX_SHARP_LQ106K1LA
+           =1         #define PWIDTH  1280
+           =1         #define PHEIGHT 768
+           =1 #endif
+  97      =1  //#define WSVGA                                         // 1024 x 600   *** only video mode
+  98      =1  #ifdef WSVGA
+           =1         #define PWIDTH  1024
+           =1         #define PHEIGHT 600
+           =1         #define UNIDEN_1024_600
+           =1 #endif
+ 103      =1  #define WVGA                                            //  800 x 480
+ 104      =1  #ifdef WVGA
+ 105      =1          #define PWIDTH  800
+ 106      =1          #define PHEIGHT 600//480
+ 107      =1          // If WVGA, you have to select panel.
+ 108      =1          //#define AU_10INCH
+ 109      =1          //#define WVGA_TPO
+ 110      =1          //#define SAMSUNG_10INCH
+ 111      =1          //#define SAMSUNG_TICONLESS_10INCH
+ 112      =1          //#define SHARP_TICONLESS_7INCH
+ 113      =1          #define AU_TICONLESS_7INCH
+ 114      =1          //#define INNOLUX_AT080TN03
+ 115      =1          //#define AU_TICONLESS_7INCH_CCFL
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 3   
+
+ 116      =1          //#define CMO                   // CHIMEI panel
+ 117      =1          //#define AU_TICONLESS_10INCH
+ 118      =1          //#define HITACHI_T01
+ 119      =1          //#define HITACHI_TX23D12
+ 120      =1          //#define HITACHI_TX18D24
+ 121      =1          //#define HITACHI_TX18D16
+ 122      =1          //#define TMD_LTA070A320F
+ 123      =1          //#define TMD_LTA080B
+ 124      =1  #endif  //WVGA
+ 125      =1  //#define HVGA                                          //  480 x 320
+ 126      =1  //#define QVGA                                          //  320 x 240   *** only video mode
+ 127      =1  #ifdef QVGA
+           =1         #define PWIDTH  320
+           =1         #define PHEIGHT 240
+           =1         //#define HITACHI_TX09D73
+           =1         //#define AU_DELTARGB
+           =1         //#define SHARP_LQ050Q5DR01
+           =1         //#define SHARP_LQ035
+           =1         //#define       TMD
+           =1 #endif
+ 136      =1  
+ 137      =1  //#define WQVGA                                         //  480 x 234   *** only video mode
+ 138      =1  #ifdef WQVGA
+           =1         #define PWIDTH  480
+           =1         #define PHEIGHT 240
+           =1         // If WQVGA, you have to select panel   
+           =1     #define ANALOG_7INCH
+           =1         //#define       PWIDTH  400
+           =1         //#define PHEIGHT       240
+           =1         //#define SHARP_LQ043T3DX02             //  400 x 237
+           =1         //#define LG_ANALOG
+           =1         //#define TMD_ANALOG                            //TMD_LTA05B352A
+           =1         //#define       T_51945GD                               // Optorex Panel
+           =1 #endif  // WQVGA
+ 150      =1  
+ 151      =1  //if LVDS pannel disable TICONLESS
+ 152      =1  
+ 153      =1  //-----------------------------------------------------------------------------
+ 154      =1  //---- Add Support One more panel with DIPSW#1
+ 155      =1  //---- Ex. Add Analog AU 7" Panel with Default Panel for evalution
+ 156      =1  //#define ADD_ANALOGPANEL               // Added Analog panel(AU7") from default set panel(expect WQVGA) with DIP #1 sw
+             -itch.(DIP#1=L:ANALOG, H:DEFAULT)
+ 157      =1                                                          // It can't support WQVGA and ADD_ANALOGPANEL same time!!
+ 158      =1          //#define ADD_ANALOG_7INCH
+ 159      =1          //#define ADD_TMD_LTA05B352A
+ 160      =1                                                                          
+ 161      =1  //---- Support Wide panel function
+ 162      =1  #if (defined WXGA) || (defined WSVGA) || (defined WVGA) || (defined WQVGA)
+ 163      =1  #define WIDE_SCREEN                             // Can support 4 display mode, i.e. Normal, Wide, Full, Zoom
+ 164      =1  #endif                                                          // Tested panasonic WVGA panel.
+ 165      =1  
+ 166      =1  //-----------------------------------------------------------------------------
+ 167      =1  //              Panel Vendor Specific
+ 168      =1  //-----------------------------------------------------------------------------
+ 169      =1  
+ 170      =1  //-----------------------------------------------------------------------------
+ 171      =1  //              TV Tuner
+ 172      =1  //-----------------------------------------------------------------------------
+ 173      =1  #define PHILIPS                         0
+ 174      =1  #define ALPS                            1               // ALPS, LG
+ 175      =1  #define TEMIC                           2
+ 176      =1  #define TVAVA                           3
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 4   
+
+ 177      =1  #define LGTUNER                         4
+ 178      =1  #define SAMSUNGMUTITUNER        5
+ 179      =1  
+ 180      =1  #define TVTunerDevice           4
+ 181      =1  //-----------------------------------------------------------------------------
+ 182      =1  //              IR Remote Controller Type
+ 183      =1  //-----------------------------------------------------------------------------
+ 184      =1  //#define REMO_RC5                                      // RC5 style
+ 185      =1  #define TECHWELL_REMOCON
+ 186      =1  //#define REMO_NEC                                      // NEC style
+ 187      =1  //#define PHILIPS_REMOCON // New remocon 
+ 188      =1  
+ 189      =1  
+ 190      =1  //-----------------------------------------------------------------------------
+ 191      =1  //              I2C Device Access Address Mapping
+ 192      =1  //-----------------------------------------------------------------------------
+ 193      =1  
+ 194      =1  #define EEPROMI2CAddress        0xa0    // EEPROM (24C16)
+ 195      =1  #define TW88I2CAddress          0x8a    // TW880x
+ 196      =1  
+ 197      =1  #define MSPI2CAddress           0x80    // MSP
+ 198      =1  
+ 199      =1  //-----------------------------------------------------------------------------
+ 200      =1  //              Options for Possible Inputs
+ 201      =1  //-----------------------------------------------------------------------------
+ 202      =1  #define         AWT
+ 203      =1  //#define       E_Wintek 
+ 204      =1  //#define SUPPORT_SVIDEO                     //andy Awt 20090914
+ 205      =1  //#define SUPPORT_COMPONENT                     // support component analog to decoder//andy Awt 20090914
+ 206      =1  
+ 207      =1  //#define SUPPORT_DTV                           // support DTV input through component( to ADC ).//andy Awt 20090914
+ 208      =1  #define SUPPORT_PC                              // support PC function
+ 209      =1  //#define SUPPORT_DVI                           // support DVI input
+ 210      =1  #define SUPPORT_SDCARD
+ 211      =1  
+ 212      =1  //#define SUPPORT_RS485
+ 213      =1  
+ 214      =1  //-----------------------------------------------------------------------------
+ 215      =1  //              Options for Possible Standards
+ 216      =1  //              Default:NTSC
+ 217      =1  //-----------------------------------------------------------------------------
+ 218      =1  #define SUPPORT_PAL                     
+ 219      =1  #define SUPPORT_SECAM
+ 220      =1  #define SUPPORT_NTSC4           
+ 221      =1  #define SUPPORT_PALM    
+ 222      =1  #define SUPPORT_PALN            
+ 223      =1  #define SUPPORT_PAL60           
+ 224      =1  
+ 225      =1  
+ 226      =1  //#define ID_CHECK_BY_FW                        // in Video mode, check input system ID by firmware
+ 227      =1  
+ 228      =1  //-----------------------------------------------------------------------------
+ 229      =1  //              Options for Debugging/Release
+ 230      =1  //-----------------------------------------------------------------------------
+ 231      =1  //#define SUPPORT_PATTERN                       // support LCD test pattern
+ 232      =1  
+ 233      =1  
+ 234      =1  #ifndef WQVGA
+ 235      =1          #ifndef QVGA
+ 236      =1  #define SUPPORT_OSDPOSITIONMOVE
+ 237      =1          #endif
+ 238      =1  #endif
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 5   
+
+ 239      =1  
+ 240      =1  #define SERIAL                                  // include serial communication routines
+ 241      =1  
+ 242      =1  //#define SUPPORT_DEBUG                         // Support to use Read & Write in debug OSD Window by remocon.
+ 243      =1  
+ 244      =1  //#define DEBUG                                         // include debug information
+ 245      =1  #ifdef DEBUG
+           =1         //#define DEBUG_MAIN
+           =1         //#define DEBUG_TIME
+           =1         //#define DEBUG_KEYREMO
+           =1         //#define DEBUG_TW88
+           =1         //#define DEBUG_DECODER
+           =1         //#define DEBUG_I2C
+           =1         //#define DEBUG_EEP
+           =1         //#define DEBUG_OSD
+           =1         //#define DEBUG_AUDIO
+           =1         //#define DEBUG_SETPANEL
+           =1         //#define DEBUG_DTV
+           =1         #define DEBUG_PC
+           =1         //#define DEBUG_PC_MEAS
+           =1         #define DEBUG_PC_COLOR
+           =1         //#define DEBUG_COMPONENT
+           =1         //#define DEBUG_BANK
+           =1         //#define DEBUG_PAUSE
+           =1         //#define DEBUG_MCU
+           =1 #endif
+ 265      =1  
+ 266      =1  #define AUTOCALC_PC                                     // in PC mode, Enable Auto Calcuration
+ 267      =1  //#define SUPPORT_USERCOLORFROMTXT      // Use color setting of text file in Color mode=USER MODE which is as B
+             -rightness(Reg10), Contast(Reg11),
+ 268      =1                                                                          //    Sat_U(Reg13),Sat_V(Reg14),Sharpness(Reg12,Reg78)                                                                  
+ 269      =1  //#define SUPPORT_GAMMA
+ 270      =1  
+ 271      =1  //#define CHIP_MANUAL_TEST                      // DIPSW#1
+ 272      =1  
+ 273      =1  #ifndef INTERNAL_MCU
+ 274      =1  //#define NO_INITIALIZE                         // After Power switch turn on with DIP SW4 Enable(Low), or pressed MENU button 
+             -for internal MCU
+ 275      =1                                      //     micom works to access only I2C bus by serial command.
+ 276      =1  #endif
+ 277      =1  
+ 278      =1  //#define SUPPORT_KRS_OSDDEMO           // For KRS Company Demo 
+ 279      =1  //#define SUPPORT_LINE_OSDDEMO
+ 280      =1  
+ 281      =1  //-----------------------------------------------------------------------------
+ 282      =1  //              Special Features
+ 283      =1  //-----------------------------------------------------------------------------
+ 284      =1  
+ 285      =1  #ifndef INTERNAL_MCU
+ 286      =1  //#define       SUPPORT_DELTA_RGB
+ 287      =1  #endif
+ 288      =1  #define SUPPORT_SELECTKEY                       // choose the keymap of using select key or left,right key.
+ 289      =1  //-----------------------------------------------------------------------------
+ 290      =1  #endif  //__CONFIG_H__
+   2          #include "typedefs.h"
+   1      =1  #ifndef __TYPEDEFS__
+   2      =1  #define __TYPEDEFS__
+   3      =1  
+   4      =1  
+   5      =1  #define DATA            data
+   6      =1  #define PDATA           pdata
+   7      =1  #define IDATA           data
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 6   
+
+   8      =1  #define CODE            code
+   9      =1  #define CODE_P
+  10      =1  #define PDATA_P
+  11      =1  #define IDATA_P
+  12      =1  #define DATA_P
+  13      =1  
+  14      =1  #define INTERRUPT( num, name ) name() interrupt num
+  15      =1  
+  16      =1  #define _between(x, a, b)       (a<=x && x<=b)
+  17      =1  #define _swap(a, b)                     { a^=b; b^=a; a^=b; }
+  18      =1  
+  19      =1  typedef unsigned char   Register;
+  20      =1  typedef unsigned char   BYTE;
+  21      =1  typedef unsigned short  WORD;
+  22      =1  typedef unsigned long   DWORD;
+  23      =1  
+  24      =1  #define TRUE    1
+  25      =1  #define FALSE   0
+  26      =1  
+  27      =1  //VInputStdDetectMode
+  28      =1  #define AUTO    0
+  29      =1  
+  30      =1  //VInputStd
+  31      =1  #define NTSC    1                       
+  32      =1  #define PAL             2
+  33      =1  #define SECAM   3
+  34      =1  #define NTSC4   4
+  35      =1  #define PALM    5
+  36      =1  #define PALN    6
+  37      =1  #define PAL60   7
+  38      =1  
+  39      =1  #define MAXINPUTSTD     PAL60+1 // 
+  40      =1  
+  41      =1  #define UNKNOWN 0xfe
+  42      =1  #define NOINPUT 0       //0xff
+  43      =1  
+  44      =1  
+  45      =1  
+  46      =1  
+  47      =1  #define NIL                     0xff
+  48      =1  
+  49      =1  enum SourceModeTypeEnum
+  50      =1  {       
+  51      =1          AVMode,            // 0
+  52      =1          VGAMode,       // 1
+  53      =1          CAM_D,         // 2
+  54      =1          CAM_A,         // 3
+  55      =1          CAM_B,         // 4
+  56      =1          CAM_C,         // 5
+  57      =1          CAM_R,         // 6
+  58      =1          CAM_AB,        // 7
+  59      =1          CAM_CR,        // 8
+  60      =1          CAM_AR,        // 9
+  61      =1          CAM_RB,        // 10
+  62      =1          CAM_AC,        // 11
+  63      =1          CAM_CB,        // 12
+  64      =1          CAM_RAB_T,     // 13
+  65      =1          CAM_RAB_H,     // 14
+  66      =1  
+  67      =1          CAM_QUAD,      // 15
+  68      =1          CAM_ABR_T3,    // 16
+  69      =1          CAM_ABR_T4,    // 17
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 7   
+
+  70      =1          SEQ,           // 18
+  71      =1          CAM_BA,                 //19
+  72      =1          
+  73      =1          CAM_BC,
+  74      =1          CAM_BR,
+  75      =1          CAM_CA,
+  76      =1          CAM_ABC,
+  77      =1          CAM_ABR,
+  78      =1          CAM_ACR,
+  79      =1          CAM_BAC,
+  80      =1          CAM_BAR,
+  81      =1          CAM_BCR,
+  82      =1          CAM_CAB,
+  83      =1          CAM_CAR,
+  84      =1          CAM_CBR,        
+  85      =1          CAM_NUM
+  86      =1  };
+  87      =1  
+  88      =1  typedef unsigned char SourceModeType;
+  89      =1  
+  90      =1  #endif  /* __TYPEDEFS__ */
+   3          #include "pc_eep.h"
+   1      =1  #ifndef __PC_EEP__
+   2      =1  #define __PC_EEP__
+   3      =1  
+   4      =1  
+   5      =1  // -----------------------------------------------------------------------------
+   6      =1  #define PC_COLOR_DATA   0x80    // StartAddress of EEPROM for PC Color Temperature
+   7      =1  #define PC_USERCOLOR    0x8A
+   8      =1  #define SetPCColorTempModeEE( ctid )                    WriteEEP( PC_COLOR_DATA, ctid )
+   9      =1  #define GetPCColorTempModeEE()                                  ReadEEP( PC_COLOR_DATA )
+  10      =1  
+  11      =1  #define GetPCUserColorTempEE( ucolorr)                  ReadEEP( PC_USERCOLOR+ucolorr )
+  12      =1  #define SavePCUserColorTempEE( ucolorw, uval)   WriteEEP( PC_USERCOLOR+ucolorw, uval )
+  13      =1  #define GetPCColorEE(index)                                             ReadEEP(index)
+  14      =1  
+  15      =1  // -----------------------------------------------------------------------------
+  16      =1  #define EE_ADC_GO               0x90    // ADC Gain Offset for PC
+  17      =1  #define EE_ADC_GO_DTV   0x98    // ADC Gain Offset for DTV
+  18      =1  
+  19      =1  #define EE_PCDATA               0xC0    // StartAddress of EEPROM for PCDATA
+  20      =1  #define LEN_PCDATA              5               // Length of PCDATA
+  21      =1  
+  22      =1  WORD GetHPNfromEE(BYTE mode);
+  23      =1  
+  24      =1  BYTE CheckPcDataEEValid(BYTE, WORD);
+  25      =1  
+  26      =1  WORD GetVactiveStartEE(BYTE mode);
+  27      =1  WORD GetHactiveStartEE(BYTE mode);
+  28      =1  
+  29      =1  void GetPCDataEE(BYTE mode);
+  30      =1  void SavePCDataEE(BYTE mode);
+  31      =1  void SaveDefaultPCDataEE(void);
+  32      =1  void SaveDefaultPCDataAllEE(void);
+  33      =1  
+  34      =1  void SaveHactiveEE(BYTE mode);
+  35      =1  void SaveVactiveEE(BYTE mode);
+  36      =1  void SaveVBackPorchEE(BYTE mode);
+  37      =1  void SaveCoarseEE(BYTE mode);
+  38      =1  void SavePhaseEE(BYTE mode);
+  39      =1  /*
+  40      =1  WORD GetHactiveStartEE(BYTE mode);
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 8   
+
+  41      =1  WORD GetVactiveStartEE(BYTE mode);
+  42      =1  */
+  43      =1  void DumpPCData(void);
+  44      =1  
+  45      =1  void SaveActiveVEE(WORD);
+  46      =1  void SaveBackPorchEE(BYTE);
+  47      =1  void SaveActiveHEE(WORD);
+  48      =1  
+  49      =1  void SaveADCGainOffsetEE(BYTE mod);
+  50      =1  void GetADCGainOffsetEE(void);
+  51      =1  
+  52      =1  void SaveADCGainOffsetForDTVEE(BYTE mod);
+  53      =1  void GetADCGainOffsetForDTVEE(void);
+  54      =1  
+  55      =1  #endif  // __PC_EEP__
+   4          #include "measure.h"
+   1      =1  #ifndef __MEASURE__
+   2      =1  #define __MEASURE__
+   3      =1  
+   4      =1  #define EE_DOS                          0
+   5      =1  
+   6      =1  #define EE_SP1                          1
+   7      =1  #define EE_SP2                          2
+   8      =1  #define EE_SP3                          3
+   9      =1  
+  10      =1  #define EE_VGA_60                       4
+  11      =1  #define EE_VGA_66                       5
+  12      =1  #define EE_VGA_70                       6
+  13      =1  #define EE_VGA_72                       7
+  14      =1  #define EE_VGA_75                       8
+  15      =1  #define EE_VGA_85                       9
+  16      =1  
+  17      =1  #define EE_SVGA_56                      10
+  18      =1  #define EE_SVGA_60                      11
+  19      =1  #define EE_SVGA_70                      12
+  20      =1  #define EE_SVGA_72                      13
+  21      =1  #define EE_SVGA_75                      14
+  22      =1  #define EE_SVGA_85                      15
+  23      =1  
+  24      =1  #define EE_832_75                       16
+  25      =1  
+  26      =1  #define EE_XGA_60                       17
+  27      =1  #define EE_XGA_70                       18
+  28      =1  #define EE_XGA_72                       19
+  29      =1  #define EE_XGA_75                       20
+  30      =1  #define EE_XGA_85                       21
+  31      =1  
+  32      =1  #define EE_1152_60                      22
+  33      =1  #define EE_1152_70                      23
+  34      =1  #define EE_1152_75                      24
+  35      =1  
+  36      =1  #define EE_SXGA_60                      25
+  37      =1  #define EE_SXGA_70                      26
+  38      =1  #define EE_SXGA_75                      27
+  39      =1  
+  40      =1  #define EE_RGB_480P                     28
+  41      =1  #define EE_RGB_720P                     29
+  42      =1  #define EE_RGB_720P50           30
+  43      =1  #define EE_RGB_1080I            31
+  44      =1  #define EE_RGB_1080I50A         32
+  45      =1  #define EE_RGB_1080I50B         33
+  46      =1  #define EE_RGB_480I                     34
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 9   
+
+  47      =1  #define EE_RGB_576I                     35
+  48      =1  #define EE_RGB_576P                     36
+  49      =1  
+  50      =1  #define EE_YPbPr_480P           37
+  51      =1  #define EE_YPbPr_720P           38
+  52      =1  #define EE_YPbPr_720P50         39
+  53      =1  #define EE_YPbPr_1080I          40
+  54      =1  #define EE_YPbPr_1080I50A       41
+  55      =1  #define EE_YPbPr_1080I50B       42
+  56      =1  #define EE_YPbPr_480I           43
+  57      =1  #define EE_YPbPr_576I           44
+  58      =1  #define EE_YPbPr_576P           45
+  59      =1  
+  60      =1  #define EE_PC_MAX                       46
+  61      =1  
+  62      =1  #define EE_PC_NO_SIGNAL         0xfe
+  63      =1  #define EE_PC_UNKNOWN           0xff
+  64      =1  
+  65      =1  struct _PCMDATA {
+  66      =1          CODE_P BYTE  Support;
+  67      =1          CODE_P WORD  HAN;
+  68      =1          CODE_P WORD  VAN;
+  69      =1          CODE_P WORD  IVF;
+  70      =1          CODE_P WORD  CLOCK;
+  71      =1          CODE_P WORD  low;
+  72      =1          CODE_P WORD  high;
+  73      =1          CODE_P WORD  Hstart;
+  74      =1          CODE_P WORD  Vstart;
+  75      =1          CODE_P WORD  IPF;               // 0.1MHz
+  76      =1          CODE_P WORD  PPF;               // 0.1MHz
+  77      =1          CODE_P BYTE  VBack;
+  78      =1  };
+  79      =1  #ifndef AUTOCALC_PC
+           =1 
+           =1 #ifdef SUPPORT_DTV
+           =1 struct _DTVMDATA {
+           =1         CODE_P BYTE Reg62;
+           =1         CODE_P BYTE RegBC;
+           =1         CODE_P BYTE RegBD;
+           =1         CODE_P BYTE RegBE;
+           =1         CODE_P WORD PHP;
+           =1 };
+           =1 #endif
+           =1 #endif
+  91      =1  #if defined     XGA
+           =1         #define MAX_PPF          90000000
+           =1 #elif defined SXGA
+           =1         #define MAX_PPF         135000000
+           =1 #elif defined WXGA
+           =1         #define MAX_PPF          90000000
+           =1 #elif defined WVGA
+  98      =1          #define MAX_PPF          90000000
+  99      =1  #elif defined VGA
+           =1         #define MAX_PPF          50000000
+           =1 #elif defined SVGA
+           =1         #define MAX_PPF          80000000
+           =1 #elif defined QVGA
+           =1         #define MAX_PPF          30000000
+           =1 #elif defined WQVGA
+           =1         #define MAX_PPF          30000000
+           =1 #endif
+ 108      =1  
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 10  
+
+ 109      =1  extern BYTE cLastSyncLoss;
+ 110      =1  extern BYTE PcMode;
+ 111      =1  
+ 112      =1  void CompLT170E2(void);
+ 113      =1  
+ 114      =1  WORD gap(WORD a, WORD b);
+ 115      =1  
+ 116      =1  //===================================================================
+ 117      =1  WORD GetHpnVpn(BYTE);
+ 118      =1  
+ 119      =1  WORD ConvertBasedOnInput(WORD dat);
+ 120      =1  
+ 121      =1  BYTE IsDTVInput(void);
+ 122      =1  
+ 123      =1  void SetVValueForPanel(WORD vstart);
+ 124      =1  BYTE SetHValueForPanel(void);
+ 125      =1  BYTE GetActiveRegion(void);
+ 126      =1  
+ 127      =1  BYTE DetectAndSetForVGAInput(BYTE);
+ 128      =1  #ifdef SUPPORT_DTV
+           =1 BYTE DetectAndSetForDTVInput(BYTE);
+           =1 #endif
+ 131      =1  void CheckPCinput(void);
+ 132      =1  void CheckDTVinput(void);
+ 133      =1  
+ 134      =1  WORD GetCoarseValue(void);
+ 135      =1  BYTE GetPhaseValue(void);
+ 136      =1  WORD SetPCCoarseValue(BYTE val);
+ 137      =1  BYTE SetPhaseValue(BYTE val);
+ 138      =1  
+ 139      =1  void DisplayResultAndSetActiveRange(void);
+ 140      =1  
+ 141      =1  //=============================================================================
+ 142      =1  //                    PC Screen Position Move Functions
+ 143      =1  //=============================================================================
+ 144      =1  void MoveActiveVpos(BYTE val);          // Up/Down
+ 145      =1  void MoveActiveHpos(BYTE val);          // Left/Right
+ 146      =1  
+ 147      =1  BYTE GetVPosition(void);
+ 148      =1  BYTE SetVPosition(BYTE val);
+ 149      =1  BYTE GetHPosition(void);
+ 150      =1  BYTE SetHPosition(BYTE val);
+ 151      =1  
+ 152      =1  void ResetPCValue(void);
+ 153      =1  
+ 154      =1  CODE_P BYTE *GetPCInputSourceName(void);
+ 155      =1  BYTE AutoAdjust(void);
+ 156      =1  
+ 157      =1  #endif // __MEASURE__
+   5          /*===========================================================================
+   6          
+   7          xx_x_SS.txt             for Samsung panel
+   8          xx_x_LP.txt             for LG-Philips panel
+   9          xx_x_Sh.txt             for Sharp panel
+  10          xx_x_PV.txt             for Prime View panel
+  11          
+  12          /*===========================================================================*/
+  13          /*                              NTSC Mode                                    */
+  14          /*===========================================================================*/
+  15          CODE BYTE NTSC_Regs[] ={
+  16          
+  17                  #if   defined SXGA
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 11  
+
+                                                              #include "data\SX_N.txt"
+                      #elif defined XGA       
+                                                              #include "data\X_N_LVDS.txt"
+                                                      //      #include "data\X_N.txt" 
+                      #elif defined SVGA
+                                                              #include "data\S_N.txt"
+                      #elif defined VGA
+                              #if defined HITACHI_640_B_160
+                                                              #include "data\V_N(HITACHI_6416).txt"
+                              #elif defined AND_640_480
+                                                              #include "data\V_N(AND_6448).txt"
+                              #else
+                                                              #include "data\V_N.txt"
+                              #endif
+                      #elif defined QVGA
+                              #if defined HITACHI_TX09D73
+                                                              #include "data\QV_N(HITACHI_TX09D73).txt"
+                              #elif defined AU_DELTARGB
+                                                              #include "data\QVGA_Delta_AU.txt"
+                              #elif defined SHARP_LQ050Q5DR01
+                                                              #include "data\QV_N(LQ050Q5DR01_SHARP).TXT"
+                              #elif defined SHARP_LQ035
+                                                              #include "data\QV_LQ035Q5DG02_sharp.txt"
+                              #elif defined TMD
+                                                              #include "data\QV_N_TMD.txt"
+                              #else
+                                                              #include "data\QV_N_new.txt"
+                              #endif
+                      #elif defined WXGA
+                                      #ifdef WX_SHARP_LQ106K1LA
+                                                              #include "data\WX_N_SHARP_LQ106K1LA.txt"
+                                      #else
+                                                              #include "data\WX_N.txt"
+                                      #endif
+                      #elif defined WSVGA
+                                                              #include "data\WS_N.txt"
+                      #elif defined WVGA
+  55                          #if defined AU_10INCH
+                                                              #include "data\WV_N.txt"
+                              #elif defined WVGA_TPO
+                                                              #include "data\WV_N_TPO.txt"
+                              #elif defined SAMSUNG_10INCH
+                                                              #include "data\Wv_n_Samsung.txt"
+                              #elif defined SAMSUNG_TICONLESS_10INCH
+                                                              #include "data\Wv_n1(Samsung_Notion).txt"
+                              #elif defined SHARP_TICONLESS_7INCH
+                                                              //#include "data\WV_N( SHARP LQ080Y5DR02).txt"
+                                                              //#include "data\WV_N(Sharp TCON less panel_7).txt"
+                                                              #include "data\WV_N3(WVGA SHARP_TLE_CCFL).txt"
+                              #elif defined AU_TICONLESS_7INCH
+  68                                                          //#include "data\WV_N_Temp.txt"
+  69                                                          //#include "data\WV_N3(WVGA AUO TCON LESS 7INCH_STD).TXT"
+  70                                                          #include "data\WV_N3(WVGA AUO TCON LESS 8_4 INCH_STD).TXT"
+   1      =1  /*===========================================================================*/
+   2      =1  /*                    Register Setting for TW8816     08/02/07               */
+   3      =1  /*===========================================================================*/
+   4      =1  //      Input   : NTSC
+   5      =1  //      Panel   : WVGA A070VW01 AUO T-CON LESS PANEL Ver0.00
+   6      =1  //      Fix PC input position
+   7      =1  //-----------------------------------------------------------------------------
+   8      =1  
+   9      =1  TW88I2CAddress, 125+6+4+8,
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 12  
+
+  10      =1  
+  11      =1  0xff, 0x00,
+  12      =1  //------------ Decoder (23) ---------------------------------------------------
+  13      =1  
+  14      =1  0x1c, 0x2f,             // Standard, shado0x            ** N/P
+  15      =1  0x04, 0x00,                             // Luminance Gamma
+  16      =1  0x07, 0x02,                             // Cropping H                           ** N/P, panel
+  17      =1  0x08, 0x16,                             // V delay L                            ** N/P, panel
+  18      =1  0x09, 0xf0,                             // V active L                           ** N/P, panel?
+  19      =1  0x0a, 0x22,             // H delay L                            ** N/P, panel
+  20      =1  0x0b, 0xd0,                             // H active L                           ** N/P, panel?
+  21      =1  0x0c, 0xcc,                             // Control Reg 1
+  22      =1  
+  23      =1  0x10, 0x00,                     // Brightness
+  24      =1  0x11, 0x63,                     // Contrast
+  25      =1  0x12, 0x52,                             // Sharpness Ctrl 1
+  26      =1  0x13, 0x80,                     // Chroma(U) gain
+  27      =1  0x14, 0x80,                     // chroma(V) gain
+  28      =1  0x15, 0x00,                             // Hue
+  29      =1  0x17, 0x30,                             // V peaking Ctrl 1                     
+  30      =1  0x18, 0x44,                             // Coring Ctrl                          
+  31      =1  
+  32      =1  0x20, 0x50, // Clamp Gain for TW8806B
+  33      =1  0x35, 0x00,
+  34      =1  0x21, 0x42,
+  35      =1  0x22, 0xf0,
+  36      =1  0x23, 0xD8,
+  37      =1  
+  38      =1  0x27, 0x2A,
+  39      =1  
+  40      =1  0x2C, 0x30,
+  41      =1  
+  42      =1  0x38, 0x80,
+  43      =1  
+  44      =1  ///---------- Input/Output (4+2) -------------------------------------------------
+  45      =1  0x40, 0x00,
+  46      =1  0x41, 0x20,
+  47      =1  0x42, 0x03,
+  48      =1  0x44, 0x24,
+  49      =1  0x4E, 0x77,
+  50      =1  0x4F, 0x18,
+  51      =1  //0x50, 0x01,
+  52      =1  
+  53      =1  //------------ Zoom (7) -------------------------------------------------------
+  54      =1  0x63, 0x00,                             // H/V scale up/dn H            ** N/P panel
+  55      =1  0x60, 0xd6,                             // H-scale up L                         ** N/P panel
+  56      =1  0x61, 0x80,                             // H-scale dn L                         ** N/P panel
+  57      =1  0x62, 0x64,                             // V-scale up L                         ** N/P panel
+  58      =1  0x64, 0xff,                             // H-scale up offset, remove error
+  59      =1  0x65, 0x80,                             // V-scale up offset
+  60      =1  0x66, 0x00,                             // H non-display area
+  61      =1  
+  62      =1  //--------- Image Adjust (18) ------------------------------------------------
+  63      =1  0x70, 0x60,                             // YCbCr/ Hue
+  64      =1  0x71, 0x80,                             // Y  contrast
+  65      =1  0x72, 0x80,                             // Cb contrast
+  66      =1  0x73, 0x80,                             // Cr contrast
+  67      =1  0x74, 0x80,                             // Y  brightness
+  68      =1  0x75, 0x80,                             // Cb brightness
+  69      =1  0x76, 0x80,                             // Cr brightness
+  70      =1  0x77, 0x30,                             // Sharpness=0
+  71      =1  0x79, 0x00,                             // Edge Enhancement=enable
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 13  
+
+  72      =1  0x7B, 0x00,                             // should be 0x00
+  73      =1  
+  74      =1  
+  75      =1  //---------- BW/Blue Stretch(4) --------------------------------------------------
+  76      =1  0x86, 0x20,
+  77      =1  0x87, 0xFF,
+  78      =1  0x89, 0x40,
+  79      =1  0x7C, 0x1D,
+  80      =1  
+  81      =1  //--------- Color Enhancement (6) ----------------------------------------------
+  82      =1  0xda, 0x9f,
+  83      =1  0xdb, 0x39,
+  84      =1  0xdc, 0xf0,
+  85      =1  0xdd, 0xf6,
+  86      =1  0xde, 0xf0,
+  87      =1  0xdf, 0xf0,
+  88      =1  
+  89      =1  //--------- Display control (15) ----------------------------------------------
+  90      =1  0xb0, 0x40,                             // Output Signal Config.
+  91      =1  0xb1, 0x07,                             // clock delay, en coast        ** panel
+  92      =1  0xbb, 0x23,                             // PVR-H, PVP-H                                                         **     panel
+  93      =1  0xb7, 0xb9,                             // PVP-L                                                **     panel
+  94      =1  0xb8, 0x0A,//0x26,              // V Sync                           panel //andy Awt084 980912 
+  95      =1  0xb9, 0x20,                             // V Back Porch                                                 ** N/P panel
+  96      =1  0xba, 0x58,                             // PVR-L                                                        **     panel
+  97      =1  0xb6, 0x33,                             // PHR-H, PHP-H                         ** N/P panel
+  98      =1  0xb2, 0x7d,                             // PHP-L                                        ** N/P panel
+  99      =1  0xb3, 0x0e,                             // H sync                                       **
+ 100      =1  0xb4, 0x4a,                             // H back porch                         **     panel
+ 101      =1  0xb5, 0x20,                             // PHR-L                                        **     panel
+ 102      =1  0xbc, 0x00,                             // Dithering
+ 103      =1  0xbe, 0x92,//0x82,                              // Auto Calc.
+ 104      =1  
+ 105      =1  //--------- Misc. Input (3) --------------------------------------------------
+ 106      =1  0xc0, 0x00,                             // Initial Counter                      ** N/P panel
+ 107      =1  0xc1, 0x00,                             //                                                      ** N/P panel
+ 108      =1  0xc2, 0x00,                             //                                                      ** N/P panel
+ 109      =1  
+ 110      =1  //--------- PLL (5) -----------------------------------------------------------
+ 111      =1  0xf9, 0x00,
+ 112      =1  0xfa, 0xCC,                             // 12.6/2=6.3MHz        ** N/P panel
+ 113      =1  0xfb, 0x00,                             //                      ** N/P panel
+ 114      =1  0xfc, 0x40,                             //                      ** N/P panel
+ 115      =1  0xfd, 0x30,                             //                      ** N/P panel
+ 116      =1  0xfe, 0x08,                             //                      ** N/P panel
+ 117      =1  
+ 118      =1  //--------- TCON ASIC Register (16) ---------------------------------------
+ 119      =1  0xff, 0x01,
+ 120      =1  
+ 121      =1  //--------------  CCFL CONTROL --------------
+ 122      =1  0x30, 0xF3,                     // disable CCFL
+ 123      =1  0x31, 0xAd,
+ 124      =1  0x32, 0x04,
+ 125      =1  0x33, 0x80,
+ 126      =1  0x34, 0x84,
+ 127      =1  0x35, 0x00,
+ 128      =1  0x36, 0x20,
+ 129      =1  
+ 130      =1  //--------------  GPO control ------------
+ 131      =1  0x40, 0x00,
+ 132      =1  0x41, 0x00,
+ 133      =1  0x42, 0x00,
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 14  
+
+ 134      =1  0x43, 0x00,
+ 135      =1  
+ 136      =1  //------------- debug register -----------
+ 137      =1  //0x57, 0x55,
+ 138      =1  //0x58, 0xf4,
+ 139      =1  //0x59, 0x0a,
+ 140      =1  //0x5A, 0x00,
+ 141      =1  
+ 142      =1  
+ 143      =1  //------------- TCON register ----------
+ 144      =1  0x76, 0x00,
+ 145      =1  0x77, 0x5A,
+ 146      =1  0x78, 0x00,
+ 147      =1  0x79, 0x7F,
+ 148      =1  0x7A, 0x01,
+ 149      =1  0x7B, 0x00,
+ 150      =1  
+ 151      =1  0x80, 0x20,
+ 152      =1  0x81,0x00,
+ 153      =1  0x82,0x0b, //02         //william-20100407
+ 154      =1  0x83,0x1f,
+ 155      =1  0x84,0x44,               
+ 156      =1  0x85, 0x00,
+ 157      =1  0x8A, 0x12,
+ 158      =1  0x8B, 0x4D,
+ 159      =1  0x8C, 0x00,
+ 160      =1  0x8d,0x00,
+ 161      =1  0x8e,0x02,
+ 162      =1  0x8f,0x0d,//02 11-30-05-RYU Ticon Vertical Ragion is wider than PVR
+ 163      =1  
+ 164      =1  //--------- Latch Pulse (12) -----------------------------------------------
+ 165      =1  0x90,0x03,
+ 166      =1  0x91,0x49,
+ 167      =1  0x92,0x03,
+ 168      =1  0x93,0x49,
+ 169      =1  0x94,0x00,
+ 170      =1  0x95,0x01,
+ 171      =1  0x9a, 0x00,
+ 172      =1  0x9b,0x29,
+ 173      =1  0x9c, 0x00,
+ 174      =1  0x9d,0x01,
+ 175      =1  
+ 176      =1  //--------- Ro0xClock (08) -----------------------------------------------
+ 177      =1  0xa0,0x04,
+ 178      =1  0xa1,0x42,
+ 179      =1  0xa2,0x00,
+ 180      =1  0xa3,0x52,
+ 181      =1  0xa4, 0x00,
+ 182      =1  
+ 183      =1  //--------- Ro0xStarting Puls (05) -----------------------------------------------
+ 184      =1  0xa5,0x38,
+ 185      =1  0xa6, 0x00,
+ 186      =1  0xa7,0x01,
+ 187      =1  
+ 188      =1  0xAC, 0x03,
+ 189      =1  0xAD, 0xF6,
+ 190      =1  0xAE, 0x00,
+ 191      =1  0xAF, 0x6A,
+ 192      =1  0xB0, 0x02,
+ 193      =1  
+ 194      =1  //--------- Charp Pump & Vcom (8) -------------------------------------------------
+ 195      =1  0xb1,0x03,              //0x30,         //william-981102
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 15  
+
+ 196      =1  0xb2,0x87,
+ 197      =1  0xb3,0x00,
+ 198      =1  //0xb4,0x02,
+ 199      =1  
+ 200      =1  0xC0, 0x25,
+ 201      =1  0xC1, 0xf4,
+ 202      =1  0xC2, 0x03,
+ 203      =1  0xC3, 0x04,
+ 204      =1  0xC4, 0x20,
+ 205      =1  0xC5, 0x09,
+ 206      =1  0xC6, 0x27,
+ 207      =1  0xC7, 0x04,
+ 208      =1  0xC8, 0x00,
+ 209      =1  0xC9, 0x00,
+ 210      =1  0xCA, 0x00,
+ 211      =1  0xCB, 0xd7,
+ 212      =1  0xCC, 0x10,
+ 213      =1  0xCD, 0x00,
+ 214      =1  0xD0, 0x00,
+ 215      =1  0xD1, 0xF0,
+ 216      =1  0xD2, 0xF0,
+ 217      =1  0xD3, 0xF0,
+ 218      =1  0xD4, 0xa0,
+ 219      =1  0xD5, 0x08,
+ 220      =1  0xD6, 0x10,
+ 221      =1  0xD7, 0x00,
+ 222      =1  0xD8, 0x47,
+ 223      =1  0xD9, 0x10,
+ 224      =1  0xDA, 0x10,
+ 225      =1  0xF0, 0x00,
+ 226      =1  0xF1, 0x00,
+ 227      =1  0xF2, 0x00,
+ 228      =1  0xF3, 0x00,
+ 229      =1           
+ 230      =1  
+ 231      =1  0xff, 0x00,
+ 232      =1  
+ 233      =1  0xff, 0xff              // end of data
+ 234      =1  
+ 235      =1  
+ 236      =1  
+ 237      =1  
+ 238      =1  
+ 239      =1  
+ 240      =1  
+ 241      =1  
+ 242      =1  
+ 243      =1  
+ 244      =1  
+ 245      =1  
+ 246      =1  
+ 247      =1  
+ 248      =1  
+ 249      =1  
+ 250      =1  
+ 251      =1  
+ 252      =1  
+ 253      =1  
+ 254      =1  
+ 255      =1  
+ 256      =1  
+ 257      =1  
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 16  
+
+  71                          #elif defined AU_TICONLESS_7INCH_CCFL
+                                                              #include "data\WV_N3(WVGA AUO TCON LESS 7INCH_CCFL).TXT"
+                              #elif defined AU_TICONLESS_10INCH       
+                                                              #include "data\WV_N3(WVGA AUO TCON LESS 10INCH).TXT"
+                              #elif defined HITACHI_T01
+                                                              #include "data\WV_N(WVGA_HITACHI_T_01).TXT"
+                              #elif defined HITACHI_TX23D12
+                                                              #include "data\WV_N(HITACHI_TX23D12).TXT"
+                              #elif defined HITACHI_TX18D24
+                                                              #include "data\WV_N(HITACHI_TX18D24).txt"
+                              #elif defined HITACHI_TX18D16
+                                                              #include "data\WV_N(HITACHI_TX18D16).txt"
+                              #elif defined TMD_LTA070A320F
+                                                              #include "data\WV_N(TMD_LTA070A320F).txt"
+                              #elif defined TMD_LTA080B
+                                                              #include "data\WV_N(WVGA TMD_LTA080B).txt"
+                              #elif defined INNOLUX_AT080TN03
+                                                              #include "data\WV_N(INNOLUX_AT080TN03).TXT"
+                              #elif defined CMO
+                                                              #include "data\WV_N(WVGA CMO TCON LESS 7INCH_CCFL).TXT"
+                              #else
+                                                              #include "data\WV_N.txt"
+                              #endif
+  94              #elif defined WQVGA
+                      #if defined ANALOG_7INCH  
+                                                              #include "data\WQV_N(AUO T-CON LESS ANALOG 7INCH).TXT"
+                              #elif defined SHARP_LQ043T3DX02
+                                                              #include "data\WQV_N_sh(LQ043T3DX02).txt" // 8bit TTL panel 480*237
+                              #elif defined LG_ANALOG
+                                                              #include "data\WQV_N_LGANALOG.txt" // 8bit TTL panel 480*237
+                              #elif defined TMD_ANALOG
+                                                              #include "data\WQVGA_N_TMD(LTA05B352A).txt"
+                              #elif defined T_51945GD
+                                                              #include "data\WQV_N(T-51945GD).TXT"
+                              #endif
+                                      
+                      #endif
+ 108          
+ 109          };
+ 110          
+ 111          #ifdef ADD_ANALOGPANEL
+              CODE BYTE NTSC_Regs_Analog[] ={
+                              #ifdef ADD_ANALOG_7INCH
+                                                              #include "data\WQV_N3(WVGA AUO T-CON LESS ANALOG 7INCH).TXT"
+                              #elif defined ADD_TMD_LTA05B352A
+                                                              #include "data\WQVGA_N_TMD(LTA05B352A).txt"
+                              #endif
+              };
+              #endif
+ 120          
+ 121          #ifdef SUPPORT_DVI
+              CODE BYTE DVI_Regs[] ={
+                              #include "data\DVI_WQVGA.txt"
+              };
+              #endif
+ 126          /*===========================================================================*/
+ 127          /*                              PAL Mode                                     */
+ 128          /*===========================================================================*/
+ 129          CODE BYTE       PAL_Regs[]   = {        
+ 130          
+ 131                  #if   defined SXGA
+                                                              #include "data\SX_P.txt"
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 17  
+
+                      #elif defined XGA
+                                                              #include "data\X_P.txt"
+                      #elif defined SVGA
+                                                              #include "data\S_P.txt"
+                      #elif defined VGA
+                              #if defined HITACHI_640_B_160
+                                                              #include "data\V_N(HITACHI_6416).txt"
+                              #else
+                                                              #include "data\V_P.txt"
+                              #endif
+                      #elif defined QVGA
+                              #if defined AU_DELTARGB
+                                                              #include "data\QVGA_P_Delta_AU.txt"
+                              #elif defined SHARP_LQ050Q5DR01
+                                                              #include "data\QV_P(LQ050Q5DR01_SHARP).TXT"
+                              #elif defined TMD
+                                                              #include "data\QV_P_TMD.txt"
+                              #else
+                                                              #include "data\QV_P.txt"
+                              #endif
+                      #elif defined WXGA 
+                                      #ifdef WX_SHARP_LQ106K1LA
+                                                              #include "data\WX_P_SHARP_LQ106K1LA.txt"
+                                      #else
+                                                              #include "data\WX_P.txt"
+                                      #endif
+                      #elif defined WSVGA
+                                                              #include "data\WS_P.txt"
+                      #elif defined WVGA
+ 162                          #if defined AU_10INCH
+                                                              #include "data\WV_P.txt"
+                              #elif defined WVGA_TPO
+                                                              #include "data\WV_P_TPO.txt"
+                              #elif defined SAMSUNG_10INCH
+                                                              #include "data\Wv_P_Samsung.txt"
+                              #elif defined SAMSUNG_TICONLESS_10INCH
+                                                              #include "data\WV_P(Samsung_Noticon).txt"
+                              #elif defined SHARP_TICONLESS_7INCH
+                                                              #include "data\WV_P(LQ080Y5DR02).TXT"
+                                                              //#include "data\WV_P3(Sharp TCON less panel_1).txt"
+                              #elif defined AU_TICONLESS_7INCH
+ 174                                                          //#include "data\WV_P3(WVGA AUO TCONLESS 7INCH PANEL).TXT"
+ 175                                                          #include "data\WV_P3(WVGA AUO TCON LESS 8_4 INCH_STD).TXT"
+   1      =1  /*===========================================================================*/
+   2      =1  /*                    Register Setting for TW8816     08/02/07               */
+   3      =1  /*===========================================================================*/
+   4      =1  //      Input   : PAL
+   5      =1  //      Panel   : WVGA A070VW01 AUO T-CON LESS PANEL Ver0.00
+   6      =1  //      Fix PC input position
+   7      =1  //-----------------------------------------------------------------------------
+   8      =1  
+   9      =1  TW88I2CAddress, 125+6+4+8,
+  10      =1  
+  11      =1  0xff, 0x00,
+  12      =1  //------------ Decoder (23) ---------------------------------------------------
+  13      =1  
+  14      =1  0x1c, 0x27,             // Standard, shado0x            ** N/P //andy AWT084 980914
+  15      =1  0x04, 0x00,                             // Luminance Gamma
+  16      =1  0x07, 0x12,//0x22,              // Cropping H                           ** N/P, panel//andy AWT084 980914
+  17      =1  0x08, 0x16,                             // V delay L                            ** N/P, panel
+  18      =1  0x09, 0x20,                             // V active L                           ** N/P, panel?//andy AWT084 980914
+  19      =1  0x0a, 0x21,//0x22,              // H delay L                            ** N/P, panel//andy AWT084 980914
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 18  
+
+  20      =1  0x0b, 0xd0,                             // H active L                           ** N/P, panel?
+  21      =1  0x0c, 0xcc,                             // Control Reg 1
+  22      =1  
+  23      =1  0x10, 0x00,                     // Brightness
+  24      =1  0x11, 0x63,                     // Contrast
+  25      =1  0x12, 0x52,                             // Sharpness Ctrl 1
+  26      =1  0x13, 0x80,                     // Chroma(U) gain
+  27      =1  0x14, 0x80,                     // chroma(V) gain
+  28      =1  0x15, 0x00,                             // Hue
+  29      =1  0x17, 0x30,                             // V peaking Ctrl 1                     
+  30      =1  0x18, 0x44,                             // Coring Ctrl                          
+  31      =1  
+  32      =1  0x20, 0x50, // Clamp Gain for TW8806B
+  33      =1  0x35, 0x00,
+  34      =1  0x21, 0x42,
+  35      =1  0x22, 0xf0,
+  36      =1  0x23, 0xD8,
+  37      =1  
+  38      =1  0x27, 0x2A,
+  39      =1  
+  40      =1  0x2C, 0x30,
+  41      =1  
+  42      =1  0x38, 0x80,
+  43      =1  
+  44      =1  ///---------- Input/Output (4+2) -------------------------------------------------
+  45      =1  0x40, 0x00,
+  46      =1  0x41, 0x20,
+  47      =1  0x42, 0x03,
+  48      =1  0x44, 0x24,
+  49      =1  0x4E, 0x77,
+  50      =1  0x4F, 0x18,
+  51      =1  //0x50, 0x01,
+  52      =1  
+  53      =1  //------------ Zoom (7) -------------------------------------------------------
+  54      =1  0x63, 0x00,                             // H/V scale up/dn H            ** N/P panel
+  55      =1  0x60, 0xd6,//0xd0,              // H-scale up L                         ** N/P panel//andy AWT084 980914
+  56      =1  0x61, 0x80,                             // H-scale dn L                         ** N/P panel//andy AWT084 980914
+  57      =1  0x62, 0x75,//0x64,                              // V-scale up L                         ** N/P panel//andy AWT084 980914
+  58      =1  0x64, 0xff,                             // H-scale up offset, remove error
+  59      =1  0x65, 0x80,                             // V-scale up offset
+  60      =1  0x66, 0x00,                             // H non-display area
+  61      =1  
+  62      =1  //--------- Image Adjust (18) ------------------------------------------------
+  63      =1  0x70, 0x60,                             // YCbCr/ Hue
+  64      =1  0x71, 0x80,                             // Y  contrast
+  65      =1  0x72, 0x80,                             // Cb contrast
+  66      =1  0x73, 0x80,                             // Cr contrast
+  67      =1  0x74, 0x80,                             // Y  brightness
+  68      =1  0x75, 0x80,                             // Cb brightness
+  69      =1  0x76, 0x80,                             // Cr brightness
+  70      =1  0x77, 0x30,                             // Sharpness=0
+  71      =1  0x79, 0x00,                             // Edge Enhancement=enable
+  72      =1  0x7B, 0x00,                             // should be 0x00
+  73      =1  
+  74      =1  
+  75      =1  //---------- BW/Blue Stretch(4) --------------------------------------------------
+  76      =1  0x86, 0x20,
+  77      =1  0x87, 0xFF,
+  78      =1  0x89, 0x40,
+  79      =1  0x7C, 0x1D,
+  80      =1  
+  81      =1  //--------- Color Enhancement (6) ----------------------------------------------
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 19  
+
+  82      =1  0xda, 0x9f,
+  83      =1  0xdb, 0x39,
+  84      =1  0xdc, 0xf0,
+  85      =1  0xdd, 0xf6,
+  86      =1  0xde, 0xf0,
+  87      =1  0xdf, 0xf0,
+  88      =1  
+  89      =1  //--------- Display control (15) ----------------------------------------------
+  90      =1  0xb0, 0x40,                             // Output Signal Config.
+  91      =1  0xb1, 0x07,                             // clock delay, en coast        ** panel
+  92      =1  0xbb, 0x23,                             // PVR-H, PVP-H                 **     panel
+  93      =1  0xb7, 0xb9,                             // PVP-L                                                **     panel
+  94      =1  0xb8, 0x16,//0x26,              // V Sync                           panel //andy Awt084 980912 
+  95      =1  0xb9, 0x20,                             // V Back Porch                                                 ** N/P panel
+  96      =1  0xba, 0x58,                             // PVR-L                                                        **     panel
+  97      =1  0xb6, 0x33,                             // PHR-H, PHP-H                         ** N/P panel
+  98      =1  0xb2, 0x0A,//0x7d,                              // PHP-L                                        ** N/P panel//andy AWT084 980914
+  99      =1  0xb3, 0x0e,                             // H sync                                       **
+ 100      =1  0xb4, 0x4a,                             // H back porch                         **     panel
+ 101      =1  0xb5, 0x20,                             // PHR-L                                        **     panel
+ 102      =1  0xbc, 0x00,                             // Dithering
+ 103      =1  0xbe, 0X92,//0x82,                              // Auto Calc.
+ 104      =1  
+ 105      =1  //--------- Misc. Input (3) --------------------------------------------------
+ 106      =1  0xc0, 0x00,                             // Initial Counter                      ** N/P panel
+ 107      =1  0xc1, 0x00,                             //                                                      ** N/P panel
+ 108      =1  0xc2, 0x00,                             //                                                      ** N/P panel
+ 109      =1  
+ 110      =1  //--------- PLL (5) -----------------------------------------------------------
+ 111      =1  0xf9, 0x00,
+ 112      =1  0xfa, 0xCC,                             // 12.6/2=6.3MHz        ** N/P panel
+ 113      =1  0xfb, 0x00,                             //                      ** N/P panel
+ 114      =1  0xfc, 0x40,                             //                      ** N/P panel
+ 115      =1  0xfd, 0x30,                             //                      ** N/P panel
+ 116      =1  0xfe, 0x08,                             //                      ** N/P panel
+ 117      =1  
+ 118      =1  //--------- TCON ASIC Register (16) ---------------------------------------
+ 119      =1  0xff, 0x01,
+ 120      =1  
+ 121      =1  //--------------  CCFL CONTROL --------------
+ 122      =1  0x30, 0xF3,                     // disable CCFL
+ 123      =1  0x31, 0xAd,
+ 124      =1  0x32, 0x04,
+ 125      =1  0x33, 0x80,
+ 126      =1  0x34, 0x84,
+ 127      =1  0x35, 0x00,
+ 128      =1  0x36, 0x20,
+ 129      =1  
+ 130      =1  //--------------  GPO control ------------
+ 131      =1  0x40, 0x00,
+ 132      =1  0x41, 0x00,
+ 133      =1  0x42, 0x00,
+ 134      =1  0x43, 0x00,
+ 135      =1  
+ 136      =1  //------------- debug register -----------
+ 137      =1  //0x57, 0x55,
+ 138      =1  //0x58, 0xf4,
+ 139      =1  //0x59, 0x0a,
+ 140      =1  //0x5A, 0x00,
+ 141      =1  
+ 142      =1  
+ 143      =1  //------------- TCON register ----------
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 20  
+
+ 144      =1  0x76, 0x00,
+ 145      =1  0x77, 0x5A,
+ 146      =1  0x78, 0x00,
+ 147      =1  0x79, 0x7F,
+ 148      =1  0x7A, 0x01,
+ 149      =1  0x7B, 0x00,
+ 150      =1  
+ 151      =1  0x80, 0x20,
+ 152      =1  0x81,0x00,
+ 153      =1  0x82,0x0b, //02         //william-20100407
+ 154      =1  0x83,0x1f,
+ 155      =1  0x84,0x44,               
+ 156      =1  0x85, 0x00,
+ 157      =1  0x8A, 0x12,
+ 158      =1  0x8B, 0x4D,
+ 159      =1  0x8C, 0x00,
+ 160      =1  0x8d,0x00,
+ 161      =1  0x8e,0x02,
+ 162      =1  0x8f,0x0d,//02 11-30-05-RYU Ticon Vertical Ragion is wider than PVR
+ 163      =1  
+ 164      =1  //--------- Latch Pulse (12) -----------------------------------------------
+ 165      =1  0x90,0x03,
+ 166      =1  0x91,0x49,
+ 167      =1  0x92,0x03,
+ 168      =1  0x93,0x49,
+ 169      =1  0x94,0x00,
+ 170      =1  0x95,0x01,
+ 171      =1  0x9a, 0x00,
+ 172      =1  0x9b,0x29,
+ 173      =1  0x9c, 0x00,
+ 174      =1  0x9d,0x01,
+ 175      =1  
+ 176      =1  //--------- Ro0xClock (08) -----------------------------------------------
+ 177      =1  0xa0,0x04,
+ 178      =1  0xa1,0x42,
+ 179      =1  0xa2,0x00,
+ 180      =1  0xa3,0x52,
+ 181      =1  0xa4, 0x00,
+ 182      =1  
+ 183      =1  //--------- Ro0xStarting Puls (05) -----------------------------------------------
+ 184      =1  0xa5,0x38,
+ 185      =1  0xa6, 0x00,
+ 186      =1  0xa7,0x01,
+ 187      =1  
+ 188      =1  0xAC, 0x03,
+ 189      =1  0xAD, 0xF6,
+ 190      =1  0xAE, 0x00,
+ 191      =1  0xAF, 0x6A,
+ 192      =1  0xB0, 0x02,
+ 193      =1  
+ 194      =1  //--------- Charp Pump & Vcom (8) -------------------------------------------------
+ 195      =1  0xb1,0x03,              //0x30,         //william-981102
+ 196      =1  0xb2,0x87,
+ 197      =1  0xb3,0x00,
+ 198      =1  //0xb4,0x02,
+ 199      =1  
+ 200      =1  0xC0, 0x25,
+ 201      =1  0xC1, 0xf4,
+ 202      =1  0xC2, 0x03,
+ 203      =1  0xC3, 0x04,
+ 204      =1  0xC4, 0x20,
+ 205      =1  0xC5, 0x09,
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 21  
+
+ 206      =1  0xC6, 0x27,
+ 207      =1  0xC7, 0x04,
+ 208      =1  0xC8, 0x00,
+ 209      =1  0xC9, 0x00,
+ 210      =1  0xCA, 0x00,
+ 211      =1  0xCB, 0xd7,
+ 212      =1  0xCC, 0x10,
+ 213      =1  0xCD, 0x00,
+ 214      =1  0xD0, 0x00,
+ 215      =1  0xD1, 0xF0,
+ 216      =1  0xD2, 0xF0,
+ 217      =1  0xD3, 0xF0,
+ 218      =1  0xD4, 0xa0,
+ 219      =1  0xD5, 0x08,
+ 220      =1  0xD6, 0x10,
+ 221      =1  0xD7, 0x00,
+ 222      =1  0xD8, 0x47,
+ 223      =1  0xD9, 0x10,
+ 224      =1  0xDA, 0x10,
+ 225      =1  0xF0, 0x00,
+ 226      =1  0xF1, 0x00,
+ 227      =1  0xF2, 0x00,
+ 228      =1  0xF3, 0x00,
+ 229      =1           
+ 230      =1  
+ 231      =1  0xff, 0x00,
+ 232      =1  
+ 233      =1  0xff, 0xff              // end of data
+ 234      =1  
+ 235      =1  
+ 236      =1  
+ 237      =1  
+ 238      =1  
+ 239      =1  
+ 240      =1  
+ 241      =1  
+ 242      =1  
+ 243      =1  
+ 244      =1  
+ 245      =1  
+ 246      =1  
+ 247      =1  
+ 248      =1  
+ 249      =1  
+ 250      =1  
+ 251      =1  
+ 252      =1  
+ 253      =1  
+ 254      =1  
+ 255      =1  
+ 256      =1  
+ 257      =1  
+ 176                          #elif defined AU_TICONLESS_7INCH_CCFL
+                                                              #include "data\WV_P3(WVGA AUO TCONLESS 7INCH PANEL).TXT"
+                              #elif defined AU_TICONLESS_10INCH       
+                                                              #include "data\WV_P3(WVGA AUO T-CON LESS).txt"
+                              #elif defined CMO
+                                                              #include "data\WV_P(WVGA CMO TCONLESS 7INCH PANEL).TXT"
+                              #elif defined HITACHI_T01
+                                                              #include "data\WV_N(WVGA_HITACHI_T_01).TXT"
+                              #elif defined HITACHI_TX23D12
+                                                              #include "data\WV_N(HITACHI_TX23D12).TXT"
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 22  
+
+                              #elif defined HITACHI_TX18D24
+                                                              #include "data\WV_N(HITACHI_TX18D24).txt"
+                              #elif defined HITACHI_TX18D16
+                                                              #include "data\WV_P(HITACHI_TX18D16).txt"
+                              #elif defined TMD_LTA070A320F
+                                                              #include "data\WV_N(TMD_LTA070A320F).txt"
+                              #elif defined TMD_LTA080B
+                                                              #include "data\WV_N(WVGA TMD_LTA080B).txt"
+                              #elif defined INNOLUX_AT080TN03
+                                                              #include "data\WV_N(INNOLUX_AT080TN03).TXT"
+                              #endif
+ 197              #elif defined WQVGA
+                              #if defined T_51945GD
+                                                              #include "data\WQV_N(T-51945GD).TXT"
+                              #else
+                                                              #include "data\WQV_P(AUO T-CON LESS ANALOG 7INCH).TXT"
+                              #endif
+                      #endif
+ 204          
+ 205          
+ 206          };
+ 207          
+ 208          #ifdef ADD_ANALOGPANEL
+              CODE BYTE       PAL_Regs_Analog[]   = { 
+                              #ifdef ADD_ANALOG_7INCH
+                                                              #include "data\WQV_N3(WVGA AUO T-CON LESS ANALOG 7INCH).TXT"
+                              #elif defined ADD_TMD_LTA05B352A
+                                                              #include "data\WQVGA_N_TMD(LTA05B352A).txt"
+                              #endif
+              };
+              #endif
+ 217          /*===========================================================================*/
+ 218          /*                              PC Mode Table                                */
+ 219          /*===========================================================================*/
+ 220          #ifdef SUPPORT_PC
+ 221          
+ 222          #if   defined SXGA
+                                                              #include "data\PC_SXGA.txt"
+              #elif defined XGA
+                                                              #include "data\PC_XGA.txt"
+              #elif defined SVGA
+                                                              #include "data\PC_SVGA.txt"
+              #elif defined VGA
+                                                              #include "data\PC_VGA.txt"
+              #elif defined WXGA
+                                                              #include "data\PC_WXGA.txt"
+              #elif defined WVGA
+ 233                                                          #include "data\PC_WVGA.txt"
+   1      =1  CODE struct _PCMDATA PCMDATA[] = {
+   2      =1  //========================================================================================================
+             -===
+   3      =1  //                       PC mode Table for WVGA Panel    09-Aug, 2002
+   4      =1  //========================================================================================================
+             -===
+   5      =1  #ifdef REFERENCE
+           =1 //       SUPPORT  HAN      VAN     IVF  CLOCK    low      high     Hst  Vst  IPF  PPF  VBack
+           =1                                                                      
+           =1         {  1,     720+2,   400+2,  70,  0x383,   0x383,   0x383,   139, 37,  283, 370, 0x40 },  //430   //  0: DOS m
+             -ode             
+           =1                                                                                                           
+             -          
+           =1         {  1,     640,     400+2,  85,  0x33f,   0x33f,   0x33f,   125, 43,  315, 460, 0x47 },          //  1: 640 x 400 
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 23  
+
+             -           
+           =1         {  1,     640,     400+2,  85,  0x33f,   0x33f,   0x33f,   157, 37,  315, 460, 0x47 },          //  2: 640 x 350 
+             -???        
+           =1         {  1,     720,     400+2,  85,  0x33f,   0x33f,   0x33f,   163, 47,  315, 460, 0x40 },          //  3: 720 x 400 
+             -???        
+           =1                                                                                                           
+             -          
+           =1 //      {  1,     640,     480,    60,  0x31f,   0x317,   0x327,   144, 35,  251, 380, 0x32 },          //  4: EE_VGA_6
+             -0            
+           =1         {  1,     640,     480,    60,  0x31f,   0x317,   0x327,   142, 26,  251, 380, 21 },            //  4: EE_VGA_60   
+             -         
+           =1         {  1,     640,     480,    66,  0x35f,   0x357,   0x37f,   144, 35,  302, 380, 0x17 },          //  5: EE_VGA_66 
+             -*** MAC    
+           =1         {  1,     640,     480,    70,  0x32f,   0x327,   0x337,   155, 22,  300, 430, 0x17 },          //  6: EE_VGA_70 
+             -           
+           =1         {  1,     640,     480,    72,  0x333,   0x32f,   0x347,   171, 30,  315, 450, 0x2a },          //  7: EE_VGA_72 
+             -           
+           =1         {  1,     640,     480,    75,  0x347,   0x32f,   0x34f,   187, 20,  315, 450, 0x17 },          //  8: EE_VGA_75 
+             -           
+           =1         {  1,     640,     480,    85,  0x33f,   0x337,   0x347,   139, 29,  360, 482, 0x1f },          //  9: EE_VGA_85 
+             -           
+           =1                                                                                                           
+             -          
+           =1         {  1,     800,     600,  56,  0x3ff,   0x3f7,   0x407,   150, 24,  360, 400, 0x19 },            // 10: EE_SVGA_56  
+             -         
+           =1 //      {  1,     800,     600,  60,  0x41f,   0x417,   0x427,   150, 28,  400, 338, 0x1a },            // 11: EE_SVGA_60
+             -           
+           =1         {  1,     800,     600,  60,  0x3ff,   0x3f7,   0x427,   150, 28,  400, 388, 0x1a },            // 11: EE_SVGA_60  
+             -         
+           =1         {  1,     800,     600,  70,  0x40f,   0x3ff,   0x417,   150, 25,  449, 390, 0x12 },            // 12: EE_SVGA_70  
+             -         
+           =1         {  1,     800,     600,  72,  0x40f,   0x407,   0x417,   150, 30,  500, 420, 0x1a },            // 13: EE_SVGA_72  
+             -         
+           =1 //      {  1,     800,     600,  75,  0x41f,   0x407,   0x427,   150, 25,  495, 400, 0x18 },            // 14: EE_SVGA_75
+             -           
+           =1         {  1,     800,     600,  75,  0x41f,   0x407,   0x427,   150, 25,  495, 500, 11 },              // 14: EE_SVGA_75    
+             -       
+           =1         {  0,     800,     600,  85,  0x41f,   0x40f,   0x427,   150, 31,  563, 440, 0x20 },            // 15: EE_SVGA_85  
+             -         
+           =1         {  1,     832,     624,    75,  0x47f,   0x45f,   0x487,   200, 30,  573, 440, 0x18 },          // 16: EE_832_75 
+             - *** MAC   
+           =1         {  1,    1024,     768,    60,  0x53f,   0x527,   0x547,   220, 36,  650, 440, 0x19 },          // 17: EE_XGA_60 
+             -           
+           =1 //      {  1,    1024,     768,    60,  0x53f,   0x527,   0x547,   220, 10,  650, 440, 13 },            // 17: EE_XGA_60 
+             -           
+           =1         {  0,    1024,     768,    70,  0x52f,   0x527,   0x54f,   220, 36,  750, 470, 0x19 },          // 18: EE_XGA_70 
+             -           
+           =1         {  0,    1024+8,   768+2,  72,  0x54f,   0x4ff,   0x557,   220, 33,  750, 470, 0x19 },  // 19: EE_XGA_72  
+             -          
+           =1         {  0,    1024,     768,    75,  0x51f,   0x517,   0x54f,   220, 32,  789, 490, 0x18 },          // 20: EE_XGA_75 
+             -           
+           =1         {  0,    1024+8,   768+2,  85,  0x55f,   0x557,   0x567,   220, 40,  945, 560, 0x19 },  // 21: EE_XGA_85  
+             -          
+           =1         {  0,    1152,     864,    60,  0x5ef,   0x5b7,   0x5f7,   300, 31,  847, 432, 39 },            // 22: EE_1152_60  
+             -         
+           =1         {  0,    1152,     864,    70,  0x5ff,   0x5c7,   0x607,   308, 36,  966, 432, 39 },            // 23: EE_1152_70  
+             -         
+           =1         {  0,    1152,     864,    75,  0x63f,   0x5e7,   0x647,   308, 36, 1080, 432, 39 },            // 24: EE_1152_75  
+             -         
+           =1         {  0,    1280,     1024,   60,  0x697,   0x697,   0x69f,   356, 42, 1080, 432, 39 },            // 25: EE_SXGA_60  
+             -         
+           =1         {  0,    1280,     1024,   70,  0x6bf,   0x6bf,   0x6bf,   356, 42, 1350, 432, 39 },            // 26: EE_SXGA_70  
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 24  
+
+             -         
+           =1         {  0,    1280,     1024,   75,  0x697,   0x68f,   0x6a7,   356, 42, 1350, 432, 39 },            // 27: EE_SXGA_75  
+             -         
+           =1         {  1,     720,        480, 60,  0x359,   0x359,   0x359,   123, 28,  251, 378, 17 },            // 28: EE_RGB_480P
+             -        
+           =1         {  1,    1280,        720, 60,  0x671,   0x671,   0x671,   282, 12,  742, 410, 3 },             // 29: EE_RGB_720P  
+             -      
+           =1         {  1,    1280,        720, 60,  0x7bb,   0x7bb,   0x7bb,   346, 25,  742, 378, 45 },            // 30: EE_RGB_720P5
+             -0 ???  
+           =1         {  0,    1920,        540, 60,  0x897,   0x897,   0x897,   300, 42,  740, 324, 32 },            // 31: EE_RGB_1080I
+             -       
+           =1         {  0,    1920, 540-40, 50,  0xa4f,   0xa4f,   0xa4f,   300, 41,  740, 324, 32 },                        // 32: EE_RGB_1080I50A
+             -    
+           =1         {  0,    1920, 540-40, 60,  0x897,   0x897,   0x897,   300, 42,  740, 324, 32 },                        // 33: EE_RGB_1080I50B
+             - ???
+           =1         {  0,     720,        240, 60,  0x359,   0x359,   0x359,   120, 10,  123, 324, 21 },            // 34: EE_RGB_480I 
+             -       
+           =1         {  0,     720,        288, 50,  0x35f,   0x35f,   0x35f,   134, 10,  131, 324, 16 },                    // 35: EE_RGB_576I
+             -        
+           =1         {  0,     720,        576, 50,  0x35f,   0x35f,   0x35f,   133, 36,  250, 324, 21 },                    // 36: EE_RGB_576P
+           =1         {  1,     720,        480, 60,  0x359,   0x359,   0x359,   123, 19,  251, 378, 25 },            // 37: EE_YPbPr_480
+             -P        
+           =1         {  1,    1280,        720, 60,  0x671,   0x671,   0x671,   282, 12,  742, 410, 3 },             // 38: EE_YPbPr_720P
+             -        
+           =1         {  1,    1280,        720, 60,  0x7bb,   0x7bb,   0x7bb,   346, 25,  742, 378, 45 },            // 39: EE_YPbPr_720
+             -P50 ???  
+           =1         {  0,    1920-96,  540-40, 60,  0x897,   0x897,   0x897,   300, 42,  740, 380, 32 },            // 40: EE_YPbPr_108
+             -0I       
+           =1         {  0,    1920-96,  540-40, 50,  0xa4f,   0xa4f,   0xa4f,   300, 41,  740, 324, 32 },            // 41: EE_YPbPr_108
+             -0I50A    
+           =1         {  0,    1920-96,  540-40, 60,  0x897,   0x897,   0x897,   300, 42,  740, 324, 32 },            // 42: EE_YPbPr_108
+             -0I50B ???
+           =1         {  1,     720,        240, 60,  0x359,   0x359,   0x359,   120, 15,  123, 360, 42 },            // 43: EE_YPbPr_480
+             -I        
+           =1         {  1,     720,        288, 50,  0x35f,   0x35f,   0x35f,   130, 20,  131, 324, 32 },                    // 44: EE_YPbPr_57
+             -6I        
+           =1         {  1,     720,        576, 50,  0x35f,   0x35f,   0x35f,   133, 30,  250, 324, 21 },                    // 45: EE_YPBPR_57
+             -6P
+           =1         {  0,       0,        0,    0,      0,       0,       0,     0,  0,    0,   0,  0 }                                     // 46: unknown
+           =1 #else
+  63      =1  //       SUPPORT  HAN      VAN     IVF  CLOCK    low      high     Hst  Vst  IPF  PPF  VBack
+  64      =1                                                                       
+  65      =1          {  1,     720+2,   400+2,  70,  0x383,   0x383,   0x383,   139, 37,  283, 470, 0x40 },  //430   //  0: DOS m
+             -ode             
+  66      =1                                                                                                            
+             -          
+  67      =1          {  1,     640,     400+2,  85,  0x33f,   0x337,   0x347,   125, 43,  315, 520, 0x47 },          //  1: 640 x 400 
+             -           
+  68      =1          {  1,     640,     400+2,  85,  0x33f,   0x33f,   0x33f,   157, 37,  315, 520, 0x47 },          //  2: 640 x 350 
+             -???        
+  69      =1          {  1,     720,     400+2,  85,  0x3a7,   0x3a1,   0x3af,   163, 47,  315, 520, 0x40 },          //  3: 720 x 400 
+             -(85 Hz)       
+  70      =1                                                                                                            
+             -          
+  71      =1  //      {  1,     640,     480,    60,  0x31f,   0x317,   0x327,   144, 35,  251, 380, 0x32 },          //  4: EE_VGA_6
+             -0            
+  72      =1          {  1,     640,     480,    60,  0x31f,   0x317,   0x327,   144, 26,  251, 380, 21 },            //  4: EE_VGA_60   
+             -         
+  73      =1          {  1,     640,     480,    66,  0x35f,   0x357,   0x37f,   144, 35,  302, 380, 0x17 },          //  5: EE_VGA_66 
+             -*** MAC    
+  74      =1          {  1,     640,     480,    70,  0x32f,   0x327,   0x337,   155, 22,  300, 430, 0x17 },          //  6: EE_VGA_70 
+             -           
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 25  
+
+  75      =1  //      {  1,     640,     480,    72,  0x333,   0x32f,   0x347,   171, 30,  315, 450, 0x2a },          //  7: EE_VGA_7
+             -2    
+  76      =1          {  1,     640,     480,    72,  0x33f,   0x337,   0x347,   171, 30,  315, 450, 0x2a },          //  7: EE_VGA_72 
+  77      =1          {  1,     640,     480,    75,  0x347,   0x341,   0x34f,   187, 20,  315, 450, 0x17 },          //  8: EE_VGA_75 
+             -           
+  78      =1          {  1,     640,     480,    85,  0x33f,   0x337,   0x347,   139, 29,  360, 510, 0x1f },          //  9: EE_VGA_85 
+             -           
+  79      =1                                                                                                            
+             -          
+  80      =1          {  1,     800,     600,  56,  0x3ff,   0x3f7,   0x407,   150, 24,  360, 430, 0x19 },            // 10: EE_SVGA_56  
+             -         
+  81      =1  //      {  1,     800,     600,  60,  0x41f,   0x3f7,   0x427,   150, 28,  400, 338, 0x1a },            // 11: EE_SVGA_60
+             -           
+  82      =1          {  1,     800,     600,  60,  0x41f,   0x417,   0x427,   150, 28,  400, 443, 0x1a },            // 11: EE_SVGA_60  
+             -         
+  83      =1          {  1,     800,     600,  70,  0x40f,   0x407,   0x417,   150, 25,  449, 450, 0x12 },            // 12: EE_SVGA_70  
+             -         
+  84      =1          {  1,     800,     600,  72,  0x40f,   0x407,   0x417,   150, 30,  500, 468, 0x1a },            // 13: EE_SVGA_72  
+             -         
+  85      =1  //      {  1,     800,     600,  75,  0x41f,   0x417,   0x427,   150, 25,  495, 400, 0x18 },            // 14: EE_SVGA_75
+             -           
+  86      =1          {  1,     800,     600,  75,  0x41f,   0x417,   0x427,   150, 25,  495, 450, 11 },                     // 14: EE_SVGA
+             -_75           
+  87      =1          {  0,     800,     600,  85,  0x417,   0x410,   0x41f,   150, 31,  562, 510, 0x20 },            // 15: EE_SVGA_85  
+             -         
+  88      =1                                                                                                            
+             -          
+  89      =1          {  0,     832,     624,    75,  0x47f,   0x45f,   0x487,   200, 30,  573, 440, 0x18 },          // 16: EE_832_75 
+             - *** MAC   
+  90      =1                                                                                                            
+             -          
+  91      =1          {  1,    1024,     768,    60,  0x53f,   0x537,   0x547,   220, 36,  650, 460, 0x19 },  //470   // 17: EE_XG
+             -A_60            
+  92      =1  //      {  1,    1024,     768,    60,  0x53f,   0x527,   0x547,   220, 10,  650, 440, 13 },            // 17: EE_XGA_60 
+             -           
+  93      =1          {  0,    1024,     768,    70,  0x52f,   0x527,   0x671,   220, 36,  750, 410, 0x19 },          // 18: EE_XGA_70 
+             -           
+  94      =1          { 0,    1024+8,   768+2,  72,  0x54f,   0x4ff,   0x557,   220, 33,  750, 470, 0x19 },           // 19: EE_XGA_72  
+             -          
+  95      =1          {  0,    1024,     768,    75,  0x51f,   0x517,   0x54f,   220, 32,  789, 490, 0x18 },          // 20: EE_XGA_75 
+             -           
+  96      =1          {  0,    1024+8,   768+2,  85,  0x55f,   0x557,   0x567,   220, 40,  945, 560, 0x19 },  // 21: EE_XGA_85  
+             -          
+  97      =1                                                                                                            
+             -          
+  98      =1          {  0,    1152,     864,    60,  0x5ef,   0x5b7,   0x5f7,   300, 31,  847, 432, 39 },            // 22: EE_1152_60  
+             -         
+  99      =1          {  0,    1152,     864,    70,  0x5ff,   0x5c7,   0x607,   308, 36,  966, 432, 39 },            // 23: EE_1152_70  
+             -         
+ 100      =1          {  0,    1152,     864,    75,  0x63f,   0x5e7,   0x647,   308, 36, 1080, 432, 39 },            // 24: EE_1152_75  
+             -         
+ 101      =1                                                                                                            
+             -          
+ 102      =1          {  0,    1280,     1024,   60,  0x701,   0x708,   0x70f,   356, 42, 1080, 500, 39 },            // 25: EE_SXGA_60  
+             -         
+ 103      =1          {  0,    1280,     1024,   70,  0x6bf,   0x6bf,   0x6bf,   356, 42, 1350, 432, 39 },            // 26: EE_SXGA_70  
+             -         
+ 104      =1          {  0,    1280,     1024,   75,  0x697,   0x68f,   0x6a7,   356, 42, 1350, 432, 39 },            // 27: EE_SXGA_75  
+             -         
+ 105      =1                                                                                                                   
+             -       
+ 106      =1          {  1,     720,        480, 60,  0x369,   0x369,   0x369,   123, 19,  251, 378, 34 },            // 28: EE_RGB_480P 
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 26  
+
+             -       
+ 107      =1          {  1,    1240,        720, 60,  0x671,   0x671,   0x671,   282, 12,  742, 420, 15 },            // 29: EE_RGB_720P 
+             -       
+ 108      =1          {  1,    1240,        720, 50,  0x7eb,   0x7eb,   0x7eb,   282, 25,  742, 378, 13 },            // 30: EE_RGB_720P5
+             -0 ???  
+ 109      =1          {  1,    1920-96,  540-40, 60,  0x857,   0x857,   0x857,   300, 42,  740, 380, 32 },            // 31: EE_RGB_1080I
+             -       
+ 110      =1          {  1,    1920-96,  540-40, 50,  0xa37,   0xa37,   0xa37,   300, 41,  740, 380, 32 },            // 32: EE_RGB_1080I
+             -50A    
+ 111      =1          {  1,    1920-96,  540-40, 60,  0x897,   0x897,   0x897,   300, 42,  740, 324, 32 },            // 33: EE_RGB_1080I
+             -50B ???
+ 112      =1          {  1,     704,        240, 60,  0x359,   0x359,   0x359,   120, 15,  123, 360, 32 },            // 34: EE_RGB_480I 
+             -       
+ 113      =1          {  1,     704,        288, 50,  0x35f,   0x35f,   0x35f,   130, 20,  131, 324, 32 },            // 35: EE_RGB_576I 
+             -       
+ 114      =1          { 1,     704,        576, 50,  0x365,   0x365,   0x365,   130, 30,  250, 324, 32},              // 36: EE_RGB_576P
+ 115      =1  
+ 116      =1                                                                                                                          
+ 117      =1          {  1,     720,        480, 60,  0x369,   0x369,   0x369,   123, 19,  251, 378, 34 },            // 37: EE_YPbPr_480
+             -P        
+ 118      =1          {  1,    1240,        720, 60,  0x671,   0x671,   0x671,   282, 12,  742, 420, 15 },            // 38: EE_YPbPr_720
+             -P        
+ 119      =1          {  1,    1240,        720, 50,  0x7eb,   0x7eb,   0x7eb,   282, 25,  742, 378, 13 },            // 39: EE_YPbPr_720
+             -P50 ???  
+ 120      =1          {  1,    1920-96,  540-40, 60,  0x857,   0x857,   0x857,   300, 42,  740, 380, 32 },            // 40: EE_YPbPr_108
+             -0I       
+ 121      =1          {  1,    1920-96,  540-40, 50,  0xa37,   0xa37,   0xa37,   300, 41,  740, 380, 32 },            // 41: EE_YPbPr_108
+             -0I50A    
+ 122      =1          {  1,    1920-96,  540-40, 60,  0x897,   0x897,   0x897,   300, 42,  740, 324, 32 },            // 42: EE_YPbPr_108
+             -0I50B ???
+ 123      =1          {  1,     704,        240, 60,  0x359,   0x359,   0x359,   120, 15,  123, 360, 32 },            // 43: EE_YPbPr_480
+             -I        
+ 124      =1          {  1,     704,        288, 50,  0x35f,   0x35f,   0x35f,   130, 20,  131, 324, 32 },            // 44: EE_YPbPr_576
+             -I        
+ 125      =1          {  1,     704,        576, 50,  0x365,   0x365,   0x365,   130, 30,  250, 324, 32 },            // 45: EE_YPBPR_576
+             -P
+ 126      =1          {  1,       0,        0,    0,      0,       0,       0,     0,  0,    0,   0,  0 }                     // 46: unknown
+ 127      =1  };
+ 128      =1  #endif 
+ 129      =1  
+ 234          #elif defined WQVGA
+                                                              #include "data\PC_WQVGA.txt"
+              #else
+                                                              #include "data\PC_VGA.txt"
+              #endif
+ 239          
+ 240          #endif  // SUPPORT_PC
+ 241          
+ 242          /*===========================================================================*/
+ 243          /*                              Component YPbPr Table                        */
+ 244          /*===========================================================================*/
+ 245          #ifdef SUPPORT_COMPONENT
+              
+              #if   defined SXGA
+                                                              #include "data\CV_SXGA.txt"
+              #elif defined XGA
+                                                              #include "data\CV_XGA.txt"
+              #elif defined SVGA
+                                                              #include "data\CV_SVGA.txt"
+              #elif defined VGA
+                                                              #include "data\CV_VGA.txt"
+              #elif defined WXGA
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 27  
+
+                                                              #include "data\CV_WXGA.txt"
+              #elif defined WVGA
+                                                              #include "data\CV_WVGA.txt"
+              #elif defined WQVGA
+                                                              #include "data\CV_WQVGA.txt"
+              #elif defined QVGA
+                                                              #include "data\CV_QVGA.txt"
+              #else
+                                                              #include "data\CV_VGA.txt"
+              #endif
+              
+              #endif //SUPPORT_COMPONENT
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 28  
+
+ASSEMBLY LISTING OF GENERATED OBJECT CODE
+
+
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 29  
+
+NAME                                    CLASS   MSPACE  TYPE    OFFSET  SIZE
+====                                    =====   ======  ====    ======  ====
+
+
+DWORD. . . . . . . . . . . . . . . . .  TYPEDEF  -----  U_LONG   -----  4
+CAM_R. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BAR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CAR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ACR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CBR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BCR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+AVMode . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+SourceModeType . . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+CAM_NUM. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+NTSC_Regs. . . . . . . . . . . . . . .  PUBLIC   CODE   ARRAY    0000H  338
+CAM_RAB_H. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BA . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_AB . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+BYTE . . . . . . . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+CAM_CA . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_AC . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BC . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CB . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+SourceModeTypeEnum . . . . . . . . . .  * TAG *  -----  ENUM     -----  -----
+CAM_RAB_T. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+WORD . . . . . . . . . . . . . . . . .  TYPEDEF  -----  U_INT    -----  2
+CAM_AR . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BR . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_RB . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CR . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+Register . . . . . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+PAL_Regs . . . . . . . . . . . . . . .  PUBLIC   CODE   ARRAY    0152H  338
+_PCMDATA . . . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  22
+  Support. . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  HAN. . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0001H  2
+  VAN. . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0003H  2
+  IVF. . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0005H  2
+  CLOCK. . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0007H  2
+  low. . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0009H  2
+  high . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    000BH  2
+  Hstart . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    000DH  2
+  Vstart . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    000FH  2
+  IPF. . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0011H  2
+  PPF. . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0013H  2
+  VBack. . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0015H  1
+CAM_QUAD . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+VGAMode. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+SEQ. . . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABR_T3 . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABR_T4 . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_A. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_B. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_C. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_D. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CAB. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BAC. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABC. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+PCMDATA. . . . . . . . . . . . . . . .  PUBLIC   CODE   ARRAY    02A4H  1034
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+C51 COMPILER V8.16   TABLE                                                                 03/04/2011 15:51:19 PAGE 30  
+
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   1710    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

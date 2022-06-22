@@ -1,0 +1,1963 @@
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 1   
+
+
+C51 COMPILER V7.09, COMPILATION OF MODULE AUDALC106
+OBJECT MODULE PLACED IN .\Output\audAlc106.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE audAlc106.c COMPACT OPTIMIZE(9,SIZE) BROWSE INCDIR(.\Include\) DEBUG OBJECT
+                    -EXTEND CODE LISTINCLUDE SYMBOLS PRINT(.\Source\audAlc106.lst) OBJECT(.\Output\audAlc106.obj)
+
+line level    source
+
+   1          //=========================================
+   2          //      FILE: AUDALC106.c
+   3          //      FUNCTION: REALTEK ALC106 AUDIO AMPLIFIER DRIVER
+   4          //                                                                                                              By Kane Ling Jul. 20, 2010
+   5          //=========================================
+   6          
+   7          #include "Config.h"
+   1      =1  /*****************************************************************************/
+   2      =1  /*                           System Configurations                           */
+   3      =1  /*                                                      rev 0.10 include auto test                                               */
+   4      =1  // 0.11 change DTV, PC input initial download data correct for Charge Pump
+   5      =1  // 0.12 correct phase measurement routine '>>3'
+   6      =1  // 0.13 enable function for SPI control... only EXT MCU case
+   7      =1  // 0.14 corrected PC measurement......
+   8      =1  // 0.0a test function only for CVBS, SVIDEO
+   9      =1  // 0.15 corrected DTV scaler setting for panel resolutions
+  10      =1  // 0.0b panel for AND 640x480 TICON panel
+  11      =1  // 0.16 corrected COMPONENT scaler setting for panel resolutions        11/21/2007
+  12      =1  // 0.0c automatic chip test
+  13      =1  // 0.17 add monitor function, osd grid for writing grid
+  14      =1  // 0.18 add component, dtv pc for analogpanel, 12/06/2007
+  15      =1  // 0.19 correct pal input for CES, 12/20/2007
+  16      =1  // 0.1a CCFL control, 12/28/2007
+  17      =1  // 0.19 Multi Grid for Banking on Internal MCU  01/17/2008
+  18      =1  // 0.20 CCFL contol for backlight brightness    01/21/2008
+  19      =1  // 0.21 CCFL contol for backlight brightness    01/25/2008
+  20      =1  // 0.22 phase setting 02/07/2008
+  21      =1  // 0.221 display input correction 04/03/2008
+  22      =1  // 0.23 PC, DTV mode, no signal display
+  23      =1  // 0.24 PC Auto Color adjustment
+  24      =1  // 0.25 revised PC Auto Clock adjustment - find divide number and phase
+  25      =1  // 0.26 Digital RGB for TW8826
+  26      =1  // 0.27 Correct LVDS control                                    08/22/2008
+  27      =1  // 0.28 Add WSVGA resolution                                    10/23/2008
+  28      =1  // 0.29 Add NEW GRID                                                    11/14/2008
+  29      =1  // 0.30 Fix DTV input                                                   12/10/2008
+  30      =1  // 0.31 Add 1080i23, 24, 25A, 25B                               01/20/2009
+  31      =1  // 0.32 TCON setting FIX all mode                               01/22/2009
+  32      =1  // 0.33 autodetect is auto on/off by dip sw1    02/02/2009
+  33      =1  // 0.34 Fix autocolor function and clamp position 02/08/2009
+  34      =1  /*****************************************************************************/
+  35      =1  #ifndef __CONFIG_H__
+  36      =1  #define __CONFIG_H__
+  37      =1  
+  38      =1  //#define INTERNAL_MCU -- defined by Project Compiler session
+  39      =1  //#define       HS                      
+  40      =1  //#define       AWT             1
+  41      =1  //#define       E_Wintek        2
+  42      =1  #define         AWT             
+  43      =1  //-----------------------------------------------------------------------------
+  44      =1  //              Firmware Version
+  45      =1  //-----------------------------------------------------------------------------
+  46      =1  #define FWVER                   0x140                   // Rev 0.14
+  47      =1  //-----------------------------------------------------------------------------
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 2   
+
+  48      =1  //              Compiler
+  49      =1  //-----------------------------------------------------------------------------
+  50      =1  #define KEILC                                           // Keil C 5.0
+  51      =1  //-----------------------------------------------------------------------------
+  52      =1  //              MPU Clock
+  53      =1  //-----------------------------------------------------------------------------
+  54      =1  #ifndef INTERNAL_MCU
+  55      =1  //#define CLOCK_11M                                     // 11.0592MHz
+  56      =1  #define CLOCK_22M                                       // 22.1184MHz
+  57      =1  #else                                                           // INTERNAL_MCU
+           =1 #define CLOCK_27M                                       // 27MHz
+           =1 #define REG_START_ADDRESS       0xc000          // register start 0xc000, for page0, 0xc100-page1 
+           =1 #endif
+  61      =1  //-----------------------------------------------------------------------------
+  62      =1  //              TW88 Version
+  63      =1  //-----------------------------------------------------------------------------
+  64      =1  #define TW8816
+  65      =1  //-----------------------------------------------------------------------------
+  66      =1  //              Options for Backlight control
+  67      =1  //-----------------------------------------------------------------------------
+  68      =1  //#define       BACKLIGHT_CCFL
+  69      =1  //#define       BACKLIGHT_LED
+  70      =1  #define BACKLIGHT_PWM
+  71      =1  
+  72      =1  //-----------------------------------------------------------------------------
+  73      =1  //              Panel Resolution
+  74      =1  //-----------------------------------------------------------------------------
+  75      =1  // ---- Select Default Panel
+  76      =1  //
+  77      =1  //#define UXGA                                          // 1600 x 1200
+  78      =1  //#define SXGA                                          // 1280 x 1024
+  79      =1  //#define XGA  // 1024 x 768
+  80      =1  #ifdef XGA
+           =1         #define LVDS                                    
+           =1         #define PWIDTH  1024
+           =1         #define PHEIGHT 768
+           =1 #endif
+  85      =1  //#define SVGA                                          //  800 x 600
+  86      =1  //#define VGA                                           //  640 x 480
+  87      =1  #ifdef VGA
+           =1         #define PWIDTH  640
+           =1         #define PHEIGHT 480
+           =1         //#define       HITACHI_640_B_160               //--> 640 x 160
+           =1         #define AND_640_480
+           =1 #endif
+  93      =1  //#define WXGA                                          // 1280 x 768 (15:9) // 1366 x 768 (16:9)
+  94      =1  #ifdef WXGA
+           =1     //#define WX_SHARP_LQ106K1LA
+           =1         #define PWIDTH  1280
+           =1         #define PHEIGHT 768
+           =1 #endif
+  99      =1  //#define WSVGA                                         // 1024 x 600   *** only video mode
+ 100      =1  #ifdef WSVGA
+           =1         #define PWIDTH  1024
+           =1         #define PHEIGHT 600
+           =1         #define UNIDEN_1024_600
+           =1 #endif
+ 105      =1  //#define WVGA                                          //  800 x 480
+ 106      =1  #ifdef WVGA
+           =1         #define PWIDTH  800
+           =1         #define PHEIGHT 600//480
+           =1         // If WVGA, you have to select panel.
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 3   
+
+           =1         //#define AU_10INCH
+           =1         //#define WVGA_TPO
+           =1         //#define SAMSUNG_10INCH
+           =1         //#define SAMSUNG_TICONLESS_10INCH
+           =1         //#define SHARP_TICONLESS_7INCH
+           =1         #define AU_TICONLESS_7INCH
+           =1         //#define INNOLUX_AT080TN03
+           =1         //#define AU_TICONLESS_7INCH_CCFL
+           =1         //#define CMO                   // CHIMEI panel
+           =1         //#define AU_TICONLESS_10INCH
+           =1         //#define HITACHI_T01
+           =1         //#define HITACHI_TX23D12
+           =1         //#define HITACHI_TX18D24
+           =1         //#define HITACHI_TX18D16
+           =1         //#define TMD_LTA070A320F
+           =1         //#define TMD_LTA080B
+           =1 #endif  //WVGA
+ 127      =1  //#define HVGA                                          //  480 x 320
+ 128      =1  //#define QVGA                                          //  320 x 240   *** only video mode
+ 129      =1  #ifdef QVGA
+           =1         #define PWIDTH  320
+           =1         #define PHEIGHT 240
+           =1         //#define HITACHI_TX09D73
+           =1         //#define AU_DELTARGB
+           =1         //#define SHARP_LQ050Q5DR01
+           =1         //#define SHARP_LQ035
+           =1         //#define       TMD
+           =1 #endif
+ 138      =1  
+ 139      =1  #define WQVGA                                           //  480 x 234   *** only video mode
+ 140      =1  #ifdef WQVGA
+ 141      =1          #define PWIDTH  480
+ 142      =1          #define PHEIGHT 240
+ 143      =1          // If WQVGA, you have to select panel   
+ 144      =1      #define ANALOG_7INCH
+ 145      =1          //#define       PWIDTH  400
+ 146      =1          //#define PHEIGHT       240
+ 147      =1          //#define SHARP_LQ043T3DX02             //  400 x 237
+ 148      =1          //#define LG_ANALOG
+ 149      =1          //#define TMD_ANALOG                            //TMD_LTA05B352A
+ 150      =1          //#define       T_51945GD                               // Optorex Panel
+ 151      =1  #endif  // WQVGA
+ 152      =1  
+ 153      =1  //if LVDS pannel disable TICONLESS
+ 154      =1  
+ 155      =1  //-----------------------------------------------------------------------------
+ 156      =1  //---- Add Support One more panel with DIPSW#1
+ 157      =1  //---- Ex. Add Analog AU 7" Panel with Default Panel for evalution
+ 158      =1  //#define ADD_ANALOGPANEL               // Added Analog panel(AU7") from default set panel(expect WQVGA) with DIP #1 sw
+             -itch.(DIP#1=L:ANALOG, H:DEFAULT)
+ 159      =1                                                          // It can't support WQVGA and ADD_ANALOGPANEL same time!!
+ 160      =1          //#define ADD_ANALOG_7INCH
+ 161      =1          //#define ADD_TMD_LTA05B352A
+ 162      =1                                                                          
+ 163      =1  //---- Support Wide panel function
+ 164      =1  #if (defined WXGA) || (defined WSVGA) || (defined WVGA) || (defined WQVGA)
+ 165      =1  #define WIDE_SCREEN                             // Can support 4 display mode, i.e. Normal, Wide, Full, Zoom
+ 166      =1  #endif                                                          // Tested panasonic WVGA panel.
+ 167      =1  
+ 168      =1  //-----------------------------------------------------------------------------
+ 169      =1  //              Panel Vendor Specific
+ 170      =1  //-----------------------------------------------------------------------------
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 4   
+
+ 171      =1  
+ 172      =1  //-----------------------------------------------------------------------------
+ 173      =1  //              TV Tuner
+ 174      =1  //-----------------------------------------------------------------------------
+ 175      =1  #define PHILIPS                         0
+ 176      =1  #define ALPS                            1               // ALPS, LG
+ 177      =1  #define TEMIC                           2
+ 178      =1  #define TVAVA                           3
+ 179      =1  #define LGTUNER                         4
+ 180      =1  #define SAMSUNGMUTITUNER        5
+ 181      =1  
+ 182      =1  #define TVTunerDevice           4
+ 183      =1  //-----------------------------------------------------------------------------
+ 184      =1  //              IR Remote Controller Type
+ 185      =1  //-----------------------------------------------------------------------------
+ 186      =1  //#define REMO_RC5                                      // RC5 style
+ 187      =1  #define TECHWELL_REMOCON
+ 188      =1  //#define REMO_NEC                                      // NEC style
+ 189      =1  //#define PHILIPS_REMOCON // New remocon 
+ 190      =1  
+ 191      =1  
+ 192      =1  //-----------------------------------------------------------------------------
+ 193      =1  //              I2C Device Access Address Mapping
+ 194      =1  //-----------------------------------------------------------------------------
+ 195      =1  
+ 196      =1  #define EEPROMI2CAddress        0xa0    // EEPROM (24C16)
+ 197      =1  #define TW88I2CAddress          0x8a    // TW880x
+ 198      =1  
+ 199      =1  #define MSPI2CAddress           0x80    // MSP
+ 200      =1  #define ALC106I2CAddress                0x4A    // MSP
+ 201      =1  //-----------------------------------------------------------------------------
+ 202      =1  //              Options for Possible Inputs
+ 203      =1  //-----------------------------------------------------------------------------
+ 204      =1  
+ 205      =1  
+ 206      =1  
+ 207      =1  //#define SUPPORT_SVIDEO                     //andy Awt 20090914
+ 208      =1  //#define SUPPORT_COMPONENT                     // support component analog to decoder//andy Awt 20090914
+ 209      =1  
+ 210      =1  //#define SUPPORT_DTV                           // support DTV input through component( to ADC ).//andy Awt 20090914
+ 211      =1  #define SUPPORT_PC                              // support PC function
+ 212      =1  //#define SUPPORT_DVI                           // support DVI input
+ 213      =1  #define SUPPORT_SDCARD
+ 214      =1  
+ 215      =1  //#define SUPPORT_RS485
+ 216      =1  
+ 217      =1  //-----------------------------------------------------------------------------
+ 218      =1  //              Options for Possible Standards
+ 219      =1  //              Default:NTSC
+ 220      =1  //-----------------------------------------------------------------------------
+ 221      =1  #define SUPPORT_PAL                     
+ 222      =1  #define SUPPORT_SECAM
+ 223      =1  #define SUPPORT_NTSC4           
+ 224      =1  #define SUPPORT_PALM    
+ 225      =1  #define SUPPORT_PALN            
+ 226      =1  #define SUPPORT_PAL60           
+ 227      =1  
+ 228      =1  
+ 229      =1  //#define ID_CHECK_BY_FW                        // in Video mode, check input system ID by firmware
+ 230      =1  
+ 231      =1  //-----------------------------------------------------------------------------
+ 232      =1  //              Options for Debugging/Release
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 5   
+
+ 233      =1  //-----------------------------------------------------------------------------
+ 234      =1  //#define SUPPORT_PATTERN                       // support LCD test pattern
+ 235      =1  
+ 236      =1  
+ 237      =1  #ifndef WQVGA
+           =1         #ifndef QVGA
+           =1 #define SUPPORT_OSDPOSITIONMOVE
+           =1         #endif
+           =1 #endif
+ 242      =1  
+ 243      =1  #define SERIAL                                  // include serial communication routines
+ 244      =1  
+ 245      =1  //#define SUPPORT_DEBUG                         // Support to use Read & Write in debug OSD Window by remocon.
+ 246      =1  
+ 247      =1  //#define DEBUG                                         // include debug information
+ 248      =1  #ifdef DEBUG
+           =1         //#define DEBUG_MAIN
+           =1         //#define DEBUG_TIME
+           =1         //#define DEBUG_KEYREMO
+           =1         //#define DEBUG_TW88
+           =1         //#define DEBUG_DECODER
+           =1         //#define DEBUG_I2C
+           =1         //#define DEBUG_EEP
+           =1         //#define DEBUG_OSD
+           =1         //#define DEBUG_AUDIO
+           =1         //#define DEBUG_SETPANEL
+           =1         //#define DEBUG_DTV
+           =1         #define DEBUG_PC
+           =1         //#define DEBUG_PC_MEAS
+           =1         #define DEBUG_PC_COLOR
+           =1         //#define DEBUG_COMPONENT
+           =1         //#define DEBUG_BANK
+           =1         //#define DEBUG_PAUSE
+           =1         //#define DEBUG_MCU
+           =1 #endif
+ 268      =1  
+ 269      =1  #define AUTOCALC_PC                                     // in PC mode, Enable Auto Calcuration
+ 270      =1  //#define SUPPORT_USERCOLORFROMTXT      // Use color setting of text file in Color mode=USER MODE which is as B
+             -rightness(Reg10), Contast(Reg11),
+ 271      =1                                                                          //    Sat_U(Reg13),Sat_V(Reg14),Sharpness(Reg12,Reg78)                                                                  
+ 272      =1  //#define SUPPORT_GAMMA
+ 273      =1  
+ 274      =1  //#define CHIP_MANUAL_TEST                      // DIPSW#1
+ 275      =1  
+ 276      =1  #ifndef INTERNAL_MCU
+ 277      =1  //#define NO_INITIALIZE                         // After Power switch turn on with DIP SW4 Enable(Low), or pressed MENU button 
+             -for internal MCU
+ 278      =1                                      //     micom works to access only I2C bus by serial command.
+ 279      =1  #endif
+ 280      =1  
+ 281      =1  //#define SUPPORT_KRS_OSDDEMO           // For KRS Company Demo 
+ 282      =1  //#define SUPPORT_LINE_OSDDEMO
+ 283      =1  
+ 284      =1  //-----------------------------------------------------------------------------
+ 285      =1  //              Special Features
+ 286      =1  //-----------------------------------------------------------------------------
+ 287      =1  
+ 288      =1  #ifndef INTERNAL_MCU
+ 289      =1  //#define       SUPPORT_DELTA_RGB
+ 290      =1  #endif
+ 291      =1  #define SUPPORT_SELECTKEY                       // choose the keymap of using select key or left,right key.
+ 292      =1  //-----------------------------------------------------------------------------
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 6   
+
+ 293      =1  #endif  //__CONFIG_H__
+   8          
+   9          #include "reg.h"
+   1      =1  //
+   2      =1  //Registers.h   : Register declaration
+   3      =1  //
+   4      =1  
+   5      =1  #ifndef __REGISTERS__
+   6      =1  #define __REGISTERS__
+   7      =1  
+   8      =1  #ifdef INTERNAL_MCU
+           =1 /*  BYTE Registers  */
+           =1 sfr P0    = 0x80;
+           =1 sfr P1    = 0x90;
+           =1 sfr P2    = 0xA0;
+           =1 sfr P3    = 0xB0;
+           =1 sfr PSW   = 0xD0;
+           =1 sfr ACC   = 0xE0;
+           =1 sfr B     = 0xF0;
+           =1 sfr SP    = 0x81;
+           =1 sfr DPL   = 0x82;
+           =1 sfr DPH   = 0x83;
+           =1 sfr PCON  = 0x87;
+           =1 sfr TCON  = 0x88;
+           =1 sfr TMOD  = 0x89;
+           =1 sfr TL0   = 0x8A;
+           =1 sfr TL1   = 0x8B;
+           =1 sfr TH0   = 0x8C;
+           =1 sfr TH1   = 0x8D;
+           =1 sfr IE    = 0xA8;
+           =1 sfr IP    = 0xB8;
+           =1 sfr SCON  = 0x98;
+           =1 sfr SBUF  = 0x99;
+           =1 
+           =1 //sfr P4    = 0xd8;
+           =1 
+           =1 /*  8052 Extensions  */
+           =1 sfr EXIF  = 0x91;               // external interrupt 2,3,4,5 flags should be cleared by software
+           =1 sfr T2CON = 0xC8;
+           =1 sfr RCAP2L = 0xCA;
+           =1 sfr RCAP2H = 0xCB;
+           =1 sfr TL2   = 0xCC;
+           =1 sfr TH2   = 0xCD;
+           =1 sfr EICON = 0xD8;
+           =1 sfr EIE   = 0xE8;
+           =1 sfr EIP   = 0xF8;
+           =1 
+           =1 /*      TW88 Core Extension */
+           =1 sfr     BANKREG         = 0x9A;
+           =1 sfr     SPICONTROL      = 0x9B;
+           =1 sfr     T0HIGH          = 0x9C;
+           =1 sfr     T0LOW           = 0x9D;
+           =1 sfr     T1HIGH          = 0x9E;
+           =1 sfr     T1LOW           = 0x9F;
+           =1 sfr     T2HIGH          = 0x93;
+           =1 sfr     T2LOW           = 0x94;
+           =1 
+           =1 /*  BIT Registers  */
+           =1 /*  PSW  */
+           =1 sbit CY    = 0xD7;
+           =1 sbit AC    = 0xD6;
+           =1 sbit F0    = 0xD5;
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 7   
+
+           =1 sbit RS1   = 0xD4;
+           =1 sbit RS0   = 0xD3;
+           =1 sbit OV    = 0xD2;
+           =1 sbit P     = 0xD0;
+           =1 
+           =1 /*  TCON  */
+           =1 sbit TF1   = 0x8F;
+           =1 sbit TR1   = 0x8E;
+           =1 sbit TF0   = 0x8D;
+           =1 sbit TR0   = 0x8C;
+           =1 sbit IE1   = 0x8B;
+           =1 sbit IT1   = 0x8A;
+           =1 sbit IE0   = 0x89;
+           =1 sbit IT0   = 0x88;
+           =1 
+           =1 /*  IE  */
+           =1 sbit EA    = 0xAF;
+           =1 sbit ES    = 0xAC;
+           =1 sbit ET1   = 0xAB;
+           =1 sbit EX1   = 0xAA;
+           =1 sbit ET0   = 0xA9;
+           =1 sbit EX0   = 0xA8;
+           =1 
+           =1 /*  EIE  */
+           =1 sbit EWDI  = 0xEC;              // Watch dog timer interrupt enable
+           =1 sbit EX5   = 0xEB;              // external interrupt 5 enable
+           =1 sbit EX4   = 0xEA;              // external interrupt 4 enable
+           =1 sbit EX3   = 0xE9;              // external interrupt 3 enable
+           =1 sbit EX2   = 0xE8;              // external interrupt 2 enable
+           =1 
+           =1 /*  IP  */
+           =1 sbit PS    = 0xBC;
+           =1 sbit PT1   = 0xBB;
+           =1 sbit PX1   = 0xBA;
+           =1 sbit PT0   = 0xB9;
+           =1 sbit PX0   = 0xB8;
+           =1 
+           =1 /*  EIP  */
+           =1 sbit PWDI  = 0xFC;              // Watch dog timer interrupt priority
+           =1 sbit PX5   = 0xFB;              // external interrupt5 priority
+           =1 sbit PX4   = 0xFA;              // external interrupt4 priority
+           =1 sbit PX3   = 0xF9;              // external interrupt3 priority
+           =1 sbit PX2   = 0xF8;              // external interrupt2 priority
+           =1 
+           =1 /*  P3  */
+           =1 sbit RD    = 0xB7;
+           =1 sbit WR    = 0xB6;
+           =1 sbit T1    = 0xB5;
+           =1 sbit T0    = 0xB4;
+           =1 sbit INT1  = 0xB3;
+           =1 sbit INT0  = 0xB2;
+           =1 sbit TXD   = 0xB1;
+           =1 sbit RXD   = 0xB0;
+           =1 
+           =1 /*  SCON  */
+           =1 sbit SM0   = 0x9F;
+           =1 sbit SM1   = 0x9E;
+           =1 sbit SM2   = 0x9D;
+           =1 sbit REN   = 0x9C;
+           =1 sbit TB8   = 0x9B;
+           =1 sbit RB8   = 0x9A;
+           =1 sbit TI    = 0x99;
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 8   
+
+           =1 sbit RI    = 0x98;
+           =1 
+           =1 /*  8052 Extensions  */
+           =1 /*  IE  */
+           =1 sbit ET2   = 0xAD;
+           =1 
+           =1 /*  IP  */
+           =1 sbit PT2   = 0xBD;
+           =1 
+           =1 /*  P1  */
+           =1 sbit T2EX  = 0x91;
+           =1 sbit T2    = 0x90;
+           =1              
+           =1 /*  T2CON  */
+           =1 sbit TF2   = 0xCF;
+           =1 sbit EXF2  = 0xCE;
+           =1 sbit RCLK  = 0xCD;
+           =1 sbit TCLK  = 0xCC;
+           =1 sbit EXEN2 = 0xCB;
+           =1 sbit TR2   = 0xCA;
+           =1 sbit C_T2  = 0xC9;
+           =1 sbit CP_RL2= 0xC8;
+           =1 
+           =1 sfr     CHPENR = 0xF6;
+           =1 sfr     CHPCON = 0xBF;
+           =1 sfr     SFRAL  = 0xC4;
+           =1 sfr     SFRAH  = 0xC5;
+           =1 sfr     SFRFD  = 0xC6;
+           =1 sfr     SFRCN  = 0xC7;
+           =1 
+           =1 sbit P0_0  = 0x80;
+           =1 sbit P0_1  = 0x81;
+           =1 sbit P0_2  = 0x82;
+           =1 sbit P0_3  = 0x83;
+           =1 sbit P0_4  = 0x84;
+           =1 sbit P0_5  = 0x85;
+           =1 sbit P0_6  = 0x86;
+           =1 sbit P0_7  = 0x87;
+           =1 
+           =1 sbit P1_0  = 0x90;
+           =1 sbit P1_1  = 0x91;
+           =1 sbit P1_2  = 0x92;
+           =1 sbit P1_3  = 0x93;
+           =1 sbit P1_4  = 0x94;
+           =1 sbit P1_5  = 0x95;
+           =1 sbit P1_6  = 0x96;
+           =1 sbit P1_7  = 0x97;
+           =1 
+           =1 sbit P2_0  = 0xa0;
+           =1 sbit P2_1  = 0xa1;
+           =1 sbit P2_2  = 0xa2;
+           =1 sbit P2_3  = 0xa3;
+           =1 sbit P2_4  = 0xa4;
+           =1 sbit P2_5  = 0xa5;
+           =1 sbit P2_6  = 0xa6;
+           =1 sbit P2_7  = 0xa7;
+           =1 
+           =1 sbit P3_0  = 0xb0;
+           =1 sbit P3_1  = 0xb1;
+           =1 sbit P3_2  = 0xb2;
+           =1 sbit P3_3  = 0xb3;
+           =1 sbit P3_4  = 0xb4;
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 9   
+
+           =1 sbit P3_5  = 0xb5;
+           =1 sbit P3_6  = 0xb6;
+           =1 sbit P3_7  = 0xb7;
+           =1 
+           =1 #else   // external MCU=WINBOND
+ 189      =1  /*  BYTE Registers  */
+ 190      =1  sfr P0    = 0x80;
+ 191      =1  sfr P1    = 0x90;
+ 192      =1  sfr P2    = 0xA0;
+ 193      =1  sfr P3    = 0xB0;
+ 194      =1  sfr PSW   = 0xD0;
+ 195      =1  sfr ACC   = 0xE0;
+ 196      =1  sfr B     = 0xF0;
+ 197      =1  sfr SP    = 0x81;
+ 198      =1  sfr DPL   = 0x82;
+ 199      =1  sfr DPH   = 0x83;
+ 200      =1  sfr PCON  = 0x87;
+ 201      =1  sfr TCON  = 0x88;
+ 202      =1  sfr TMOD  = 0x89;
+ 203      =1  sfr TL0   = 0x8A;
+ 204      =1  sfr TL1   = 0x8B;
+ 205      =1  sfr TH0   = 0x8C;
+ 206      =1  sfr TH1   = 0x8D;
+ 207      =1  sfr CKCON = 0x8E;               //clock control register, default =0x01
+ 208      =1  sfr IE    = 0xA8;
+ 209      =1  sfr IP    = 0xB8;
+ 210      =1  sfr SCON  = 0x98;
+ 211      =1  sfr SBUF  = 0x99;
+ 212      =1  sfr P4 = 0xE8; //Megawin Ryan@970716
+ 213      =1  //sfr P4    = 0xa5;      //SST MCU
+ 214      =1  //sfr P4    = 0xd8;             //winbond<960820>
+ 215      =1  
+ 216      =1  
+ 217      =1  /*  8052 Extensions  */
+ 218      =1  sfr ADCTL = 0xC5;               //william-20111017
+ 219      =1  sfr ADCV = 0xC6;                //william-20111017
+ 220      =1  sfr ADCVL = 0xE8;               //william-20111017
+ 221      =1  sfr T2CON = 0xC8;
+ 222      =1  sfr RCAP2L = 0xCA;
+ 223      =1  sfr RCAP2H = 0xCB;
+ 224      =1  sfr TL2   = 0xCC;
+ 225      =1  sfr TH2   = 0xCD;
+ 226      =1  
+ 227      =1  // for UART2
+ 228      =1  sfr S2CON  = 0xAA;
+ 229      =1  sfr S2BRT  = 0xBA;
+ 230      =1  sfr S2BUF  = 0x9A;
+ 231      =1  sfr AUXR2  = 0xA6;
+ 232      =1  sfr AUXIE  = 0xAD;
+ 233      =1  
+ 234      =1  
+ 235      =1  sfr P1M0  = 0x91;
+ 236      =1  sfr P1M1  = 0x92;
+ 237      =1  sfr P0M0  = 0x93;
+ 238      =1  sfr P0M1  = 0x94;
+ 239      =1  
+ 240      =1  
+ 241      =1  
+ 242      =1  // for PCA
+ 243      =1  sfr CCON   = 0xD8;
+ 244      =1  sfr CMOD   = 0xD9;
+ 245      =1  sfr CCAPM0 = 0xDA;
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 10  
+
+ 246      =1  sfr CCAPM1 = 0xDB;
+ 247      =1  sfr CCAPM2 = 0xDC;
+ 248      =1  sfr CCAPM3 = 0xDD;
+ 249      =1  sfr CCAPM4 = 0xDE;
+ 250      =1  sfr CCAPM5 = 0xDF;
+ 251      =1  sfr CL     = 0xE9;
+ 252      =1  sfr CH     = 0xF9;
+ 253      =1  sfr CCAP0L = 0xEA;
+ 254      =1  sfr CCAP0H = 0xFA;
+ 255      =1  sfr CCAP1L = 0xEB;
+ 256      =1  sfr CCAP1H = 0xFB;
+ 257      =1  sfr CCAP2L = 0xEC;
+ 258      =1  sfr CCAP2H = 0xFC;
+ 259      =1  sfr CCAP3L = 0xED;
+ 260      =1  sfr CCAP3H = 0xFD;
+ 261      =1  sfr CCAP4L = 0xEE;
+ 262      =1  sfr CCAP4H = 0xFE;
+ 263      =1  sfr CCAP5L = 0xEF;
+ 264      =1  sfr CCAP5H = 0xFF;
+ 265      =1  sfr PCAPWM0= 0xF2;
+ 266      =1  sfr PCAPWM1= 0xF3;
+ 267      =1  sfr PCAPWM2= 0xF4;
+ 268      =1  sfr PCAPWM3= 0xF5;
+ 269      =1  sfr PCAPWM4= 0xF6;
+ 270      =1  sfr PCAPWM5= 0xF7;
+ 271      =1  
+ 272      =1  /*  BIT Registers  */
+ 273      =1  /*  PSW  */
+ 274      =1  sbit CY    = 0xD7;
+ 275      =1  sbit AC    = 0xD6;
+ 276      =1  sbit F0    = 0xD5;
+ 277      =1  sbit RS1   = 0xD4;
+ 278      =1  sbit RS0   = 0xD3;
+ 279      =1  sbit OV    = 0xD2;
+ 280      =1  sbit P     = 0xD0;
+ 281      =1  
+ 282      =1  /*  TCON  */
+ 283      =1  sbit TF1   = 0x8F;
+ 284      =1  sbit TR1   = 0x8E;
+ 285      =1  sbit TF0   = 0x8D;
+ 286      =1  sbit TR0   = 0x8C;
+ 287      =1  sbit IE1   = 0x8B;
+ 288      =1  sbit IT1   = 0x8A;
+ 289      =1  sbit IE0   = 0x89;
+ 290      =1  sbit IT0   = 0x88;
+ 291      =1  
+ 292      =1  /*  IE  */
+ 293      =1  sbit EA    = 0xAF;
+ 294      =1  sbit ES    = 0xAC;
+ 295      =1  sbit ET1   = 0xAB;
+ 296      =1  sbit EX1   = 0xAA;
+ 297      =1  sbit ET0   = 0xA9;
+ 298      =1  sbit EX0   = 0xA8;
+ 299      =1  
+ 300      =1  /*  IP  */
+ 301      =1  sbit PS    = 0xBC;
+ 302      =1  sbit PT1   = 0xBB;
+ 303      =1  sbit PX1   = 0xBA;
+ 304      =1  sbit PT0   = 0xB9;
+ 305      =1  sbit PX0   = 0xB8;
+ 306      =1  
+ 307      =1  /*  P3  */
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 11  
+
+ 308      =1  sbit RD    = 0xB7;
+ 309      =1  sbit WR    = 0xB6;
+ 310      =1  sbit T1    = 0xB5;
+ 311      =1  sbit T0    = 0xB4;
+ 312      =1  sbit INT1  = 0xB3;
+ 313      =1  sbit INT0  = 0xB2;
+ 314      =1  sbit TXD   = 0xB1;
+ 315      =1  sbit RXD   = 0xB0;
+ 316      =1  
+ 317      =1  /*  SCON  */
+ 318      =1  sbit SM0   = 0x9F;
+ 319      =1  sbit SM1   = 0x9E;
+ 320      =1  sbit SM2   = 0x9D;
+ 321      =1  sbit REN   = 0x9C;
+ 322      =1  sbit TB8   = 0x9B;
+ 323      =1  sbit RB8   = 0x9A;
+ 324      =1  sbit TI    = 0x99;
+ 325      =1  sbit RI    = 0x98;
+ 326      =1  
+ 327      =1  /*  8052 Extensions  */
+ 328      =1  /*  IE  */
+ 329      =1  sbit ET2   = 0xAD;
+ 330      =1  
+ 331      =1  /*  IP  */
+ 332      =1  sbit PT2   = 0xBD;
+ 333      =1  
+ 334      =1  /*  P1  */
+ 335      =1  sbit T2EX  = 0x91;
+ 336      =1  sbit T2    = 0x90;
+ 337      =1               
+ 338      =1  /*  T2CON  */
+ 339      =1  sbit TF2   = 0xCF;
+ 340      =1  sbit EXF2  = 0xCE;
+ 341      =1  sbit RCLK  = 0xCD;
+ 342      =1  sbit TCLK  = 0xCC;
+ 343      =1  sbit EXEN2 = 0xCB;
+ 344      =1  sbit TR2   = 0xCA;
+ 345      =1  sbit C_T2  = 0xC9;
+ 346      =1  sbit CP_RL2= 0xC8;
+ 347      =1  
+ 348      =1  sfr     CHPENR = 0xF6;
+ 349      =1  sfr     CHPCON = 0xBF;
+ 350      =1  sfr     SFRAL  = 0xC4;
+ 351      =1  sfr     SFRAH  = 0xC5;
+ 352      =1  sfr     SFRFD  = 0xC6;
+ 353      =1  sfr     SFRCN  = 0xC7;
+ 354      =1  
+ 355      =1  sbit P0_0  = 0x80;
+ 356      =1  sbit P0_1  = 0x81;
+ 357      =1  sbit P0_2  = 0x82;
+ 358      =1  sbit P0_3  = 0x83;
+ 359      =1  sbit P0_4  = 0x84;
+ 360      =1  sbit P0_5  = 0x85;
+ 361      =1  sbit P0_6  = 0x86;
+ 362      =1  sbit P0_7  = 0x87;
+ 363      =1  
+ 364      =1  sbit P1_0  = 0x90;
+ 365      =1  sbit P1_1  = 0x91;
+ 366      =1  sbit P1_2  = 0x92;
+ 367      =1  sbit P1_3  = 0x93;
+ 368      =1  sbit P1_4  = 0x94;
+ 369      =1  sbit P1_5  = 0x95;
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 12  
+
+ 370      =1  sbit P1_6  = 0x96;
+ 371      =1  sbit P1_7  = 0x97;
+ 372      =1  
+ 373      =1  sbit P2_0  = 0xa0;
+ 374      =1  sbit P2_1  = 0xa1;
+ 375      =1  sbit P2_2  = 0xa2;
+ 376      =1  sbit P2_3  = 0xa3;
+ 377      =1  sbit P2_4  = 0xa4;
+ 378      =1  sbit P2_5  = 0xa5;
+ 379      =1  sbit P2_6  = 0xa6;
+ 380      =1  sbit P2_7  = 0xa7;
+ 381      =1  
+ 382      =1  sbit P3_0  = 0xb0;
+ 383      =1  sbit P3_1  = 0xb1;
+ 384      =1  sbit P3_2  = 0xb2;
+ 385      =1  sbit P3_3  = 0xb3;
+ 386      =1  sbit P3_4  = 0xb4;
+ 387      =1  sbit P3_5  = 0xb5;
+ 388      =1  sbit P3_6  = 0xb6;
+ 389      =1  sbit P3_7  = 0xb7;
+ 390      =1  
+ 391      =1  sbit P4_0  = P4^0;
+ 392      =1  sbit P4_1  = P4^1;
+ 393      =1  sbit INT3  = P4^2;
+ 394      =1  sbit INT2  = P4^3;
+ 395      =1  #endif  // INTERNAL_MCU
+ 396      =1  
+ 397      =1  #endif  //__REGISTERS__
+  10          #include "typedefs.h"
+   1      =1  #ifndef __TYPEDEFS__
+   2      =1  #define __TYPEDEFS__
+   3      =1  
+   4      =1  
+   5      =1  #define DATA            data
+   6      =1  #define PDATA           pdata
+   7      =1  #define IDATA           data
+   8      =1  #define CODE            code
+   9      =1  #define CODE_P
+  10      =1  #define PDATA_P
+  11      =1  #define IDATA_P
+  12      =1  #define DATA_P
+  13      =1  
+  14      =1  #define INTERRUPT( num, name ) name() interrupt num
+  15      =1  
+  16      =1  #define _between(x, a, b)       (a<=x && x<=b)
+  17      =1  #define _swap(a, b)                     { a^=b; b^=a; a^=b; }
+  18      =1  
+  19      =1  typedef unsigned char   Register;
+  20      =1  typedef unsigned char   BYTE;
+  21      =1  typedef unsigned short  WORD;
+  22      =1  typedef unsigned long   DWORD;
+  23      =1  
+  24      =1  #define TRUE    1
+  25      =1  #define FALSE   0
+  26      =1  
+  27      =1  //VInputStdDetectMode
+  28      =1  #define AUTO    0
+  29      =1  
+  30      =1  //VInputStd
+  31      =1  #define NTSC    1                       
+  32      =1  #define PAL             2
+  33      =1  #define SECAM   3
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 13  
+
+  34      =1  #define NTSC4   4
+  35      =1  #define PALM    5
+  36      =1  #define PALN    6
+  37      =1  #define PAL60   7
+  38      =1  
+  39      =1  #define MAXINPUTSTD     PAL60+1 // 
+  40      =1  
+  41      =1  #define UNKNOWN 0xfe
+  42      =1  #define NOINPUT 0       //0xff
+  43      =1  
+  44      =1  
+  45      =1  
+  46      =1  
+  47      =1  #define NIL                     0xff
+  48      =1  
+  49      =1  enum SourceModeTypeEnum
+  50      =1  {       
+  51      =1          AVMode,            // 0
+  52      =1          VGAMode,       // 1
+  53      =1          CAM_D,         // 2
+  54      =1          CAM_A,         // 3
+  55      =1          CAM_B,         // 4
+  56      =1          CAM_C,         // 5
+  57      =1          CAM_R,         // 6
+  58      =1          CAM_AB,        // 7
+  59      =1          CAM_CR,        // 8
+  60      =1          CAM_AR,        // 9
+  61      =1          CAM_RB,        // 10
+  62      =1          CAM_AC,        // 11
+  63      =1          CAM_CB,        // 12
+  64      =1          CAM_RAB_T,     // 13
+  65      =1          CAM_RAB_H,     // 14
+  66      =1  
+  67      =1          CAM_QUAD,      // 15
+  68      =1          CAM_ABR_T3,    // 16
+  69      =1          CAM_ABR_T4,    // 17
+  70      =1          SEQ,           // 18
+  71      =1          CAM_BA,                 //19
+  72      =1          
+  73      =1          CAM_BC,
+  74      =1          CAM_BR,
+  75      =1          CAM_CA,
+  76      =1          CAM_ABC,
+  77      =1          CAM_ABR,
+  78      =1          CAM_ACR,
+  79      =1          CAM_BAC,
+  80      =1          CAM_BAR,
+  81      =1          CAM_BCR,
+  82      =1          CAM_CAB,
+  83      =1          CAM_CAR,
+  84      =1          CAM_CBR,        
+  85      =1          CAM_NUM
+  86      =1  };
+  87      =1  
+  88      =1  typedef unsigned char SourceModeType;
+  89      =1  
+  90      =1  #endif  /* __TYPEDEFS__ */
+  11          #include "cpu.h"
+   1      =1  #ifndef __CPU__
+   2      =1  #define __CPU__
+   3      =1  
+   4      =1  /*
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 14  
+
+   5      =1  #ifdef INTERNAL_MCU
+   6      =1  #define I2C_SCL         P2_0
+   7      =1  #else
+   8      =1  #define I2C_SCL         P1_0
+   9      =1  #endif
+  10      =1  #define I2C_SDA         P1_1
+  11      =1  */
+  12      =1  #define I2C_SCL         P1_0
+  13      =1  #define I2C_SDA         P1_1
+  14      =1  #define BUF_MAX         8
+  15      =1  #define DVR_BUF_MAX     30
+  16      =1  
+  17      =1  #ifdef REMO_RC5
+           =1 #define EnableRemoconInt()      { RemoDataReady = 0;    EX0 = 1;}
+           =1 #endif
+  20      =1  void    InitCPU(void);
+  21      =1  void    InitVars(void);
+  22      =1  void    InitTechwell(void);
+  23      =1  void    main_init (void);
+  24      =1  void    PowerDown( void );
+  25      =1  #if 0
+           =1 BYTE    OKSleepTime(void);
+           =1 #endif
+  28      =1  #ifdef REMO_RC5
+           =1 void    InitForRemo(void);
+           =1 #endif
+  31      =1  void    PowerLED(BYTE flag);
+  32      =1  void    Wait_ms(WORD Tms);
+  33      =1  BYTE    TW2835Command(char,char,char,char,char);
+  34      =1  
+  35      =1  #endif
+  12          #include "I2C.h"
+   1      =1  #ifndef __I2C_H__
+   2      =1  #define __I2C_H__
+   3      =1  
+   4      =1  
+   5      =1  void I2CReadByte3(BYTE *);
+   6      =1  void I2CRead8Byte(BYTE *);
+   7      =1  #if 0
+           =1 void I2CReadByteMSP(BYTE addr, BYTE index, BYTE *pd, BYTE cnt);
+           =1 #endif
+  10      =1  BYTE I2CWriteByte2(BYTE);
+  11      =1  BYTE I2CWriteByte3(BYTE*);
+  12      =1  BYTE I2CWrite8Byte(BYTE *);
+  13      =1  
+  14      =1  void I2CStart(void);
+  15      =1  void I2CWriteData(BYTE value);
+  16      =1  BYTE I2CReadData(void);
+  17      =1  #if 0
+           =1 BYTE I2CReadDataWithACK(void);
+           =1 #endif
+  20      =1  void I2CStop(void);
+  21      =1  void I2Cdelay(void);
+  22      =1  
+  23      =1  
+  24      =1  #define WriteTW88(a,b)          WriteI2C(TW88I2CAddress, a, b)
+  25      =1  #define ReadTW88(a)                     ReadI2C(TW88I2CAddress, a)
+  26      =1  
+  27      =1  BYTE WriteTW88_Wait     (BYTE, BYTE);
+  28      =1  void WriteADC           (BYTE, BYTE);
+  29      =1  BYTE ReadADC            (BYTE);
+  30      =1  BYTE ReadADC_TW88(BYTE index);
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 15  
+
+  31      =1  void WriteADC_TW88(BYTE index, BYTE dat);
+  32      =1  
+  33      =1  void WriteEEP           (WORD, BYTE);
+  34      =1  BYTE ReadEEP            (WORD);
+  35      =1  WORD ReadALC106(WORD index);
+  36      =1  void WriteALC106(WORD index, WORD  dat);
+  37      =1  WORD ReadI2CWORD(BYTE addr, BYTE index);
+  38      =1  BYTE ReadI2C            (BYTE addr, BYTE index);
+  39      =1  void WriteI2C           (BYTE addr, BYTE index, BYTE val);
+  40      =1  
+  41      =1  void WriteI2Cn_(BYTE addr, BYTE *val, BYTE cnt);
+  42      =1  void WriteI2Cn (BYTE addr, BYTE index, BYTE *val, BYTE cnt);
+  43      =1  void WriteI2CnD(BYTE addr, BYTE index, BYTE val, BYTE cnt);
+  44      =1  
+  45      =1  void ReadI2Cmn(BYTE addr, BYTE wcnt, BYTE rcnt, BYTE *rwdata);
+  46      =1  
+  47      =1  #define         WriteADC(a,b)   WriteADC_TW88(a,b)
+  48      =1  #define         ReadADC(a)              ReadADC_TW88(a)
+  49      =1  
+  50      =1  #endif  /* __I2C_H__ */
+  13          #include "main.h"
+   1      =1  #ifndef __MAIN__
+   2      =1  #define __MAIN__
+   3      =1  
+   4      =1  #define ON                                      1
+   5      =1  #define OFF                                     0
+   6      =1  //#define Hs_debug
+   7      =1  //#define       DVR
+   8      =1  #define BJTSwitch
+   9      =1  
+  10      =1  //================= DIP SW Definition =========================================
+  11      =1  ///#define PIXEL_SINGLE         P0_0
+  12      =1  //#define DIP_PANEL_SWITCH      P0_0    // Samsung(0) // Sharp-Noticon(1)
+  13      =1  //#define DIP_AUTO_DETECT               P0_1
+  14      =1  //#define DIP_EDGE_ENHANCE      P0_2
+  15      =1  //#define DIP_BW_STRETCH                P0_3
+  16      =1  
+  17      =1  #define Panel_Enable()          P4=P4|0x08 //andy 980908
+  18      =1  #define Panel_Disable()                 P4=P4&0xf7
+  19      =1  
+  20      =1  #define SetBacklight()      P4=P4|0x04
+  21      =1  #define clrBacklight()      P4=P4&0xfb
+  22      =1  
+  23      =1  
+  24      =1  //InputSelection
+  25      =1  struct struct_IdName {
+  26      =1          BYTE    Id;
+  27      =1          BYTE    Name[16];
+  28      =1  };
+  29      =1  
+  30      =1  #define CH_TW2835              1
+  31      =1  #define CH_CAMD                2
+  32      =1  #define CH_AV                  3
+  33      =1  #define PC                                         7
+  34      =1  #define ChineseDefaultMenu   8
+  35      =1  
+  36      =1  #define SVIDEO                          2
+  37      =1  #define COMPONENT                       3
+  38      =1  //#define ANALOGDTV                     4
+  39      =1  #define DTV                                     4
+  40      =1  #define TV                                      5
+  41      =1  #define SCART                           6
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 16  
+
+  42      =1  
+  43      =1  #define DIGITALVGA                      8
+  44      =1  
+  45      =1  #define AIRTV                           0 //9
+  46      =1  #define CABLETV                         1 //0xa
+  47      =1  
+  48      =1  
+  49      =1  #define TVTUNER                         0xd             //10
+  50      =1  #define MUTE                            1       
+  51      =1  #define MENU                            2       
+  52      =1  #define TVVOL                           4       
+  53      =1  #define CC                                      8       
+  54      =1  #define INPUTINFO                       0x10
+  55      =1  #define PCINFO                          0x20
+  56      =1  #define GAUGEINFO           0x40
+  57      =1  //#define RATINGINFO                    0x40
+  58      =1  #define TVCHN                           0x80
+  59      =1  //#define MUTE                          0x40
+  60      =1  
+  61      =1  #define YPBPR_480i                      0
+  62      =1  #define YPBPR_576i                      1
+  63      =1  #define YPBPR_480p                      2
+  64      =1  #define YPBPR_576p                      3
+  65      =1  #define YPBPR_1080i                     4
+  66      =1  #define YPBPR_720p                      5
+  67      =1  #define YPBPR_720p50            6
+  68      =1  
+  69      =1  
+  70      =1  //--------------------------- P0 Define -----------------------------
+  71      =1  //#define SEL_MIX                       P0_6    // 
+  72      =1  //--------------------------- P1 Define -----------------------------
+  73      =1  #define SEL_DVI                 P3_5    //LJY062001             
+  74      =1  
+  75      =1  #define TW88HWReset                     P3_4    //LJY001010 //LJY000721
+  76      =1  #define PowerUp             P3_7
+  77      =1  //======================= CDS Control ================================= 
+  78      =1  //#define CDS_CTRL           P1_5
+  79      =1  extern BYTE     SelectModeType;
+  80      =1  extern BYTE InputSelection;
+  81      =1  extern BYTE SEQTime;
+  82      =1  extern BYTE     Priority;
+  83      =1  extern BYTE AutoDayNight;
+  84      =1  extern BYTE PowerFlag;
+  85      =1  
+  86      =1  BYTE keyIn(void);
+  87      =1  void TimerForRemocon(void);
+  88      =1  void TimerForTick(void);
+  89      =1  void DisableRemoconInt(void);
+  90      =1  BYTE SetSupport_remocon(BYTE newd);
+  91      =1  
+  92      =1  void delay(BYTE cnt);
+  93      =1  
+  94      =1  BYTE RS_ready(void);
+  95      =1  BYTE RS_rx(void);
+  96      =1  void RS_tx(BYTE tx_buf);
+  97      =1  
+  98      =1  BYTE RS2_rx(void);
+  99      =1  void RS2_tx(BYTE tx_buf);
+ 100      =1  
+ 101      =1  void NewLine(void);
+ 102      =1  void PutsP(PDATA_P BYTE *ptr);
+ 103      =1  #ifdef Hs_debug
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 17  
+
+           =1 void MonWriteI2C(BYTE addr, BYTE index, BYTE val);
+           =1 BYTE MonReadI2C(BYTE addr, BYTE index);
+           =1 #endif
+ 107      =1  BYTE Asc1Bin(BYTE asc);
+ 108      =1  BYTE Asc2Bin(PDATA_P BYTE *s);
+ 109      =1  
+ 110      =1  void I2CDeviceInitialize( CODE_P BYTE *RegSet);
+ 111      =1  
+ 112      =1  //void RestartSystemClock(WORD clock_hm);
+ 113      =1  WORD GetTime_ms(void);
+ 114      =1  BYTE GetTime_H(void);
+ 115      =1  BYTE GetTime_M(void);
+ 116      =1  void ChangeTime_H( char add );
+ 117      =1  void ChangeTime_M( char add );
+ 118      =1  //WORD GetWakeupTime(void);
+ 119      =1  //void SetWakeupTime(WORD wtime);
+ 120      =1  
+ 121      =1  
+ 122      =1  //WORD GetOffTime(void);
+ 123      =1  //void SetOffTime(WORD wtime);
+ 124      =1  //BYTE GetSleepTimer(void);
+ 125      =1  //void SetSleepTimer(BYTE stime);
+ 126      =1  WORD DiffTime_ms( WORD stime, WORD etime );
+ 127      =1  //void SetLastBlockedTime(void);
+ 128      =1  void SetLastCCTime(void);                               //ljy010904...CC_FIX_CLEAR_ON_TIME
+ 129      =1  
+ 130      =1  void SetOSDLastKeyInTime(void);
+ 131      =1  WORD GetOSDLastKeyInTime(void);
+ 132      =1  WORD GetIVF(void);
+ 133      =1  DWORD GetIHF(void);
+ 134      =1  BYTE ReadVInputSTD(void);
+ 135      =1  void SetVInputStd(BYTE newd);
+ 136      =1  BYTE GetVInputStd(void);
+ 137      =1  BYTE GetInputSelection(void);
+ 138      =1  #ifdef ADD_ANALOGPANEL
+           =1 BYTE IsAnalogOn(void);
+           =1 #endif
+ 141      =1  void InitVideoData(BYTE src);
+ 142      =1  void ChangeVInputStdDetectMode(BYTE val);
+ 143      =1  BYTE GetVInputStdInx(void);
+ 144      =1  
+ 145      =1  void MonWriteI2Cn_(BYTE addr, BYTE *val, BYTE cnt) ;
+ 146      =1  
+ 147      =1  ///void Usage(void);
+ 148      =1  #ifdef Hs_debug
+           =1         void Prompt(void);
+           =1 #endif
+ 151      =1  void DebugKeyIn(BYTE ikey);
+ 152      =1  void DVIPowerDown(bit flag);
+ 153      =1  void PowerDown_XTAL(bit flag);
+ 154      =1  
+ 155      =1  void ChangeInput(BYTE newsel);
+ 156      =1  
+ 157      =1  
+ 158      =1  void WaitPowerOn(void);
+ 159      =1  void PowerOff(void);
+ 160      =1  BYTE GetNextInputSelection(void);
+ 161      =1  
+ 162      =1  BYTE WantToStopTVScan(void);
+ 163      =1  
+ 164      =1  //BYTE IsTW8801(void);
+ 165      =1  //BYTE IsTW8803(void);
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 18  
+
+ 166      =1  //BYTE ConvertVideoVSAT(BYTE reg);
+ 167      =1  
+ 168      =1  BYTE IsNoInput(void);
+ 169      =1  void LoadEEPROM (void);
+ 170      =1  void Hs_InitVars(void);
+ 171      =1  void AdjustAutoDayNight(BYTE val);
+ 172      =1  void ACCPowerControl(void);
+ 173      =1  struct RegisterInfo
+ 174      =1  {
+ 175      =1     int  Min;
+ 176      =1     int  Max;
+ 177      =1     int  Default;
+ 178      =1  };
+ 179      =1  struct LongRegisterInfo
+ 180      =1  {
+ 181      =1     WORD Min;
+ 182      =1     WORD Max;
+ 183      =1     WORD Default;
+ 184      =1  };
+ 185      =1  
+ 186      =1  #endif  // __MAIN__
+  14          #include "debug.h"
+   1      =1  #ifndef __DEBUG__
+   2      =1  #define __DEBUG__
+   3      =1  
+   4      =1  #define DEBUG_ERR       1
+   5      =1  #define DEBUG_WARN      2
+   6      =1  #define DEBUG_INFO      3
+   7      =1  #define DEBUG_BREAK     4
+   8      =1  
+   9      =1  #define Pause(a)        { Printf("\r\n"); Printf(a); while(!RS_ready()); RS_rx(); }
+  10      =1  
+  11      =1  //#define BURSTLOCK     7
+  12      =1  
+  13      =1  void DebugWindowControl (void) ;
+  14      =1  void Draw_Debug_Char(void);
+  15      =1  void DebugWindowCursor( BYTE flag ) ;
+  16      =1  void DebugWindowData( BYTE flag ) ;
+  17      =1  void Debug_Write(void);
+  18      =1  void Debug_Read(void);
+  19      =1  
+  20      =1  
+  21      =1  
+  22      =1  #endif  // __DEBUG__
+  23      =1  
+  24      =1  #ifdef CHIP_MANUAL_TEST
+           =1 BYTE DelaynCheck(void);
+           =1 void ChipManualTest(void);
+           =1 
+           =1 #endif
+  15          #include "printf.h"
+   1      =1  #ifndef __PRINTF__
+   2      =1  #define __PRINTF__
+   3      =1  
+   4      =1  #define _outchar(c) while(1) { if( !RS_Xbusy ) { SBUF = c; RS_Xbusy=1; break; } }
+   5      =1  #define Putch(c) _outchar(c)
+   6      =1  
+   7      =1  #ifdef SERIAL
+   8      =1  
+   9      =1   void Printf ( const char CODE_P *fmt, ... );
+  10      =1   void Puts ( CODE_P char *ptr );
+  11      =1  
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 19  
+
+  12      =1  #define TW2835Cmd(a)   Puts ( a )
+  13      =1  
+  14      =1  #else
+           =1 
+           =1  #undef  DEBUG
+           =1  #define Printf(a,b)    //
+           =1  #define Puts(a)                //
+           =1 
+           =1 #endif
+  21      =1  
+  22      =1  
+  23      =1  #ifndef DEBUG
+  24      =1  
+  25      =1   #define dPuts(a)               //
+  26      =1   #define wPuts(a)               //
+  27      =1   #define ePuts(a)               //
+  28      =1  
+  29      =1  #else
+           =1 
+           =1  void dPrintf( const char CODE_P *fmt, ... );
+           =1  void wPrintf( const char CODE_P *fmt, ... );
+           =1  void ePrintf( const char CODE_P *fmt, ... );
+           =1 
+           =1  void dPuts( CODE_P char *ptr );
+           =1  void wPuts( CODE_P char *ptr );
+           =1  void ePuts( CODE_P char *ptr );
+           =1 
+           =1 #endif  // DEBUG
+  40      =1  
+  41      =1  BYTE Getch(void);
+  42      =1  BYTE Getche(void);
+  43      =1  
+  44      =1  
+  45      =1  #endif  //__PRINTF__
+  16          #include "osdbasic.h"
+   1      =1  //osd_basic.h
+   2      =1  //LJY11012001
+   3      =1  #ifndef __OSD_BASIC__
+   4      =1  #define __OSD_BASIC__
+   5      =1  
+   6      =1  // osd_basic.h
+   7      =1  // char code
+   8      =1  //#include "apilib.h"
+   9      =1  
+  10      =1  //ljy052903
+  11      =1  //definition for internal OSD
+  12      =1  #define FONT_WIDTH_TW88                 12
+  13      =1  #define FONT_HEIGHT_TW88                18
+  14      =1  #define PIXS_PER_XSTEP_TW88             8
+  15      =1  #define LINES_PER_YSTEP_TW88    4
+  16      =1  #define MAX_OSDWINDOW_TW88              8
+  17      =1  
+  18      =1  // Using TW88 OSD for Menu
+  19      =1  #define FONT_WIDTH                      12
+  20      =1  #define FONT_HEIGHT                     18
+  21      =1  #define PIXS_PER_XSTEP          8
+  22      =1  #define LINES_PER_YSTEP         4
+  23      =1  #define MAX_OSDWINDOW           4
+  24      =1  
+  25      =1  #define MAX_FONT_BYTES          27
+  26      =1  #define RAMFONT         0xFE
+  27      =1  #define ROMFONT         0xFF
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 20  
+
+  28      =1  #define NO_UDFONT                       226 
+  29      =1  
+  30      =1  #define FONT_ROM        1
+  31      =1  #define FONT_RAM        2
+  32      =1  
+  33      =1  
+  34      =1  /////////////////////////////////
+  35      =1  // Old Registers...
+  36      =1  /*
+  37      =1          #define TW88_WIN1ATTR           0x76
+  38      =1          #define TW88_WIN1XSTART         0x77
+  39      =1          #define TW88_WIN1YSTART         0x78
+  40      =1          #define TW88_WIN1WIDTH          0x79
+  41      =1          #define TW88_WIN1HEIGHT         0x7a
+  42      =1          #define TW88_WIN1BRDATTR        0x7b
+  43      =1          #define TW88_WIN1BRDWIDTH       0x7c
+  44      =1          #define TW88_WIN1BRDHEIGHT      0x7d
+  45      =1          #define TW88_WIN1XSPACE         0x7e            // between characters.
+  46      =1          #define TW88_WIN1YSPACE         0x7f
+  47      =1          #define TW88_WIN1SADDR          0x80            // starting address of OSD ram for Windows 1
+  48      =1  */
+  49      =1  /////////////////////////////////
+  50      =1  
+  51      =1  // OSD
+  52      =1  #define TW88_ENABLERAM          0x94    // TW8804C
+  53      =1  #define TW88_FONTRAMADDR        0x99    // TW8804C
+  54      =1  #define TW88_FONTRAMDATA        0x9a    // TW8804C
+  55      =1  #define TW88_OSDRAMADDRHI       0x95    // TW8804C
+  56      =1  #define TW88_OSDRAMADDRLO       0x96    // TW8804C
+  57      =1  #define TW88_OSDRAMDATAHI       0x97    // TW8804C
+  58      =1  #define TW88_OSDRAMDATALO       0x98    // TW8804C
+  59      =1  #define TW88_MULTISTART         0x9b    // TW8804C
+  60      =1  #define TW88_OSDLOCKUPSEL       0x9c
+  61      =1  #define TW88_WINNUM                     0x9e    // TW8804C
+  62      =1  #define TW88_WINATTR            0x9f    //
+  63      =1  #define TW88_WINXSTART          0xa1    //
+  64      =1  #define TW88_WINYSTART          0xa2    //
+  65      =1  #define TW88_WINSTART_HI        0xa0    //
+  66      =1  #define TW88_WINWIDTH           0xa3    //
+  67      =1  #define TW88_WINHEIGHT          0xa4    //
+  68      =1  #define TW88_WINBRDATTR         0xa5    //
+  69      =1  #define TW88_WINBRDWIDTH        0xa6    //
+  70      =1  #define TW88_WINBRDHEIGHT       0xa7    //
+  71      =1  #define TW88_WINSPACE           0xa8    // between characters.
+  72      =1  #define TW88_WINZOOM            0xa9    //
+  73      =1  #define TW88_WINSADDRHI         0xa9    // starting address of OSD ram for Windows 1
+  74      =1  #define TW88_WINSADDRLO         0xaa    // starting address of OSD ram for Windows 1
+  75      =1  
+  76      =1  #define TW88_WINSHADOW          0xab    //
+  77      =1  #define TW88_WINBLENDING        0xac    //
+  78      =1  #define TW88_WINCHEFFECT        0xad    //
+  79      =1  
+  80      =1  
+  81      =1  //Attributes for OSD
+  82      =1  #define WINZOOMx1                       0x01
+  83      =1  #define WINZOOMx2                       0x02
+  84      =1  #define WINZOOMx3                       0x03
+  85      =1  #define WINZOOMx4                       0x04
+  86      =1  #define SHOW                            0x08    
+  87      =1  
+  88      =1  #define EXTENDED_COLOR          0x80
+  89      =1  #define BG_COLOR_BLACK          0x00    //For background color of window, border, and char. 
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 21  
+
+  90      =1  #define BG_COLOR_RED            0x40    
+  91      =1  #define BG_COLOR_GREEN          0x20
+  92      =1  #define BG_COLOR_YELLOW         0x60
+  93      =1  #define BG_COLOR_BLUE           0x10
+  94      =1  #define BG_COLOR_MAGENTA        0x50
+  95      =1  #define BG_COLOR_CYAN           0x30
+  96      =1  #define BG_COLOR_WHITE          0x70
+  97      =1  #define BG_COLOR_TRANS          0x80    
+  98      =1  #define BG_COLOR_MASK           0xf0    
+  99      =1  
+ 100      =1  #define CH_COLOR_BLACK          0x00    //For color of char.
+ 101      =1  #define CH_COLOR_RED            0x04    
+ 102      =1  #define CH_COLOR_GREEN          0x02
+ 103      =1  #define CH_COLOR_YELLOW         0x06
+ 104      =1  #define CH_COLOR_BLUE           0x01
+ 105      =1  #define CH_COLOR_MAGENTA        0x05
+ 106      =1  #define CH_COLOR_CYAN           0x03
+ 107      =1  #define CH_COLOR_WHITE          0x07
+ 108      =1  #define CH_BLINK                        0x08    
+ 109      =1  #define CH_COLOR_MASK           0x0f    
+ 110      =1  
+ 111      =1  #define CL_BLACK                        0x00    //For color of char.
+ 112      =1  #define CL_BLUE                         0x01
+ 113      =1  #define CL_GREEN                        0x02
+ 114      =1  #define CL_CYAN                         0x03
+ 115      =1  #define CL_RED                          0x04    
+ 116      =1  #define CL_MAGENTA                      0x05
+ 117      =1  #define CL_YELLOW                       0x06
+ 118      =1  #define CL_WHITE                        0x07
+ 119      =1  #define CL_BLINK                        0x08    
+ 120      =1  
+ 121      =1  // 0x76*(WindowNo*0x0b)
+ 122      =1  #define WINDOW_DISABLE          0x00
+ 123      =1  #define WINDOW_ENABLE           0x01
+ 124      =1  #define WINDOW_3D_ENABLE    0x04
+ 125      =1  #define WINDOW_3D_BOTTOM    0x08
+ 126      =1  #define WINDOW_3D_TOP       0x00
+ 127      =1  #define WINDOW_TRANS_ENABLE 0x80
+ 128      =1  
+ 129      =1  #define WINBDCOLOR_ENABLE       0x80
+ 130      =1  #define WINBDCOLOR_EXTENT       0x80
+ 131      =1  
+ 132      =1  
+ 133      =1  #define WINBLENDING_DISABLE 0x00
+ 134      =1  #define WINBLENDING_BACK    0x10
+ 135      =1  #define WINBLENDING_FORE    0x20
+ 136      =1  #define WINBLENDING_ALL     0x30
+ 137      =1  
+ 138      =1  #define WINSHADOW_ENABLE        0x80
+ 139      =1  // 0xc8*WindowNo
+ 140      =1  #define WIN_MULTICOLOR_ENABLE 0x20
+ 141      =1  #define WIN_CH_EFFECT_ENABLE  0x10
+ 142      =1  #define WIN_CH_EFFECT_SHADOW  0x08
+ 143      =1  
+ 144      =1  
+ 145      =1  
+ 146      =1  ///////// TW8804C /////////////
+ 147      =1  // Window Number
+ 148      =1  #define WINNUM1                         1
+ 149      =1  #define WINNUM2                         2
+ 150      =1  #define WINNUM3                         3
+ 151      =1  #define WINNUM4                         4
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 22  
+
+ 152      =1  
+ 153      =1  // Index 0x9f Defination
+ 154      =1  #define WIN_BG_COLOR_EX         0x80
+ 155      =1  #define WIN_BG_COLOR_EX0        0x00
+ 156      =1  #define WIN_3D_TYPE                     0x08
+ 157      =1  #define WIN_3D_TYPE0            0x00
+ 158      =1  #define WIN_3D_EN                       0x04
+ 159      =1  #define WIN_3D_EN0                      0x00
+ 160      =1  #define WIN_3D_LEVEL            0x02
+ 161      =1  #define WIN_EN                          0x01
+ 162      =1  #define WIN_EN0                         0x00
+ 163      =1  
+ 164      =1  // Index 0xa5 Defination
+ 165      =1  #define WIN_BD_EN                       0x80
+ 166      =1  #define WIN_BD_EN0                      0x00
+ 167      =1  #define WIN_BD_WIDTH(a)         a
+ 168      =1  
+ 169      =1  // Index 0xa6 Defination
+ 170      =1  #define WIN_BD_COLOR_EX         0x80
+ 171      =1  #define WIN_BD_COLOR_EX0        0x00
+ 172      =1  #define WIN_H_BD_W(a)           a
+ 173      =1  
+ 174      =1  // Index 0xa7 Defination
+ 175      =1  #define WIN_V_BD_W(a)           a
+ 176      =1  
+ 177      =1  // Index 0xa8
+ 178      =1  #define WIN_CH_VSPACE(a)        (a<<4)
+ 179      =1  #define WIN_CH_HSPACE(a)        a
+ 180      =1  
+ 181      =1  // Index 0xa9 Defination
+ 182      =1  #define WIN_VZOOM(a)            (a-1)
+ 183      =1  #define WIN_HZOOM(a)            (a-1)
+ 184      =1  #define WIN_SADDR(a)            a
+ 185      =1  
+ 186      =1  // Index 0xab
+ 187      =1  #define WIN_SHADOW_EN           0x80
+ 188      =1  #define WIN_SHADOW_EN0          0x00
+ 189      =1  #define WIN_SHADOW_W(a)         a
+ 190      =1  
+ 191      =1  // ad
+ 192      =1  #define WIN_SHADOW_COLOR_EX             0x80
+ 193      =1  #define WIN_SHADOW_COLOR_EX0    0x00
+ 194      =1  #define WIN_MULTI_EN                    0x40
+ 195      =1  #define WIN_MULTI_EN0                   0x00
+ 196      =1  #define WIN_V_EXT_EN                    0x20
+ 197      =1  #define WIN_V_EXT_EN0                   0x00
+ 198      =1  #define WIN_CH_BDSH_SEL(a)              a
+ 199      =1  #define SEL_BORDER                              0
+ 200      =1  #define SEL_SHADOW                              1
+ 201      =1  #define WIN_CH_BDSH_COLOR_EX    0x08
+ 202      =1  #define WIN_CH_BDSH_COLOR_EX0   0x00
+ 203      =1  
+ 204      =1  #define OSD_Win_Num(a)                  0x9e, a-1
+ 205      =1  #define OSD_Win_Start_Addr              0xa0
+ 206      =1  #define OSD_Win_Attr(a)                         a
+ 207      =1  #define OSD_Win_Start(h,v)                       (BYTE)(((WORD)h>>8) | (((WORD)v>>8)<<4)),(BYTE)h, (BYTE)v
+ 208      =1  #define OSD_Win_Width(a)                        a
+ 209      =1  #define OSD_Win_Height(a)                       a
+ 210      =1  #define OSD_Win_Border(a)                       a
+ 211      =1  #define OSD_Win_HBorder(a)                      a
+ 212      =1  #define OSD_Win_VBorder(a)                      a
+ 213      =1  #define OSD_Win_CH_Space(a)                     a
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 23  
+
+ 214      =1  #define OSD_Win_ZM_SAddr(h,v,a)         ((h<<6)|(v<<4)|(a>>8)), (BYTE)a
+ 215      =1  #define OSD_Win_Shadow(a)                       a
+ 216      =1  #define OSD_Win_Blending(a)                     a
+ 217      =1  #define OSD_Win_CH_BorderShadow(a)      a
+ 218      =1  
+ 219      =1  
+ 220      =1  #define SetOSDWindowNum(winno)          WriteTW88(TW88_WINNUM, winno-1)
+ 221      =1  
+ 222      =1  //#define  OSD_Window_Attr(Trans_en,Color,3D_Type,3D_en,W_en)       (((( Trans_en | Color ) | 3D_Type) | 3
+             -D_en) | W_en)
+ 223      =1  #define  OSD_Window_Attr(a,b,c,d,e)                                                                     (((( a | b ) | c) | d) | e)
+ 224      =1  #define  OSD_WShadow_Attr(W_Shadow_en,Color,Width)                                      W_Shadow_en | Color | Width
+ 225      =1  //#define  OSD_Blending(en,level)                                                                               en | (level & 0x0f)
+ 226      =1  //#define  OSD_Ch_Effect(Multi, Effect_En, ShadowBorder, Color)         Multi | Effect_En | ShadowBorder | Color 
+             - 
+ 227      =1  
+ 228      =1  
+ 229      =1  struct OSDStrInfo 
+ 230      =1  {
+ 231      =1          BYTE    cnt;
+ 232      =1          WORD    addr;
+ 233      =1          BYTE    attr;
+ 234      =1          DWORD   str;
+ 235      =1  };
+ 236      =1  /*
+ 237      =1  struct BarInfo {
+ 238      =1          struct RegisterInfo BarCnt;
+ 239      =1          BYTE    winno;
+ 240      =1          BYTE    xoff;
+ 241      =1          BYTE    yoff;
+ 242      =1          BYTE    color;
+ 243      =1          int             bar_cnt;
+ 244      =1  };
+ 245      =1  */
+ 246      =1  struct FontData {
+ 247      =1          BYTE    font[27];
+ 248      =1  } ;
+ 249      =1  
+ 250      =1  //====================================================================
+ 251      =1  //  Internal OSD Function
+ 252      =1  void CopyCharToOSDRAM_TW88(BYTE Addr, BYTE attr, BYTE ch);
+ 253      =1  void CopyUDCharToOSDRAM_TW88(BYTE Addr, BYTE attr, BYTE ch);
+ 254      =1  //BYTE GetOSDWindowWidth_TW88(BYTE winno);
+ 255      =1  WORD GetOSDWindowSA_TW88(BYTE winno);
+ 256      =1  void SetOSDWindowX_TW88(BYTE winno, BYTE x);
+ 257      =1  void SetOSDWindowY_TW88(BYTE winno, BYTE y);
+ 258      =1  void SetOSDWindowWidth_TW88(BYTE winno, BYTE w);
+ 259      =1  void SetOSDWindowSA_TW88(BYTE winno, WORD sa);
+ 260      =1  
+ 261      =1  void SetOSDItalicsAndUnderline(BYTE italics, BYTE underline);
+ 262      =1  
+ 263      =1  void SetOSDHBorderWidth_TW88(BYTE winno, BYTE w);
+ 264      =1  //BYTE GetOSDWindowColor_TW88(BYTE winno);
+ 265      =1  void SetOSDWindowColor_TW88(BYTE CCWin, BYTE color);
+ 266      =1  void EnableOSDRAMAndChangeFont(BYTE type);
+ 267      =1  void WriteCharToOSDRAM(WORD addr, BYTE ch, BYTE attr);
+ 268      =1  
+ 269      =1  
+ 270      =1  void ShowOSDWindowAll(BYTE on);
+ 271      =1  void ShowOSDWindow_TW88(BYTE winno, BYTE onoff);
+ 272      =1  void ClearOSD_TW88(void);
+ 273      =1  //void CreateOSDWindow_TW88(BYTE winno, BYTE x, BYTE y, BYTE w, BYTE h, WORD sa, BYTE attr);
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 24  
+
+ 274      =1  /*not yet!!
+ 275      =1  //ljy012304...CC_ADJUST_POS
+ 276      =1  void SetOSDWindowXS_TW88(BYTE winno, BYTE xs);
+ 277      =1  void SetOSDWindowYS_TW88(BYTE winno, BYTE ys);
+ 278      =1  */
+ 279      =1  
+ 280      =1  //====================================================================
+ 281      =1  //      OSDMenu Functions
+ 282      =1  
+ 283      =1  //--------------------------------------------------------------------
+ 284      =1  //      Functions used in only Menu
+ 285      =1  #define         CONVERT_CODE                    0x80
+ 286      =1  
+ 287      =1  void InitOSDWindow(BYTE *ptr);
+ 288      =1  
+ 289      =1  WORD GetOSDWindowX(BYTE winno);
+ 290      =1  WORD GetOSDWindowY(BYTE winno);
+ 291      =1  BYTE CreateOSDWindowOutline(BYTE winno, BYTE w, BYTE color);
+ 292      =1  void CreateOSDMenuWindow(BYTE, BYTE, BYTE, BYTE, BYTE, BYTE, BYTE);
+ 293      =1  void ClearOSDLine(BYTE winno, BYTE sx, BYTE sy, BYTE cnt, BYTE attr);
+ 294      =1  void WriteStringToAddr(WORD addr, BYTE *str, BYTE cnt);
+ 295      =1  void DrawAttrString(WORD addr, BYTE *str, BYTE cnt);
+ 296      =1  void DrawAttrCnt(WORD addr, BYTE color, BYTE cnt);
+ 297      =1  void ClearDataCnt(WORD, BYTE);
+ 298      =1  #define         SetOSDWindowX(A, B)                                                     SetOSDWindowX_TW88(A, B)
+ 299      =1  #define     SetOSDWindowY(A, B)                                                 SetOSDWindowY_TW88(A, B)
+ 300      =1  
+ 301      =1  
+ 302      =1  //--------------------------------------------------------------------
+ 303      =1  //      Functions used in Menu and others
+ 304      =1  #define         ShowOSDWindow(A, B)                                                     ShowOSDWindow_TW88(A, B)
+ 305      =1  #define     ClearOSD()                                                                  ClearOSD_TW88()
+ 306      =1  
+ 307      =1  //================================================================
+ 308      =1  //      Font
+ 309      =1  void DownloadUDFont(void);
+ 310      =1  #ifdef Hs_debug
+           =1 void DisplayROMFont(BYTE);
+           =1 void DisplayRAMFont(BYTE);
+           =1 #endif
+ 314      =1  void DownloadFont(BYTE cod, CODE_P BYTE *fontdata);
+ 315      =1  //void DisplayGrid( void );
+ 316      =1  //void DisplayCone( void );
+ 317      =1  //void DisplayJapanese( void );
+ 318      =1  void TestRAMFont( void );
+ 319      =1  #ifdef BANKING
+           =1 void DisplayMGrid( BYTE );
+           =1 void DisplayMessage( void );
+           =1 void DisplayChinese( void );
+           =1 void DisplayJapanese( void );
+           =1 void DisplayKorean( void );
+           =1 void DisplayGridBank0( BYTE n );
+           =1 void DisplayGridBank1( BYTE n );
+           =1 #endif
+ 328      =1  
+ 329      =1  //================================================================
+ 330      =1  //      OSD COLOR
+ 331      =1  void Change_OSDColorLookup(void);
+ 332      =1  void Reset_OSDColorLookup(void);
+ 333      =1  
+ 334      =1  //====================================================================
+ 335      =1  //                              Conversion
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 25  
+
+ 336      =1  //====================================================================
+ 337      =1  BYTE utoa(WORD value, BYTE *str, BYTE radix);
+ 338      =1  BYTE ltoa_K(long value, BYTE *str, BYTE);
+ 339      =1  BYTE strlen( BYTE *str );
+ 340      =1  
+ 341      =1  #define CStrlen(A)                              strlen(A)
+ 342      =1  
+ 343      =1  void WaitEndofDisplayArea(void);
+ 344      =1  
+ 345      =1  #endif  // __OSD_BASIC__
+  17          #include "CPU.h"
+   1      =1  #ifndef __CPU__
+           =1 #define __CPU__
+           =1 
+           =1 /*
+           =1 #ifdef INTERNAL_MCU
+           =1 #define I2C_SCL         P2_0
+           =1 #else
+           =1 #define I2C_SCL         P1_0
+           =1 #endif
+           =1 #define I2C_SDA         P1_1
+           =1 */
+           =1 #define I2C_SCL         P1_0
+           =1 #define I2C_SDA         P1_1
+           =1 #define BUF_MAX         8
+           =1 #define DVR_BUF_MAX     30
+           =1 
+           =1 #ifdef REMO_RC5
+           =1 #define EnableRemoconInt()      { RemoDataReady = 0;    EX0 = 1;}
+           =1 #endif
+           =1 void    InitCPU(void);
+           =1 void    InitVars(void);
+           =1 void    InitTechwell(void);
+           =1 void    main_init (void);
+           =1 void    PowerDown( void );
+           =1 #if 0
+           =1 BYTE    OKSleepTime(void);
+           =1 #endif
+           =1 #ifdef REMO_RC5
+           =1 void    InitForRemo(void);
+           =1 #endif
+           =1 void    PowerLED(BYTE flag);
+           =1 void    Wait_ms(WORD Tms);
+           =1 BYTE    TW2835Command(char,char,char,char,char);
+           =1 
+           =1 #endif
+  18          #include "audAlc106.h"
+   1      =1  //=========================================
+   2      =1  //      FILE: AUDALC106.h
+   3      =1  //      FUNCTION: REALTEK ALC106 AUDIO AMPLIFIER DRIVER
+   4      =1  //                                                                                                              By Kane Ling Jul. 20, 2010
+   5      =1  //=========================================
+   6      =1  #ifndef __AUDALC106_H__
+   7      =1  #define __AUDALC106_H__
+   8      =1  
+   9      =1  #define ALC106
+  10      =1  
+  11      =1  //#if(AUDIO_USE == ALC106)
+  12      =1  #ifdef ALC106
+  13      =1  
+  14      =1  #define AUD_ALC106_ID   0x4A
+  15      =1  #define ALC106_VOLUME_CTRL_REG  0x02
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 26  
+
+  16      =1  #define ALC106_MAIN_CTRL_REG    0x04
+  17      =1  
+  18      =1  typedef struct Alc106VoulmeCtrlStruct
+  19      =1  {
+  20      =1          UINT SpkVoulme_R        :5;//bit[0:4]
+*** ERROR C141 IN LINE 20 OF AUDALC106.H: syntax error near 'UINT'
+*** ERROR C129 IN LINE 20 OF AUDALC106.H: missing ';' before 'SpkVoulme_R'
+  21      =1          UINT Resever1                   :2;//bit[5:6]
+  22      =1          UINT Mute_R                             :1;//bit 7
+  23      =1          UINT SpkVoulme_L        :5;//bit[8:12]
+  24      =1          UINT Resever2                   :2;//bit[13:14]
+  25      =1          UINT Mute_L                             :1;//bit 15
+  26      =1  }Alc106VoulmeCtrlType;
+  27      =1  
+  28      =1  typedef struct Alc106MainCtrlStruct
+  29      =1  {
+  30      =1          UINT Resever1                                           :6;//bit[0:5]
+  31      =1          UINT OverCurrent_R                      :1;//bit 6
+  32      =1          UINT OverCurrent_L                      :1;//bit 7
+  33      =1          UINT RstOverCurrent                     :1;//bit 8
+  34      =1          UINT Resever2                                           :1;//bit 9
+  35      =1          UINT AutoPowerOff                               :1;//bit 10
+  36      =1          UINT OutPut_Select                              :1;//bit 11
+  37      =1          UINT Resever3                                           :2;//bit[12:13]
+  38      =1          UINT OverCurrentProtect :1;//bit 14
+  39      =1          UINT CorePower                                  :1;//bit 15
+  40      =1  }Alc106MainCtrlType;
+  41      =1  
+  42      =1  enum 
+  43      =1  {
+  44      =1          ALC106_MUTE_OFF,
+  45      =1          ALC106_MUTE_ON
+  46      =1  };//Alc106MuteType
+  47      =1  
+  48      =1  enum 
+  49      =1  {
+  50      =1          OUT_BTL,
+  51      =1          OUT_SINGLE
+  52      =1  };//Alc106OutputSelectType
+  53      =1  
+  54      =1  void audAlc106_Init(void);
+  55      =1  void audAlc106_VolumeAdj(BYTE volume);
+  56      =1  void audAlc106_SetMuteCtrl(BYTE mute);
+  57      =1  BYTE audAlc106_GetMuteCtrl(void);
+  58      =1  void audAlc106_PowerOn(void);
+  59      =1  void audAlc106_PowerOff(void);
+  60      =1  
+  61      =1  #endif//#if(AUDIO_USE == ALC106)        
+  62      =1  
+  63      =1  #endif//__AUDALC106_H__
+  64      =1  
+  19          
+  20          
+  21          //#define AUDIO_USE == ALC106
+  22          #ifdef ALC106
+  23          
+  24          #define xDEBUG_ALC106
+  25                  
+  26          #define MAX_SOUND_VOLUME 50
+  27          Alc106VoulmeCtrlType    Alc106VolumCtrl;
+  28          Alc106MainCtrlType      Alc106MainCtrl;
+  29          //****************************************************
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 27  
+
+  30          //      LOCAL FUNCTIONS
+  31          //****************************************************
+  32          #if 1
+  33          BOOL audAlc106_Write(BYTE Reg, BYTE* Data);
+  34          BOOL audAlc106_ReadWord(BYTE Reg, BYTE* Data);
+  35          #endif
+  36          //****************************************************
+  37          //      CODE START
+  38          //****************************************************
+  39          void audAlc106_Init(void)
+  40          {
+  41                  Alc106VolumCtrl.Mute_L = ALC106_MUTE_ON;
+  42                  Alc106VolumCtrl.Mute_R = ALC106_MUTE_ON;
+  43                  Alc106VolumCtrl.SpkVoulme_L = 0x1F;//same as audio mute
+  44                  Alc106VolumCtrl.SpkVoulme_R = 0x1F;//same as audio mute
+  45                  Alc106VolumCtrl.Resever1 = 0;
+  46                  Alc106VolumCtrl.Resever1 = 0;
+  47          
+  48                  
+  49                  Alc106MainCtrl.RstOverCurrent  =1;
+  50                  Alc106MainCtrl.CorePower= 1;
+  51                  Alc106MainCtrl.OverCurrentProtect = TRUE;
+  52                  Alc106MainCtrl.OutPut_Select = OUT_BTL;
+  53                  Alc106MainCtrl.AutoPowerOff = FALSE;// TRUE;
+  54                  Alc106MainCtrl.Resever1 = 0;
+  55                  Alc106MainCtrl.Resever2 = 0;
+  56                  Alc106MainCtrl.Resever3 = 0;
+  57                  Alc106MainCtrl.OverCurrent_L = 0;
+  58                  Alc106MainCtrl.OverCurrent_R = 0;
+  59          
+  60                  //audAlc106_Write(ALC106_VOLUME_CTRL_REG, (BYTE *) &Alc106VolumCtrl);
+  61                  //audAlc106_Write(ALC106_MAIN_CTRL_REG, (BYTE *)&Alc106MainCtrl);
+  62                  #ifdef DEBUG_ALC106
+                      {
+                              //WORD Data=0;
+                              printf("\r\n>>>>Initial ALC106", 0);
+                              //      audAlc106_ReadWord(ALC106_VOLUME_CTRL_REG, (BYTE *) &Data);
+                              //Data = 0;
+                              //audAlc106_ReadWord(ALC106_MAIN_CTRL_REG, (BYTE *) &Data);
+                      }
+                      #endif
+  71          
+  72          }
+  73          void audAlc106_VolumeAdj(BYTE volume)
+  74          {
+  75                  #ifdef DEBUG_ALC106
+                      BYTE Ext_Volume = volume ;
+                      #endif
+  78                  
+  79                  volume =volume + (0x1F-MAX_SOUND_VOLUME);//Kane @2010 0929 Ver0.13.03 add
+  80                  if(volume>=0x1F)
+  81                          volume=0x1F;
+  82                  
+  83                  //Ext_Volume = volume;
+  84                  Alc106VolumCtrl.SpkVoulme_L = volume;
+  85                  Alc106VolumCtrl.SpkVoulme_R = volume;
+  86                  audAlc106_Write(ALC106_VOLUME_CTRL_REG, (BYTE *) &Alc106VolumCtrl);
+  87                  
+  88                  #ifdef DEBUG_ALC106
+                      {
+                              WORD Data = 0;
+                              printf("\r\n>>>>Ext_Volume=%d", Ext_Volume);
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 28  
+
+                              audAlc106_ReadWord(ALC106_VOLUME_CTRL_REG, (BYTE *) &Data);
+                      }
+                      #endif
+  95          }
+  96          
+  97          void audAlc106_SetMuteCtrl(BYTE mute)
+  98          {
+  99                          if(mute)
+ 100                          {
+ 101                                  Alc106VolumCtrl.Mute_L = ALC106_MUTE_OFF;
+ 102                                  Alc106VolumCtrl.Mute_R = ALC106_MUTE_OFF;
+ 103                          }
+ 104                          else
+ 105                          {
+ 106                                  Alc106VolumCtrl.Mute_L = ALC106_MUTE_ON;
+ 107                                  Alc106VolumCtrl.Mute_R = ALC106_MUTE_ON;
+ 108                          }       
+ 109                          audAlc106_Write(ALC106_VOLUME_CTRL_REG, (BYTE *) &Alc106VolumCtrl);
+ 110                          #ifdef DEBUG_ALC106
+                              {
+                                      WORD Data = 0;
+                                      printf("\r\n>>>>mute=%d", mute);
+                                      audAlc106_ReadWord(ALC106_VOLUME_CTRL_REG, (BYTE *) &Data);
+                              }
+                              #endif
+ 117          }
+ 118          
+ 119          void audAlc106_PowerOn(void)
+ 120          {
+ 121                  Alc106MainCtrl.CorePower= 1;//Power up core
+ 122                  audAlc106_Write(ALC106_MAIN_CTRL_REG, (BYTE *)&Alc106MainCtrl);
+ 123                  Alc106VolumCtrl.Mute_L = ALC106_MUTE_ON;
+ 124                  Alc106VolumCtrl.Mute_R = ALC106_MUTE_ON;
+ 125                  Alc106VolumCtrl.SpkVoulme_L = 0x1E;//same as audio mute//Kane @2010 1110 Ver0.14.01 add for resolve pop n
+             -oise
+ 126                  Alc106VolumCtrl.SpkVoulme_R = 0x1E;//same as audio mute//Kane @2010 1110 Ver0.14.01 add for resolve pop n
+             -oise
+ 127                  audAlc106_Write(ALC106_VOLUME_CTRL_REG, (BYTE *) &Alc106VolumCtrl);//Kane @2010 1110 Ver0.14.01 add for r
+             -esolve pop noise
+ 128                  #if 0
+                      audAlc106_Write(ALC106_VOLUME_CTRL_REG, (BYTE *) &Alc106VolumCtrl);
+                      Delay1ms(50);
+                      Alc106VolumCtrl.Mute_L = ALC106_MUTE_OFF;
+                      Alc106VolumCtrl.Mute_R = ALC106_MUTE_OFF;
+                      audAlc106_Write(ALC106_VOLUME_CTRL_REG, (BYTE *) &Alc106VolumCtrl);
+                      Delay1ms(50);
+                      Alc106VolumCtrl.SpkVoulme_L = Ext_Volume;
+                      Alc106VolumCtrl.SpkVoulme_R = Ext_Volume;
+                      audAlc106_Write(ALC106_VOLUME_CTRL_REG, (BYTE *) &Alc106VolumCtrl);
+                      #endif
+ 139                  #ifdef DEBUG_ALC106
+                      {
+                              WORD Data = 0;
+                              printf("\r\n>>>>audAlc106_PowerOn", 0);
+                              audAlc106_ReadWord(ALC106_VOLUME_CTRL_REG, (BYTE *) &Data);
+                              Data =0;
+                              audAlc106_ReadWord(ALC106_MAIN_CTRL_REG, (BYTE *) &Data);
+                      }
+                      #endif
+ 148                  Wait_ms(50);
+ 149          }
+ 150          
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 29  
+
+ 151          void audAlc106_PowerOff(void)
+ 152          {
+ 153                  Alc106VolumCtrl.Mute_L = ALC106_MUTE_ON;
+ 154                  Alc106VolumCtrl.Mute_R = ALC106_MUTE_ON;
+ 155                  audAlc106_Write(ALC106_VOLUME_CTRL_REG, (BYTE *) &Alc106VolumCtrl);
+ 156                  Wait_ms(50);
+ 157                  Alc106VolumCtrl.SpkVoulme_L = 0x1E;//same as audio mute
+ 158                  Alc106VolumCtrl.SpkVoulme_R = 0x1E;//same as audio mute
+ 159                  audAlc106_Write(ALC106_VOLUME_CTRL_REG, (BYTE *) &Alc106VolumCtrl);
+ 160                  Wait_ms(50);
+ 161                  
+ 162                  Alc106MainCtrl.CorePower= 0;//Power down core
+ 163                  audAlc106_Write(ALC106_MAIN_CTRL_REG, (BYTE *)&Alc106MainCtrl);
+ 164                  #ifdef DEBUG_ALC106
+                      {
+                              WORD Data = 0;
+                              printf("\r\n>>>>audAlc106_Power OFF", 0);
+                              audAlc106_ReadWord(ALC106_VOLUME_CTRL_REG, (BYTE *) &Data);
+                              Data =0;
+                              audAlc106_ReadWord(ALC106_MAIN_CTRL_REG, (BYTE *) &Data);
+                      }
+                      #endif
+ 173          }
+ 174          
+ 175          #if 1
+ 176          BOOL audAlc106_Write(BYTE index, BYTE* Data)
+ 177          {
+ 178              BYTE ucDummy; // loop dummy
+ 179          
+ 180                  //#if (TELI_MODEL ==    T15MUA)
+ 181                  //return 1;
+ 182                  //#endif//#if (TELI_MODEL ==    T15MUA)
+ 183              
+ 184                  #ifdef DEBUG_ALC106
+                      WORD temp;
+                      temp = Data[0]& 0x00FF;
+                      temp <<=8;
+                      temp |=Data[1];
+                      printf("\r\n>>>>WriteReg[%d] = ", Reg); 
+                      printf("0x%x ",temp);   
+                      
+                      #endif
+ 193          
+ 194                  BYTE addr;
+ 195                  //BYTE dat1,dat2;
+ 196          
+ 197                  //dat2=Data&0x00ff;
+ 198                  //dat1=(Data>>8)&0x00ff;
+ 199                          
+ 200                  addr = (ALC106I2CAddress | (index>>7)) & 0xfe;
+ 201          
+ 202                  I2CStart();
+ 203                  I2CWriteData(addr);
+ 204                  I2CWriteData((BYTE)addr);
+ 205                  I2CWriteData(*(Data));
+ 206                  dd();
+ 207                  I2CWriteData(*Data+1);
+ 208                  I2CStop();
+ 209          
+ 210                  //#ifdef DEBUG_EEP
+ 211                          Printf("Write %02xh to [Adrs(%02xh)Index(%02xh)\r\n", (WORD)dat, (WORD)addr, (WORD)index );
+ 212                  //#endif
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 30  
+
+ 213          
+ 214          #if 0
+                      
+                      ucDummy = I2C_ACCESS_DUMMY_TIME;
+                  while(ucDummy--)
+                  {
+                              if (i2c_AccessStart(AUD_ALC106_ID, I2C_TRANS_WRITE) == FALSE)
+                                  continue;
+              
+                              if(i2c_SendByte(Reg)== I2C_NON_ACKNOWLEDGE)  //Send Register
+                                      continue;
+              
+                              i2c_SendByte(*(Data)); // send high byte
+                              i2c_SendByte(*Data+1); // send low byte
+                              
+              
+                      break;
+                  } // while
+              
+                  i2c_Stop();
+                  Delay1ms(10);
+                      if(ucDummy == 0)
+                      {
+                              g_unErrorState=Sys_Error_HW2_Audio;//Kane @2010 1116 Ver0.14.02 add for external control
+                              return FALSE;
+                      }
+                      else
+                              return TRUE;
+              
+              #endif  
+ 243          }
+ 244          
+ 245          BOOL audAlc106_ReadWord(BYTE Reg, BYTE* index)
+ 246          {
+ 247          
+ 248                  WORD val;
+ 249                  BYTE addr;
+ 250          
+ 251                  addr = (ALC106I2CAddress | (index>>7)) & 0xfe;
+ 252          
+ 253                  val = ReadI2CWORD(addr,(BYTE)index);
+ 254                  //#ifdef DEBUG_OSD
+ 255                          Printf("Read [Adrs:%02xh,Index:%02xh] %xh\r\n", (WORD)addr, (WORD)index, (WORD)val);
+ 256                  //#endif
+ 257                  delay(2);
+ 258                  return val;
+ 259          
+ 260          #if 0
+                  BYTE ucDummy; // loop dummy
+                      //#if (TELI_MODEL ==    T15MUA)
+                      //return 1;
+                      //#endif//#if (TELI_MODEL ==    T15MUA
+                  ucDummy = I2C_ACCESS_DUMMY_TIME;
+                  while(ucDummy--)
+                  {
+                      if (i2c_AccessStart(AUD_ALC106_ID, I2C_TRANS_WRITE) == FALSE)
+                          continue;
+              
+                       if(i2c_SendByte(Reg)== I2C_NON_ACKNOWLEDGE)  // //Send Register
+                                      continue;
+                      if (i2c_AccessStart(AUD_ALC106_ID, I2C_TRANS_READ) == FALSE)
+                          continue;
+C51 COMPILER V7.09   AUDALC106                                                             10/25/2011 09:41:34 PAGE 31  
+
+                                              
+                              Data[0] = i2c_ReceiveByte(TRUE); // receive byte
+              
+                              Data[1] = i2c_ReceiveByte(FALSE); // receive byte
+                              
+                      break;
+                  } // while
+                  i2c_Stop();
+                      #ifdef DEBUG_ALC106
+                      {
+                              WORD temp;
+                              temp = Data[0]& 0x00FF;
+                              temp <<=8;
+                              temp |=Data[1];
+                              printf("\r\n>>>>Read Reg[%d] = ", Reg); 
+                              printf("0x%x ",temp);   
+                      }
+                      #endif
+              
+                              
+                      if(ucDummy == 0)
+                      {
+                              g_unErrorState=Sys_Error_HW2_Audio;//Kane @2010 1116 Ver0.14.02 add for external control
+                              return FALSE;
+                      }
+                      else
+                              return TRUE;
+              #endif
+ 303          }
+ 304          #endif
+ 305          BYTE audAlc106_GetMuteCtrl(void)
+ 306          {
+ 307                  if( Alc106VolumCtrl.Mute_L == ALC106_MUTE_ON)
+ 308                          return ALC106_MUTE_ON;
+ 309                  else
+ 310                          return ALC106_MUTE_OFF;
+ 311          }
+ 312          
+ 313          #endif//#if(AUDIO_USE == ALC106)
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  2 ERROR(S)

@@ -1,0 +1,77 @@
+/*===========================================================================*/
+//  Analog WQVGA Panel Menu Window tabel
+/*===========================================================================*/
+
+	//----- Top(Left) Window
+	17,
+	OSD_Win_Num				( BACK_COLOR|OSDMENU_TOPWIN ),	// 2 bytes
+	OSD_Win_Attr			( WIN_BG_COLOR_EX0 | BACK_COLOR | WIN_3D_TYPE0 | WIN_3D_EN0 | WIN_EN0 ),
+	OSD_Win_Start			( (OSDHSTART_MAX_A/2+14), ((OSDVSTART_MAX_A/2)+28) ), // 3 bytes
+	OSD_Win_Width			( 2 ),
+	OSD_Win_Height			( 5 ),
+	OSD_Win_Border			( WIN_BD_EN | OSDMENU_OUTLINE_COLOR | WIN_BD_WIDTH(1) ),
+	OSD_Win_HBorder			( WIN_BD_COLOR_EX0 | WIN_H_BD_W(4) ),
+	OSD_Win_VBorder			( WIN_V_BD_W(3) ),
+	OSD_Win_CH_Space		( WIN_CH_HSPACE(0) | WIN_CH_VSPACE(0x02) ),
+	OSD_Win_ZM_SAddr		( WIN_VZOOM(WINZOOMx2), WIN_HZOOM(WINZOOMx2), WIN_SADDR(OSDMENU_MAINADDR) ),	// 2 bytes
+	OSD_Win_Shadow			( WIN_SHADOW_EN0 | BG_COLOR_BLACK | WIN_SHADOW_W(4) ),
+	OSD_Win_Blending		( 3 ),
+	OSD_Win_CH_BorderShadow	( WIN_SHADOW_COLOR_EX0 | WIN_MULTI_EN | WIN_V_EXT_EN0 
+	                        | WIN_CH_BDSH_SEL(SEL_BORDER) 
+	                        | WIN_CH_BDSH_COLOR_EX0 | CH_COLOR_BLACK ),
+
+	//----- Title Window
+	17,                           
+	OSD_Win_Num				( BACK_COLOR|OSDMENU_TITLEWIN ),	// 2 bytes
+	OSD_Win_Attr			( WIN_BG_COLOR_EX0 | TITLE_BACK_COLOR | WIN_3D_TYPE0 | WIN_3D_EN0 | WIN_EN0 ),
+	OSD_Win_Start			( (OSDHSTART_MAX_A/2), (OSDVSTART_MAX_A/2) ), // 3 bytes
+	OSD_Win_Width			( TITLE_MAX_DESC ), 
+	OSD_Win_Height			( 0x09 ), 
+	OSD_Win_Border			( WIN_BD_EN | OSDMENU_OUTLINE_COLOR | WIN_BD_WIDTH(2) ),
+	OSD_Win_HBorder			( WIN_BD_COLOR_EX | WIN_H_BD_W(0x30+8) ),
+	OSD_Win_VBorder			( WIN_V_BD_W(0x05) ),
+	OSD_Win_CH_Space		( WIN_CH_HSPACE(1) | WIN_CH_VSPACE(0x0b) ),
+	OSD_Win_ZM_SAddr		( WIN_VZOOM(WINZOOMx1), WIN_HZOOM(WINZOOMx1), WIN_SADDR(OSDMENU_SUBADDR) ),	//25=MENU_WIDTH// 2 bytes
+	OSD_Win_Shadow			( WIN_SHADOW_EN0 | BG_COLOR_BLACK | WIN_SHADOW_W(8) ),
+	OSD_Win_Blending		( 3 ),
+	OSD_Win_CH_BorderShadow	( WIN_SHADOW_COLOR_EX0 | WIN_MULTI_EN | WIN_V_EXT_EN0 
+	                        | WIN_CH_BDSH_SEL(SEL_BORDER) 
+	                        | WIN_CH_BDSH_COLOR_EX0 | CH_COLOR_BLACK ),
+	//----- Sub(Right) Window
+	17,
+	OSD_Win_Num				( BACK_COLOR|OSDMENUWINDOW ),	// 2 bytes
+	OSD_Win_Attr			( WIN_BG_COLOR_EX0 | BACK_COLOR | WIN_3D_TYPE0 | WIN_3D_EN0 | WIN_EN0 ),
+	OSD_Win_Start			( ((OSDHSTART_MAX_A/2)+66+14/*+0x2c+0x14*/), (OSDVSTART_MAX_A/2+28) ), // 3 bytes
+	OSD_Win_Width			( MENU_WIDTH ), //MENU_WIDTH
+	OSD_Win_Height			( MENU_HEIGHT ),	// MENU_HEIGHT
+	OSD_Win_Border			( WIN_BD_EN | OSDMENU_OUTLINE_COLOR | WIN_BD_WIDTH(1) ),
+	OSD_Win_HBorder			( WIN_BD_COLOR_EX | WIN_H_BD_W(0x0c+8) ),
+	OSD_Win_VBorder			( WIN_V_BD_W(0x16+1) ),
+	OSD_Win_CH_Space		( WIN_CH_HSPACE(0) | WIN_CH_VSPACE(0x06) ),
+	OSD_Win_ZM_SAddr		( WIN_VZOOM(WINZOOMx1), WIN_HZOOM(WINZOOMx1), WIN_SADDR(OSDMENU_SUBADDR+MENU_WIDTH) ),	//25=MENU_WIDTH// 2 bytes
+	OSD_Win_Shadow			( WIN_SHADOW_EN0 | BG_COLOR_BLACK | WIN_SHADOW_W(8) ),
+	OSD_Win_Blending		( 3 ),
+	OSD_Win_CH_BorderShadow	( WIN_SHADOW_COLOR_EX0 | WIN_MULTI_EN | WIN_V_EXT_EN0 
+	                        | WIN_CH_BDSH_SEL(SEL_BORDER) 
+	                        | WIN_CH_BDSH_COLOR_EX0 | CH_COLOR_BLACK ),
+
+	//----- 3D Cursor Window
+	17,
+	OSD_Win_Num				( BACK_COLOR|OSDCURSORWINDOW ),	// 2 bytes
+	OSD_Win_Attr			( WIN_BG_COLOR_EX | BACK_COLOR | WIN_3D_TYPE0 | WIN_3D_EN | WIN_EN0 ),
+	OSD_Win_Start			( (OSDHSTART_MAX_A/2+14+8), ((OSDVSTART_MAX_A/2)+28+8) ), // 3 bytes
+	OSD_Win_Width			( 2 ),
+	OSD_Win_Height			( 1 ),
+	OSD_Win_Border			( WIN_BD_EN | BG_COLOR_WHITE | WIN_BD_WIDTH(1) ),
+	OSD_Win_HBorder			( WIN_BD_COLOR_EX0 | WIN_H_BD_W(0) ),
+	OSD_Win_VBorder			( WIN_V_BD_W(0) ),
+	OSD_Win_CH_Space		( WIN_CH_HSPACE(0) | WIN_CH_VSPACE(0x10) ),
+	OSD_Win_ZM_SAddr		( WIN_VZOOM(WINZOOMx2), WIN_HZOOM(WINZOOMx2), WIN_SADDR(OSDMENU_MAINADDR) ),	// 2 bytes
+	OSD_Win_Shadow			( WIN_SHADOW_EN0 | BG_COLOR_BLACK | WIN_SHADOW_W(0) ),
+	OSD_Win_Blending		( 3 ),
+	OSD_Win_CH_BorderShadow	( WIN_SHADOW_COLOR_EX | WIN_MULTI_EN | WIN_V_EXT_EN0 
+	                        | WIN_CH_BDSH_SEL(SEL_BORDER) 
+	                        | WIN_CH_BDSH_COLOR_EX0 | CH_COLOR_BLACK ),
+
+	0 // End of Data
+/*===========================================================================*/

@@ -1,0 +1,3107 @@
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MEASURE
+OBJECT MODULE PLACED IN .\Output\Measure.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE Measure.c LARGE OPTIMIZE(9,SIZE) BROWSE INCDIR(.\Include\) DEBUG OBJECTE
+                    -XTEND CODE LISTINCLUDE SYMBOLS PRINT(.\Source\Measure.lst) TABS(2) OBJECT(.\Output\Measure.obj)
+
+line level    source
+
+   1          #include "Config.h"
+   1      =1  /*****************************************************************************/
+   2      =1  /*                           System Configurations                           */
+   3      =1  /*              rev 0.10 include auto test             */
+   4      =1  // 0.11 change DTV, PC input initial download data correct for Charge Pump
+   5      =1  // 0.12 correct phase measurement routine '>>3'
+   6      =1  // 0.13 enable function for SPI control... only EXT MCU case
+   7      =1  // 0.14 corrected PC measurement......
+   8      =1  // 0.0a test function only for CVBS, SVIDEO
+   9      =1  // 0.15 corrected DTV scaler setting for panel resolutions
+  10      =1  // 0.0b panel for AND 640x480 TICON panel
+  11      =1  // 0.16 corrected COMPONENT scaler setting for panel resolutions  11/21/2007
+  12      =1  // 0.0c automatic chip test
+  13      =1  // 0.17 add monitor function, osd grid for writing grid
+  14      =1  // 0.18 add component, dtv pc for analogpanel, 12/06/2007
+  15      =1  // 0.19 correct pal input for CES, 12/20/2007
+  16      =1  // 0.1a CCFL control, 12/28/2007
+  17      =1  // 0.19 Multi Grid for Banking on Internal MCU  01/17/2008
+  18      =1  // 0.20 CCFL contol for backlight brightness  01/21/2008
+  19      =1  // 0.21 CCFL contol for backlight brightness  01/25/2008
+  20      =1  // 0.22 phase setting 02/07/2008
+  21      =1  // 0.221 display input correction 04/03/2008
+  22      =1  // 0.23 PC, DTV mode, no signal display
+  23      =1  // 0.24 PC Auto Color adjustment
+  24      =1  // 0.25 revised PC Auto Clock adjustment - find divide number and phase
+  25      =1  // 0.26 Digital RGB for TW8826
+  26      =1  // 0.27 Correct LVDS control          08/22/2008
+  27      =1  // 0.28 Add WSVGA resolution          10/23/2008
+  28      =1  // 0.29 Add NEW GRID              11/14/2008
+  29      =1  // 0.30 Fix DTV input             12/10/2008
+  30      =1  // 0.31 Add 1080i23, 24, 25A, 25B       01/20/2009
+  31      =1  // 0.32 TCON setting FIX all mode       01/22/2009
+  32      =1  // 0.33 autodetect is auto on/off by dip sw1  02/02/2009
+  33      =1  // 0.34 Fix autocolor function and clamp position 02/08/2009
+  34      =1  /*****************************************************************************/
+  35      =1  #ifndef __CONFIG_H__
+  36      =1  #define __CONFIG_H__
+  37      =1  
+  38      =1  //#define INTERNAL_MCU -- defined by Project Compiler session
+  39      =1  #define   HS        
+  40      =1  //#define   E_Wintek  
+  41      =1  //#define   AWT 
+  42      =1  //#define Holtz
+  43      =1  
+  44      =1  //#define QUAD
+  45      =1  
+  46      =1  #ifdef QUAD
+           =1   #define AWT_ML072Q  //Pinchi 20150827 disable for HTRV
+           =1 //  #define HTRV  //Pinchi 20140902 disable for AWT ML072Q
+           =1 #else
+  50      =1    #define AWT_ML072S
+  51      =1  #endif
+  52      =1  
+  53      =1  //--------------------------------------------------
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 2   
+
+  54      =1  //              Common Feature Define
+  55      =1  //--------------------------------------------------
+  56      =1  //#define FIRST_RUN_FROM_AC  //Pinchi 20150831 disable for Screen re-setting by Set4WideScreen()  //Pinchi
+             - 20141029 add
+  57      =1  #define SUPPORT_ML072Q_AUTO_DAY_NIGHT  //Pinchi 20150825 add for function define
+  58      =1  #define SUPPORT_TRIGGER_EXIT_MENU  //Pinchi 20150827 add for exit OSD Menu by CAM trigger
+  59      =1  #define SUPPORT_AC_ON_NORMAL_SCREEN  //Pinchi 20150901 add to set 4:3 screen when AC on
+  60      =1  
+  61      =1  #define FIX_DISPLAY_OFF_TRIGGER_ISSUE  //Pinchi 20150908 add to fix [Display] set OFF and trigger release 
+             -then trigger again during display info the CAM will change from trigger CH to original CH
+  62      =1  #define FIX_EXIT_STANDBY_NO_AUDIO  //Pinchi 20150908 add to fix no audio output when exit Standby mode
+  63      =1  #ifdef AWT_ML072Q
+           =1 #define FIX_2835_SCREEN_NOISE  //Pinchi 20160929 add to fix the screen noise of TW2835 by change DDR to ma
+             -ke clock shift
+           =1 #endif
+  66      =1  
+  67      =1  #define SUPPORT_NEW_TRIGGER_FUNCTION  /////修改新的Trigger方式減少trigger polling 時間 add by ryan@2018012
+             -4
+  68      =1  
+  69      =1  //#define AWT_ML072QS_MSG  //Pinchi 20140925 add
+  70      =1  //#define REDUCE_DELAY_TIME  //Pinchi 20141029 add
+  71      =1  //#define DISPLAY_TECHWELL_LOGO  //Pinchi 2050903 add to disable the Techwell logo
+  72      =1  
+  73      =1  //#define SUPPORT_SVIDEO                     //andy Awt 20090914
+  74      =1  //#define SUPPORT_COMPONENT     // support component analog to decoder//andy Awt 20090914
+  75      =1  //#define SUPPORT_DTV           // support DTV input through component( to ADC ).//andy Awt 20090914
+  76      =1  //#define SUPPORT_PC        // support PC function
+  77      =1  //#define SUPPORT_DVI       // support DVI input
+  78      =1  //#define SUPPORT_SDCARD
+  79      =1  
+  80      =1  #define SUPPORT_2835_CLK_TUNE_BACK_DOOR  //Pinchi 20160913 add to fine tune TW2835 clock by hot key
+  81      =1  //#define SUPPORT_DISPLAY_TEST_VERSION  //Pinchi 20150929 add to display test software version on OSD
+  82      =1  
+  83      =1  //--------------------------------------------------
+  84      =1  //              Model Feature Define
+  85      =1  //--------------------------------------------------
+  86      =1  #if (defined AWT_ML072Q) || (defined AWT_ML072S)
+  87      =1  #define AWT_ML072QS_FW_RULE  //Pinchi 20140902 add
+  88      =1  //#define AWT_NEW_SLIM_MODEL  //Pinchi 20150203 add for AWT new slim model
+  89      =1  #define AWT_NO_SIGNAL_MSG  //Pinchi 20150319 add for display "NO VIDEO SIGNAL" by AWT request of 20150302
+  90      =1  #define AWT_TW2835_DRAW_T_ICON  //Pinchi 20150415 add to draw T icon by TW2835 when CAM C trigger
+  91      =1  #define SUPPORT_AC_ON_REDUCE_TIME  //Pinchi 20150903 add to reduce Power time when AC on
+  92      =1  
+  93      =1  //#define SUPPORT_TRIGGER_RELEASE_DELAY  //Pinchi 20150908 add to support delay time when CAM trigger rele
+             -ase
+  94      =1  
+  95      =1  typedef enum  //Pinchi 20150326 add
+  96      =1  {
+  97      =1       LAST_TRIG_NON =  0x00,
+  98      =1       LAST_TRIG_LEFT =   0x01,
+  99      =1       LAST_TRIG_RIGHT =  0x02,
+ 100      =1       LAST_TRIG_REVERSE =0x03,
+ 101      =1       LAST_TRIG_CAMC =   0x04,
+ 102      =1  
+ 103      =1  } AWT_LAST_TRIGGER;
+ 104      =1  
+ 105      =1  #endif
+ 106      =1  
+ 107      =1  
+ 108      =1  #ifdef HTRV  //Pinchi 20150825 add
+           =1 #define HTRV_ML072Q_FW_RULE  //Pinchi 20150827 add
+           =1 #define HTRV_REDUCE_SCREEN_CHANGE  //Pinchi 20150828 add to reduce screen double change
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 3   
+
+           =1 
+           =1 #if 0  //Pinchi 20151209 add to remove 4:3 screen by HTRV request of 20151209
+           =1 #define HTRV_SUPPORT_4_3_SCREEN
+           =1 #else
+           =1 #undef SUPPORT_AC_ON_NORMAL_SCREEN  //Pinchi 20151210 add
+           =1 #endif
+           =1 
+           =1 #endif
+ 119      =1  
+ 120      =1  //#define SUPPORT_RS485
+ 121      =1  //-----------------------------------------------------------------------------
+ 122      =1  //    Firmware Version
+ 123      =1  //-----------------------------------------------------------------------------
+ 124      =1  #ifdef HTRV  //Pinchi 20150907 add
+           =1 //#define FWVER     0x200 // Rev 2.00
+           =1 //#define FWVER     0x210   // Rev 2.1  //Pinchi 20151209 update version for HTRV request to remove 4:3 scree
+             -n
+           =1 //#define FWVER     0x220   // Rev 2.2  //Pinchi 20160929 change for V2.2
+           =1 #define FWVER     0x230     //Rev 2.3    ryan@20170727 update version by Encoder switches零件 EOL更換
+           =1 #else
+ 130      =1  #define FWVER     0x210   // Rev 0.14
+ 131      =1  #endif
+ 132      =1  
+ 133      =1  //-----------------------------------------------------------------------------
+ 134      =1  //    Compiler
+ 135      =1  //-----------------------------------------------------------------------------
+ 136      =1  #define KEILC           // Keil C 5.0
+ 137      =1  //-----------------------------------------------------------------------------
+ 138      =1  //    MPU Clock
+ 139      =1  //-----------------------------------------------------------------------------
+ 140      =1  #ifndef INTERNAL_MCU
+ 141      =1  //#define CLOCK_11M         // 11.0592MHz
+ 142      =1  #define CLOCK_22M         // 22.1184MHz
+ 143      =1  #else                 // INTERNAL_MCU
+           =1 #define CLOCK_27M         // 27MHz
+           =1 #define REG_START_ADDRESS 0xc000    // register start 0xc000, for page0, 0xc100-page1 
+           =1 #endif
+ 147      =1  //-----------------------------------------------------------------------------
+ 148      =1  //    TW88 Version
+ 149      =1  //-----------------------------------------------------------------------------
+ 150      =1  #define TW8816   ///AWT TW8806 change to TW8816 platform //ryan@20170921
+ 151      =1  //-----------------------------------------------------------------------------
+ 152      =1  //-----------------------------------------------------------------------------
+ 153      =1  //    Options for Backlight control
+ 154      =1  //-----------------------------------------------------------------------------
+ 155      =1  //#define BACKLIGHT_CCFL
+ 156      =1  //#define BACKLIGHT_LED
+ 157      =1  #define BACKLIGHT_PWM
+ 158      =1  
+ 159      =1  //-----------------------------------------------------------------------------
+ 160      =1  //    Panel Resolution
+ 161      =1  //-----------------------------------------------------------------------------
+ 162      =1  // ---- Select Default Panel
+ 163      =1  //
+ 164      =1  //#define UXGA            // 1600 x 1200
+ 165      =1  //#define SXGA              // 1280 x 1024
+ 166      =1  //#define XGA  // 1024 x 768
+ 167      =1  #ifdef XGA
+           =1   #define LVDS          
+           =1   #define PWIDTH  1024
+           =1   #define PHEIGHT 768
+           =1 #endif
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 4   
+
+ 172      =1  //#define SVGA            //  800 x 600
+ 173      =1  //#define VGA             //  640 x 480
+ 174      =1  #ifdef VGA
+           =1   #define PWIDTH  640
+           =1   #define PHEIGHT 480
+           =1   //#define HITACHI_640_B_160   //--> 640 x 160
+           =1   #define AND_640_480
+           =1 #endif
+ 180      =1  //#define WXGA            // 1280 x 768 (15:9) // 1366 x 768 (16:9)
+ 181      =1  #ifdef WXGA
+           =1     //#define WX_SHARP_LQ106K1LA
+           =1   #define PWIDTH  1280
+           =1   #define PHEIGHT 768
+           =1 #endif
+ 186      =1  //#define WSVGA           // 1024 x 600 *** only video mode
+ 187      =1  #ifdef WSVGA
+           =1   #define PWIDTH  1024
+           =1   #define PHEIGHT 600
+           =1   #define UNIDEN_1024_600
+           =1 #endif
+ 192      =1  #define WVGA            //  800 x 480
+ 193      =1  #ifdef WVGA
+ 194      =1    #define PWIDTH  800
+ 195      =1    #define PHEIGHT 480//600
+ 196      =1    // If WVGA, you have to select panel.
+ 197      =1    //#define AU_10INCH
+ 198      =1    //#define WVGA_TPO
+ 199      =1    //#define SAMSUNG_10INCH
+ 200      =1    //#define SAMSUNG_TICONLESS_10INCH
+ 201      =1    //#define SHARP_TICONLESS_7INCH
+ 202      =1    //#define AU_TICONLESS_7INCH
+ 203      =1    //#define AU_G084SN05V8_8_4INCH 
+ 204      =1    #define HSD070IDW1_7INCH
+ 205      =1    //#define INNOLUX_AT080TN03
+ 206      =1    //#define AU_TICONLESS_7INCH_CCFL
+ 207      =1    //#define CMO     // CHIMEI panel
+ 208      =1    //#define AU_TICONLESS_10INCH
+ 209      =1    //#define HITACHI_T01
+ 210      =1    //#define HITACHI_TX23D12
+ 211      =1    //#define HITACHI_TX18D24
+ 212      =1    //#define HITACHI_TX18D16
+ 213      =1    //#define TMD_LTA070A320F
+ 214      =1    //#define TMD_LTA080B
+ 215      =1  #endif  //WVGA
+ 216      =1  //#define HVGA            //  480 x 320
+ 217      =1  //#define QVGA            //  320 x 240 *** only video mode
+ 218      =1  #ifdef QVGA
+           =1   #define PWIDTH  320
+           =1   #define PHEIGHT 240
+           =1   //#define HITACHI_TX09D73
+           =1   //#define AU_DELTARGB
+           =1   //#define SHARP_LQ050Q5DR01
+           =1   //#define SHARP_LQ035
+           =1   //#define TMD
+           =1 #endif
+ 227      =1  
+ 228      =1  //#define WQVGA           //  480 x 234 *** only video mode
+ 229      =1  #ifdef WQVGA
+           =1   #define PWIDTH  480
+           =1   #define PHEIGHT 240
+           =1   // If WQVGA, you have to select panel 
+           =1     #define ANALOG_7INCH
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 5   
+
+           =1   //#define PWIDTH  400
+           =1   //#define PHEIGHT 240
+           =1   //#define SHARP_LQ043T3DX02   //  400 x 237
+           =1   //#define LG_ANALOG
+           =1   //#define TMD_ANALOG        //TMD_LTA05B352A
+           =1   //#define T_51945GD       // Optorex Panel
+           =1 #endif  // WQVGA
+ 241      =1  
+ 242      =1  //if LVDS pannel disable TICONLESS
+ 243      =1  
+ 244      =1  //-----------------------------------------------------------------------------
+ 245      =1  //---- Add Support One more panel with DIPSW#1
+ 246      =1  //---- Ex. Add Analog AU 7" Panel with Default Panel for evalution
+ 247      =1  //#define ADD_ANALOGPANEL   // Added Analog panel(AU7") from default set panel(expect WQVGA) with DIP #1 sw
+             -itch.(DIP#1=L:ANALOG, H:DEFAULT)
+ 248      =1                // It can't support WQVGA and ADD_ANALOGPANEL same time!!
+ 249      =1    //#define ADD_ANALOG_7INCH
+ 250      =1    //#define ADD_TMD_LTA05B352A
+ 251      =1                    
+ 252      =1  //---- Support Wide panel function
+ 253      =1  #if (defined WXGA) || (defined WSVGA) || (defined WVGA) || (defined WQVGA)
+ 254      =1  #if 0///ryan@20180115//mask for NTSC sharpness issue
+           =1 #define WIDE_SCREEN         // Can support 4 display mode, i.e. Normal, Wide, Full, Zoom
+           =1 #endif
+ 257      =1  #endif                // Tested panasonic WVGA panel.
+ 258      =1  
+ 259      =1  //-----------------------------------------------------------------------------
+ 260      =1  //    Panel Vendor Specific
+ 261      =1  //-----------------------------------------------------------------------------
+ 262      =1  
+ 263      =1  //-----------------------------------------------------------------------------
+ 264      =1  //    TV Tuner
+ 265      =1  //-----------------------------------------------------------------------------
+ 266      =1  #define PHILIPS       0
+ 267      =1  #define ALPS        1   // ALPS, LG
+ 268      =1  #define TEMIC       2
+ 269      =1  #define TVAVA       3
+ 270      =1  #define LGTUNER       4
+ 271      =1  #define SAMSUNGMUTITUNER  5
+ 272      =1  
+ 273      =1  #define TVTunerDevice   4
+ 274      =1  //-----------------------------------------------------------------------------
+ 275      =1  //    IR Remote Controller Type
+ 276      =1  //-----------------------------------------------------------------------------
+ 277      =1  //#define REMO_RC5          // RC5 style
+ 278      =1  #define TECHWELL_REMOCON
+ 279      =1  //#define REMO_NEC          // NEC style
+ 280      =1  //#define PHILIPS_REMOCON // New remocon 
+ 281      =1  
+ 282      =1  //-----------------------------------------------------------------------------
+ 283      =1  //    I2C Device Access Address Mapping
+ 284      =1  //-----------------------------------------------------------------------------
+ 285      =1  
+ 286      =1  #define EEPROMI2CAddress  0xa0  // EEPROM (24C16)
+ 287      =1  #define TW88I2CAddress    0x8a  // TW880x
+ 288      =1  
+ 289      =1  #define MSPI2CAddress   0x80  // MSP
+ 290      =1  #define ALC106I2CAddress  0x4A  // MSP
+ 291      =1  //-----------------------------------------------------------------------------
+ 292      =1  //    Options for Possible Inputs
+ 293      =1  //-----------------------------------------------------------------------------
+ 294      =1  
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 6   
+
+ 295      =1  
+ 296      =1  //-----------------------------------------------------------------------------
+ 297      =1  //    Options for Possible Standards
+ 298      =1  //    Default:NTSC
+ 299      =1  //-----------------------------------------------------------------------------
+ 300      =1  #define SUPPORT_PAL     
+ 301      =1  #define SUPPORT_SECAM
+ 302      =1  #define SUPPORT_NTSC4   
+ 303      =1  #define SUPPORT_PALM  
+ 304      =1  #define SUPPORT_PALN    
+ 305      =1  #define SUPPORT_PAL60   
+ 306      =1  
+ 307      =1  //#define ID_CHECK_BY_FW        // in Video mode, check input system ID by firmware
+ 308      =1  
+ 309      =1  //-----------------------------------------------------------------------------
+ 310      =1  //    Options for Debugging/Release
+ 311      =1  //-----------------------------------------------------------------------------
+ 312      =1  //#define SUPPORT_PATTERN       // support LCD test pattern
+ 313      =1  
+ 314      =1  #ifndef WQVGA
+ 315      =1    #ifndef QVGA
+ 316      =1  #define SUPPORT_OSDPOSITIONMOVE
+ 317      =1    #endif
+ 318      =1  #endif
+ 319      =1  
+ 320      =1  #define SERIAL              // include serial communication routines
+ 321      =1  
+ 322      =1  //#define SUPPORT_DEBUG       // Support to use Read & Write in debug OSD Window by remocon.
+ 323      =1  
+ 324      =1  //#define DEBUG           // include debug information
+ 325      =1  #ifdef DEBUG
+           =1   //#define DEBUG_MAIN
+           =1   //#define DEBUG_TIME
+           =1   //#define DEBUG_KEYREMO
+           =1   //#define DEBUG_TW88
+           =1   //#define DEBUG_DECODER
+           =1   //#define DEBUG_I2C
+           =1   //#define DEBUG_EEP
+           =1   //#define DEBUG_OSD
+           =1   //#define DEBUG_AUDIO
+           =1   //#define DEBUG_SETPANEL
+           =1   //#define DEBUG_DTV
+           =1 //  #define DEBUG_PC
+           =1   //#define DEBUG_PC_MEAS
+           =1   //#define DEBUG_PC_COLOR
+           =1   //#define DEBUG_COMPONENT
+           =1   //#define DEBUG_BANK
+           =1   //#define DEBUG_PAUSE
+           =1   //#define DEBUG_MCU
+           =1 #endif
+ 345      =1  
+ 346      =1  #define AUTOCALC_PC         // in PC mode, Enable Auto Calcuration
+ 347      =1  //#define SUPPORT_USERCOLORFROMTXT  // Use color setting of text file in Color mode=USER MODE which is as B
+             -rightness(Reg10), Contast(Reg11),
+ 348      =1                    //    Sat_U(Reg13),Sat_V(Reg14),Sharpness(Reg12,Reg78)                  
+ 349      =1  //#define SUPPORT_GAMMA
+ 350      =1  
+ 351      =1  //#define CHIP_MANUAL_TEST      // DIPSW#1
+ 352      =1  
+ 353      =1  #ifndef INTERNAL_MCU
+ 354      =1  //#define NO_INITIALIZE       // After Power switch turn on with DIP SW4 Enable(Low), or pressed MENU button 
+             -for internal MCU
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 7   
+
+ 355      =1                                      //     micom works to access only I2C bus by serial command.
+ 356      =1  #endif
+ 357      =1  
+ 358      =1  //#define SUPPORT_KRS_OSDDEMO   // For KRS Company Demo 
+ 359      =1  //#define SUPPORT_LINE_OSDDEMO
+ 360      =1  
+ 361      =1  //-----------------------------------------------------------------------------
+ 362      =1  //    Special Features
+ 363      =1  //-----------------------------------------------------------------------------
+ 364      =1  
+ 365      =1  #ifndef INTERNAL_MCU
+ 366      =1  //#define SUPPORT_DELTA_RGB
+ 367      =1  #endif
+ 368      =1  #define SUPPORT_SELECTKEY     // choose the keymap of using select key or left,right key.
+ 369      =1  //-----------------------------------------------------------------------------
+ 370      =1  
+ 371      =1  //#define HS_NEWOSDMENU     //Weylis -@121008 for Hor. Style OSD
+ 372      =1  //#define HS_NEWOSDMENU_2     //Weylis -@121008 for Hor. Style OSD(2 line)
+ 373      =1  
+ 374      =1  #endif  //__CONFIG_H__
+ 375      =1  
+   2          
+   3          #if defined( SUPPORT_PC ) || defined( SUPPORT_DTV )
+              
+              #include "typedefs.h"
+              
+              #include "main.h"
+              #include "tw88.h"
+              #include "measure.h"
+              #include "adc.h"
+              #include "i2c.h"
+              #include "debug.h"
+              #include "dispinfo.h"
+              #include "pc_eep.h"
+              #include "etc_eep.h"
+              #include "printf.h"
+              #include "osdmenu.h"
+              #include "RegMap.h"
+              #include "panel.h"
+              #ifdef REFERENCE
+              #else //REFERENCE
+              #include "stdlib.h"
+              #endif //REFERENCE
+              //================== Input Measurement ====================================
+              #ifdef REFERENCE
+              #else // REFERENCE
+              static WORD  LastHPN=0;
+              BYTE cLastSyncLoss= 0;
+              #endif // REFERENCE
+              static WORD  LastVPN=0;
+              static DWORD LastIHF=0;
+              static WORD  LastIVF=0;
+              BYTE InputDetection;
+              BYTE  VPosMax, VPosCurr, HPosMax, HPosCurr;
+              
+              DWORD   RGBPeak, PhaseRGB, RGBMin;
+              
+              #ifdef WIDE_SCREEN
+              extern BYTE WideScreenMode;
+              #endif //WIDE_SCREEN
+              
+              CODE BYTE PcModeStr[][15] = {
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 8   
+
+                  "720x400 70Hz", // 0
+              
+                  "640x400 80Hz", // 1
+                  "640x350 85Hz", // 2
+                  "720x400 85Hz", // 3
+              
+                  "640x480 60Hz", // 4
+                  "640x480 66Hz", // 5
+                  "640x480 70Hz", // 6
+                  "640x480 72Hz", // 7
+                  "640x480 75Hz", // 8
+                  "640x480 85Hz", // 9
+              
+                  "800x600 56Hz", // 10
+                  "800x600 60Hz", // 11
+                  "800x600 70Hz", // 12
+                  "800x600 72Hz", // 13
+                  "800x600 75Hz", // 14
+                  "800x600 85Hz", // 15
+                  
+                  "832x624 75Hz", // 16
+              
+                  "1024x768 60Hz",  // 17
+                  "1024x768 70Hz",  // 18
+                  "1024x768 72Hz",  // 19
+                  "1024x768 75Hz",  // 20
+                  "1024x768 85Hz",  // 21
+              
+                  "1152x864 60Hz",  // 22
+                  "1152x864 70Hz",  // 23
+                  "1152x864 75Hz",  // 24
+                  
+                "1280x1024 60Hz", // 25
+                  "1280x1024 70Hz", // 26
+                  "1280x1024 75Hz", // 27
+              
+                  "RGB 480p 60Hz",  // 28
+                  "RGB 720p 60Hz",  // 29
+                  "RGB 720p 50Hz",  // 30
+                  "RGB 1080i 60Hz", // 31
+                  "RGB 1080i 50Hz", // 32
+                  "RGB 1080i 50Hz", // 33
+                  "RGB 480i 60Hz",  // 34
+                  "RGB 576i 50Hz",  // 35
+                  "RGB 576p 50Hz",  // 36
+              
+                  "YPbPr 480p", // 37
+                  "YPbPr 720p", // 38
+                  "YPbPr 720p50", // 39
+                  "YPbPr 1080i",  // 40
+                  "YPbPr 1080i50A", // 41
+                  "YPbPr 1080i50B", // 42
+                  "YPbPr 480i", // 43
+                  "YPbPr 576i", // 44
+                  "YPbPr 576p", // 45
+              
+                ""
+              };
+              
+              //-------------------------------------------------------------------------
+              extern CODE struct RegisterInfo UserRange;
+              
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 9   
+
+              extern  IDATA WORD  IVF;
+              extern  IDATA DWORD IHF;
+              extern      BYTE  DebugLevel;
+              extern        bit   Range4Coarse;
+              extern  DATA  WORD  tm01, tm001;
+              extern  DATA  BYTE  tic01;
+              extern  DATA  WORD  tic_pc;
+              
+                  BYTE PcMode;
+              
+              #if defined WVGA || defined WSVGA || defined WXGA || defined VGA_PRIMEVIEW
+                  bit   Flag4Bypass=0;      // 0:non-bypass
+              #else //defined WVGA || defined WSVGA || defined WXGA || defined VGA_PRIMEVIEW
+                  bit   Flag4Bypass=0;//1;    // 1:bypass 
+              #endif //defined WVGA || defined WSVGA || defined WXGA || defined VGA_PRIMEVIEW
+              
+              //-----------------------------------------------------------------------------
+              extern  CODE struct _PCMDATA  PCMDATA[];
+              
+              extern CODE BYTE *CheckPCCableStr[];
+              extern CODE BYTE *CheckDTVCableStr[];
+              extern CODE BYTE *OutOfRangeStr[] ;
+              
+              
+              CODE BYTE DTVMode[] = { EE_YPbPr_480I, EE_YPbPr_576I, EE_YPbPr_480P, EE_YPbPr_576P,
+                          EE_YPbPr_1080I, EE_YPbPr_720P, EE_PC_UNKNOWN, EE_PC_UNKNOWN };
+              //#define DetectDTVInputSource()  DTVMode[ReadADC(0xC1)& 0x07]
+              
+              //=============================================================================
+              BYTE Measure_VPN_IHF( WORD *p_vpn, DWORD *p_ihf)
+              {
+                DWORD ppf;
+                WORD  hpn;
+              
+              
+                if( !MeasureAndWait(3) ) {
+                
+                  #ifdef DEBUG_PC
+                  dPuts("\r\n  ** Error at Get_VPN_IHF");
+                  #endif //DEBUG_PC
+                  return 0;
+                }
+              
+                ppf    = GetPPF();      //
+                *p_vpn = GetVPN();      //
+                hpn    = GetHPN();      // HPN = H Period Num
+              
+                *p_ihf = (ppf + hpn/2) / hpn;     // IHF = PPF / HPN 
+              
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\n  *** PPF=%ld   HPN=%4d", ppf, hpn);
+                dPrintf("  --> VPN=%4d   IHF=%ld ", *p_vpn, *p_ihf);
+                dPrintf("  IVF=%d", (WORD)((*p_ihf + *p_vpn/2) / *p_vpn) );
+              
+                dPrintf(" [%d, %ld]", LastVPN, LastIHF);
+              
+                #endif // DEBUG_PC_MEAS
+              
+                return 1;
+              }
+              #ifdef SUPPORT_DTV
+              BYTE  DetectDTVInputSource( void )
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 10  
+
+              {
+                WORD  vpn;
+                DWORD ihf;
+              
+                if ( Measure_VPN_IHF( &vpn, &ihf) ) {
+                  if (( ihf > 15634 ) && ( ihf < 15834 ))       //15734
+                    return EE_YPbPr_480I;
+                  else if (( ihf > 31369 ) && ( ihf < 31569 ))    // 31469
+                    return EE_YPbPr_480P;
+                  else if (( ihf > 15525 ) && ( ihf < 15725 ))      // 15625
+                    return EE_YPbPr_576I;
+                  else if (( ihf > 31150 ) && ( ihf < 31350 )) {    // 31250 576P & 1080I50B
+                    WriteTW88(0x54, 0);
+                    MeasureAndWait(3);
+                    vpn = GetVstart();
+                    if ( vpn < 3 ) return EE_YPbPr_1080I50B;
+                    else return EE_YPbPr_576P;
+                    /*
+                    ChangeInternPLL(PCMDATA[EE_YPbPr_1080I50B].PPF * 100000L);  // Set PPF (Internal PLL) as 0x948  for 1080I
+             -50B
+                    WriteTW88( 0x40, 0xA4 );            // clear invert field
+                    WriteTW88(0x45, 0xD2);              // Field detection start=128, end=1664
+                    WriteDecoder(0x06, 0x80);           // software reset
+                    delay(100);
+                    WriteDecoder(0x5b, 1);              // ODD field measure
+                    delay(100);
+                    vpn = GetVPN();
+                    #ifdef DEBUG_DTV
+                    Printf("\r\nODD field VPN: %d", vpn);
+                    #endif
+                    if ( !vpn ) return EE_YPbPr_576P;
+                    WriteDecoder(0x06, 0x80);           // software reset
+                    delay(100);
+                    WriteDecoder(0x5b, 1);              // EVEN field measure
+                    delay(100);
+                    vpn = GetVPN();
+                    #ifdef DEBUG_DTV
+                    Printf("\r\nEVEN field VPN: %d", vpn);
+                    #endif
+                    if ( !vpn ) return EE_YPbPr_576P;
+                    return EE_YPbPr_1080I50B;
+                    */
+                  }
+                  else if (( ihf > 36500 ) && ( ihf < 38500 ))      // 37500
+                    return EE_YPbPr_720P50;
+                  else if (( ihf > 44000 ) && ( ihf < 46000 ))      // 45000
+                    return EE_YPbPr_720P;
+                  else if (( ihf > 32750 ) && ( ihf < 34750 ))      // 33750
+                    return EE_YPbPr_1080I;
+                  else if (( ihf > 27125 ) && ( ihf < 29125 ))      // 28125
+                    return EE_YPbPr_1080I50A;
+                  else
+                    return EE_PC_UNKNOWN;
+                }
+              
+                return (EE_PC_UNKNOWN);   // cannot find correct mode
+              }
+              #endif
+              void ResetPCValue(void)
+              {
+                SaveDefaultPCDataEE();
+                if( DetectAndSetForVGAInput(3)==FALSE )   // HHY 1.44 change 1 to 3
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 11  
+
+                  CloseOSDMenu();
+              
+                LCDPowerON(0);
+              }
+              
+              void StartNewDetect(void)
+              {
+                ClearEnDet();
+                MeasureAndWait(3);
+                SetEnDet();
+              
+                WriteTW88(0xd0, 0xff);
+                WriteTW88(0xd1, 0xff);
+              }
+              /*
+              WORD gap(WORD a, WORD b)
+              {
+                if( a>b ) return a-b;
+                return b-a;
+              }
+              */
+              WORD GetCoarseValue(void)
+              {
+                return GetCoarse();
+              }
+              
+              WORD SetPCCoarseValue(BYTE val)   //1:Up  2:Dn
+              {
+                WORD  coarse;
+              
+              //  WriteADC(0xc1, 0x30);
+                WriteADC(0xc0, 0x38);
+              
+                coarse = GetCoarse();
+                if( val==UP ) coarse++;
+                else coarse--;
+              
+                SetCoarse(coarse);
+                SaveCoarseEE(PcMode); // HHY 1.33
+              
+                StartNewDetect();
+              
+              //  WriteADC(0xc1, 0x20);
+                WriteADC(0xc0, 0x28);
+                return coarse;
+              }
+              
+              
+              BYTE SetPhaseValue(BYTE val)
+              {
+                BYTE  phase;
+              
+                phase = GetPhaseCurrent();
+              
+                if( val==UP ) {
+                  if( phase>=31 ) return phase;
+                  else phase++;
+                }
+                else {
+                  if( phase==0 ) return phase;
+                  else phase--;
+                }
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 12  
+
+              
+                SetPhase(phase);
+                SavePhaseEE(PcMode);  // HHY 1.33
+              
+                return phase;
+              }
+              
+              BYTE IsDTVInput(void)
+              {
+                if( GetInputSelection()==DTV || GetInputSelection()==PC ) {
+                  if( PcMode>=EE_RGB_480P && PcMode<=EE_YPbPr_576P ) return 1;
+                }
+                return 0;
+              }
+              
+              IDATA struct RegisterInfo VPositionRange={0,100, 50};
+              
+              //=============================================================================
+              //                    PC Screen Position Move Functions
+              //=============================================================================
+              void MoveActiveVpos(BYTE dir)   //=== Up
+              {
+                char add;
+              
+                if( dir==UP ) {
+                  if( VPosCurr>=VPosMax ) return;
+                  add = 1;
+                }
+                else {
+                  if( VPosCurr==0 ) return;
+                  add = -1;
+                }
+                VPosCurr += add;
+              
+                if( IsBypassmode() ) {
+                  SetVactiveStart( GetVactiveStart()+add );
+                  SaveVactiveEE(PcMode);            // HHY 1.33
+                }
+                else {
+                  SetVactiveStart( GetVactiveStart()+add );
+                  SaveVactiveEE(PcMode);            // HHY 1.33
+                  SetVBackPorch( GetVBackPorch()+add );   // A6
+                  SaveVBackPorchEE(PcMode);         // HHY 1.33
+                }
+              }
+              
+              void MoveActiveHpos(BYTE dir)   //=== Right
+              {
+                char add;
+                WORD hstart, hend;
+              
+                if( dir==UP ) {
+                  if( HPosCurr>=HPosMax ) return;
+                  add = 1;
+                }
+                else {
+                  if( HPosCurr==0 ) return;
+                  add = -1;
+                }
+                HPosCurr += add;
+              
+                hstart = GetHactiveStart();
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 13  
+
+                hend   = GetHactiveEnd();
+              
+                hstart += add;
+                hend   += add;
+                SetHactiveStart(hstart);
+                SetHactiveEnd(hend);
+              
+                SaveHactiveEE(PcMode);    // HHY 1.33
+              }
+              
+              BYTE GetVPosition(void)
+              {
+                int newv;
+              
+                VPositionRange.Max = VPosMax;
+                VPositionRange.Default = VPosMax/2;
+                Mapping2( VPosCurr, &VPositionRange, &newv, &UserRange );
+              
+                return newv;
+              }
+              
+              BYTE SetVPosition(BYTE val)   //0:UP, 1:DOWN
+              {
+                int newv;
+              
+                MoveActiveVpos(val);
+              
+                VPositionRange.Max = VPosMax;
+                VPositionRange.Default = VPosMax/2;
+                Mapping2( VPosCurr, &VPositionRange, &newv, &UserRange );
+                
+                return newv;
+              }
+              
+              BYTE GetHPosition(void)
+              {
+                return HPosCurr;
+              }
+              
+              BYTE SetHPosition(BYTE val)
+              {
+                MoveActiveHpos(val);
+              
+                return HPosCurr;
+              }
+              //=============================================================================
+              //    Phase Measurement
+              //      Return : PhaseBlue, PhaseGreen, PhaseRed                       
+              //=============================================================================
+              DWORD ReadOut4(void)
+              {
+                BYTE  i;
+                DWORD dat=0;
+              
+                for(i=0; i<4; i++) {
+                  dat <<= 8;
+                  dat |= (DWORD)ReadTW88(0x5a-i);
+                }
+                return dat;
+              }
+              
+              BYTE GetPhaseRGB(void)    // HHY 1.10 BYTE return 
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 14  
+
+              {
+                static bit flag=0;
+                DWORD _RGB;
+              
+                #ifdef DEBUG_PC_MEAS
+                BYTE sign;
+                #endif // DEBUG_PC_MEAS
+              
+                _RGB = PhaseRGB;
+              
+                if( !MeasureAndWait(3) ) {
+                  return 0;   //LJY001219
+                }
+              
+                WriteTW88(0x5b, 0x08);      // Read Phase B
+                PhaseRGB  = ReadOut4();
+              
+                WriteTW88(0x5b, 0x18);      // Read Phase G
+                PhaseRGB += ReadOut4();
+              
+                WriteTW88(0x5b, 0x28);      // Read Phase R
+                PhaseRGB += ReadOut4();
+              
+                #ifdef DEBUG_PC_MEAS
+                if( PhaseRGB  >= _RGB ) sign = '+'; else sign = '-';
+                dPrintf("(%c%lu)", (WORD)sign, PhaseRGB);
+                dPrintf("(%c%lu), %d", (WORD)sign, PhaseRGB, GetHstart() );
+                #endif //DEBUG_PC_MEAS
+              
+                if( PhaseRGB==_RGB ) {      // NO INPUT ???
+                  dPuts("\r\n??? SYNC loss...");
+                  if(flag) {
+                    flag = 0;
+                    return 0;
+                  }
+                  else flag = 1;
+                }
+                else flag = 0;
+              
+                return 1;
+              }
+              
+              //============================================================================
+              //      Detect Input source for PC
+              //============================================================================
+              /*
+              BYTE DetectPCInputSource(void)
+              {
+                BYTE   mode, PCMode;
+              
+                mode = ReadADC(0xC1)& 0x07; // 8816 0x1c1 for LLPLL input detection register
+              
+                #ifdef DEBUG_PC
+                dPrintf("\n +++DetectPCInputSource ==> Detect from ADC : 0x%2x", (WORD)mode);
+                #endif
+                switch(mode) {
+                  case 1: PCMode = EE_RGB_480I; break;
+                  case 2: PCMode = EE_RGB_576I;  break;
+                  case 3: PCMode = EE_RGB_480P; break;
+                  case 4: PCMode = EE_RGB_576P; break;
+                  case 5: PCMode = EE_RGB_720P; break;
+                  default:PCMode = EE_PC_UNKNOWN; break;
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 15  
+
+                }
+              
+                return PCMode;
+              }
+              */
+              
+              //============================================================================
+              //      Determine InputSource Format based on VPN
+              //============================================================================
+              //  Input VPN
+              //  Return  PcMode
+              //      InputSource (PC_XGA, PC_SVGA, PC_VGA)
+              
+              BYTE DecideVGAInputSource(WORD vpn, WORD ivf)
+              {
+                BYTE _PcMode;
+              
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\n-> DecideVGAInputSource: vpn:%4xh, ivf:%4xh", vpn, ivf);
+                #endif // DEBUG_PC_MEAS
+              
+              
+                _PcMode     = EE_PC_UNKNOWN;
+                //InputSource = UNKNOWN;
+              
+                /*    comment out for there is no DTV type on PC input mode 10/05/2007
+                _PcMode = DetectDTVInputSource();
+                #ifdef DEBUG_PC
+                dPrintf("\r\n-----> DetectDTVInputSource(): _PcMode:%d", (WORD)_PcMode);
+                #endif
+                if(_PcMode != EE_PC_UNKNOWN ) return _PcMode;
+                */
+                //====================== PC DOS ================================
+                if( vpn >= 440  && vpn <= 460 ) { 
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf("\r\n=== PC DOS ===: vpn:%4d, ivf:%4d", (WORD)vpn, (WORD)ivf);
+                  #endif //DEBUG_PC_MEAS
+                  //InputSource = PC_DOS1;  
+                  switch( ivf ) {
+                  case 69: case 70: case 71:  _PcMode = EE_DOS;     break;
+                  
+                  case 84: case 85: case 86: case 87:
+                    GetHpnVpn(1);
+                  #ifdef REFERENCE
+                    if( ReadTW88(0x40) & 0x02 ) 
+                      _PcMode = EE_SP1;     
+                    else
+                      _PcMode = EE_SP2;
+                  #else // REFERENCE
+                    if( ReadTW88(0x40) & 0x02 )
+                    {
+                      if(IHF >= 37910 && IHF <= 38000)
+                        _PcMode = EE_SP3; 
+                      else if((IHF >= 37850 && IHF <= 37900) && 
+                          (GetHPN <= 1360 && GetHPN >= 1330))
+                        _PcMode = EE_SP2;
+                      else
+                        _PcMode = EE_SP1; 
+                    }
+                    else
+                      _PcMode = EE_SP2; 
+                  #endif //REFERENCE
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 16  
+
+                    break;
+              
+                  default:          _PcMode = EE_PC_UNKNOWN;  break;
+              
+                  }
+                }
+                //====================== PC VGA, DTV 480P ======================
+                else if( vpn>=490  && vpn<=540 ) { 
+              
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf("\r\n=== PC VGA, DTV 480P ===: vpn:%4d, ivf:%4d", (WORD)vpn, (WORD)ivf);
+                  #endif //DEBUG_PC_MEAS
+                  switch( ivf ) {
+                    case 59: case 60: case 61:
+                      _PcMode = EE_VGA_60;  break;
+                    case 65: case 66: case 67:  _PcMode = EE_VGA_66;    break;
+                    case 69: case 70: case 71:  _PcMode = EE_VGA_70;    break;
+                        case 72: case 73:     _PcMode = EE_VGA_72;    break;
+                    case 74: case 75: case 76:  _PcMode = EE_VGA_75;    break;
+                    case 83:
+                    case 84: case 85: case 86:  _PcMode = EE_VGA_85;    break;
+                    default:          _PcMode = EE_PC_UNKNOWN;  break;
+                  }
+                }
+                //====================== PC SVGA ===============================
+                else if( vpn>=610 && vpn<=680+30 ) {
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf("\r\n=== PC SVGA ===: vpn:%4d, ivf:%4d", (WORD)vpn, (WORD)ivf);
+                  #endif //DEBUG_PC_MEAS
+                  //InputSource = PC_SVGA;  
+                  switch( ivf ) {
+                    case 49: case 50: case 51: _PcMode = EE_RGB_576P;   break;
+                  
+                    case 55: case 56: case 57:  _PcMode = EE_SVGA_56;   break;
+                    case 59: case 60: case 61: case 62: case 63: case 64:
+                                  _PcMode = EE_SVGA_60;   break;
+                    case 69: case 70: case 71:  _PcMode = EE_SVGA_70;   break;
+                      case 72: case 73:     _PcMode = EE_SVGA_72;   break;
+                    case 74: case 75: case 76:  _PcMode = EE_SVGA_75;   break;
+              
+                    case 83:
+                    case 84: case 85: case 86:  _PcMode = EE_SVGA_85;   break;
+                  
+                    default:          _PcMode = EE_PC_UNKNOWN;  break;
+                  }
+                }
+              
+                //====================== DTV 720P ==============================
+                else if(vpn>=751-20 && vpn<=751+30) {
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf("\r\n=== DTV 720P ===: vpn:%4d, ivf:%4d", (WORD)vpn, (WORD)ivf);
+                  #endif //DEBUG_PC_MEAS
+                  #ifdef REFERENCE
+                  if( ivf>=55) 
+                  #else //REFERENCE
+                  if( ivf>=55  && ivf<=65) 
+                  #endif //REFERENCE
+                  {
+                    _PcMode = EE_RGB_720P;
+                  }
+                  #ifdef REFERENCE
+                  else
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 17  
+
+                  #else //REFERENCE
+                  else if( ivf>=45  && ivf<=55) 
+                  #endif //REFERENCE
+                  {
+                    _PcMode = EE_RGB_720P50;
+                  }
+                }
+                //====================== DTV 1080i =============================
+                else if(vpn>=563-10 && vpn<=563+10) {
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf("\r\n=== DTV 1080i ===: vpn:%4d, ivf:%4d", (WORD)vpn, (WORD)ivf);
+                  #endif //DEBUG_PC_MEAS
+                  if( ivf>=55 ) {
+                    _PcMode = EE_RGB_1080I;
+                  }
+                  else {
+                    _PcMode = EE_RGB_1080I50A;
+                  }
+                }
+                //====================== DTV 480i ==============================
+                else if(vpn>=264-40 && vpn<=264+35) {
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf("\r\n=== DTV 480i ===: vpn:%4d, ivf:%4d", (WORD)vpn, (WORD)ivf);
+                  #endif //DEBUG_PC_MEAS
+                  _PcMode = EE_RGB_480I;
+                }
+                //====================== DTV 576i ==============================
+                else if(vpn>=314-14 && vpn<=314+50) {
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf("\r\n=== DTV 576i ===: vpn:%4d, ivf:%4d", (WORD)vpn, (WORD)ivf);
+                  #endif //DEBUG_PC_MEAS
+                  _PcMode = EE_RGB_576I;
+                }
+              
+                //====================== PC XGA ================================
+                else if( vpn>=790 && vpn<=820 ) {
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf("\r\n=== PC XGA ===: vpn:%4d, ivf:%4d", (WORD)vpn, (WORD)ivf);
+                  #endif //DEBUG_PC_MEAS
+                  //InputSource = PC_XGA; 
+                  switch( ivf ) {
+                  case 59: case 60: case 61:  _PcMode = EE_XGA_60;    break;
+                  case 69: case 70: case 71:  _PcMode = EE_XGA_70;    break;
+                           case 72: case 73:  _PcMode = EE_XGA_72;    break;
+                  case 74: case 75: case 76:  _PcMode = EE_XGA_75;    break;
+                  case 84: case 85: case 86:  _PcMode = EE_XGA_85;    break;
+                  default:          _PcMode = EE_PC_UNKNOWN;  break;
+                  }
+                }
+                //====================== PC 1152x864 ===========================
+                else if( vpn>=850 && vpn<=1000 ) {
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf("\r\n=== PC 1152x864 ===: vpn:%4d, ivf:%4d", (WORD)vpn, (WORD)ivf);
+                  #endif //DEBUG_PC_MEAS
+                  //InputSource = PC_SXGA;  
+                  switch( ivf ) {
+                  case 59: case 60: case 61:  _PcMode = EE_1152_60;   break;
+                  case 69: case 70: case 71:  _PcMode = EE_1152_70;   break;
+                  case 74: case 75: case 76:  _PcMode = EE_1152_75;   break;
+                  default:          _PcMode = EE_PC_UNKNOWN;  break;
+                  }
+                }
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 18  
+
+              
+                //====================== PC SXGA ===============================
+                else if( vpn>=1024 && vpn<=1600 ) {
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf("\r\n=== PC SXGA ===: vpn:%4d, ivf:%4d", (WORD)vpn, (WORD)ivf);
+                  #endif //DEBUG_PC_MEAS
+                  //InputSource = PC_SXGA;  
+                  switch( ivf ) {
+                  case 59: case 60: case 61:  _PcMode = EE_SXGA_60;   break;
+                  case 69: case 70: case 71:  _PcMode = EE_SXGA_70;   break;
+                  case 74: case 75: case 76:  _PcMode = EE_SXGA_75;   break;
+                  default:          _PcMode = EE_PC_UNKNOWN;  break;
+                  }
+                }
+              
+                #ifdef DEBUG_PC_MEAS
+                if( _PcMode == EE_PC_UNKNOWN )
+                  dPrintf("\r\nUnknown Input-- VPN:%d IVF:%d", vpn, ivf);
+                else
+                  dPrintf("\r\nInput VPN(%d) IVF(%d) :%d(%s)", vpn, ivf, (WORD)_PcMode, PcModeStr[_PcMode] );
+                #endif //DEBUG_PC_MEAS
+              
+                if( !PCMDATA[_PcMode].Support ) _PcMode = EE_PC_UNKNOWN;
+              
+                return _PcMode;
+              }
+              
+              WORD ConvertBasedOnInput(WORD dat)
+              {         
+                DWORD dtmp;
+              
+                if( IsBypassmode() ) return dat;        // HHY 2.01
+              
+                dtmp = PCMDATA[PcMode].PPF*100000L/dat;     // from PPF-based to IPF-based
+                dtmp = PCMDATA[PcMode].IPF*100000L/dtmp;    // NewHPN = OldHPN * (IPF/PPF)
+                return (WORD)dtmp;
+              }
+              
+              //=============================================================================
+              //        Search ADC Clock with measuring Phase
+              //=============================================================================
+              /*
+              WORD AutoTuneClock(void)
+              {
+                WORD  low, high, lowV, highV; // Test value range of plldiv
+                WORD  i;
+              //  BYTE  phase, phasepeak, j;
+                WORD  num, width, height;
+              
+                #ifdef DEBUG_PC
+                dPrintf("\r\n---Tune-Coarse Mode=%d", (WORD)PcMode);
+                #endif
+              
+                //------ Set Test Range, Divide Range more detail
+              
+                low  = 10;
+                high = ConvertBasedOnInput( GetHPN() );
+                SetMeasureWindowH(low, high);     //
+              
+                low  = 1;
+                high = GetVPN() - 1;
+                SetMeasureWindowV(low, high);     //
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 19  
+
+              
+                low  = PCMDATA[PcMode].low;
+                high = PCMDATA[PcMode].high;
+              
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\n===>>>>Get Divider Number=0x%4x to 0x%4x", (WORD)low, (WORD)high);
+                #endif
+                width = PCMDATA[PcMode].HAN;
+                height = PCMDATA[PcMode].VAN;
+                SetCoarse( low );
+                MeasureAndWait(3);
+                low = GetHend() - GetHstart() - 1;
+                lowV = GetVend() - GetVstart() - 1;
+                SetCoarse( high );
+                MeasureAndWait(3);
+                high = GetHend() - GetHstart() - 1;
+                highV = GetVend() - GetVstart() - 1;
+              
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\n===>>>>width: 0x%4x, low: 0x%4x, high: 0x%4x", (WORD)width, (WORD)low, (WORD)high);
+                dPrintf("\r\n===>>>>height: 0x%4x, lowV: 0x%4x, highV: 0x%4x", (WORD)height, (WORD)lowV, (WORD)highV);
+                #endif
+                if(( low > width ) || ( width > high ) )  return 0;   // cannot adjustable in setting range...
+              //  if(( height > (highV+100) ) ) return 0;   // cannot adjustable in setting range...
+              
+                for(i=PCMDATA[PcMode].low; i <= PCMDATA[PcMode].high; i+=4 ) {  // increment by 4
+              
+                  SetCoarse(i);
+                  MeasureAndWait(3);
+                  width = GetHend() - GetHstart();
+                  if ( width >= PCMDATA[PcMode].HAN ) return (i);
+                }
+                return num;
+              
+              }
+              */
+              
+              WORD AutoTuneClock(void)
+              {
+                WORD  low, high;  // Test value range of plldiv
+                WORD  i;
+                BYTE  phase, phasepeak, j, phasemin;
+                WORD  num;
+                DWORD RGBdiff, RGBmin;
+              
+                #ifdef DEBUG_PC
+                dPrintf("\r\n---Tune-Coarse Mode=%d", (WORD)PcMode);
+                #endif //DEBUG_PC
+              
+                //------ Set Test Range, Divide Range more detail
+              
+                low  = 10;
+                high = ConvertBasedOnInput( GetHPN() );
+                SetMeasureWindowH(low, high);     //
+              
+                low  = 1;
+                high = GetVPN() - 1;
+                SetMeasureWindowV(low, high);     //
+              
+                low  = PCMDATA[PcMode].low;
+                high = PCMDATA[PcMode].high;
+              
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 20  
+
+                i = IVF;
+                num = GetHpnVpn(1);               // Get vpn, IVF
+                if( num==0 ) {
+                  #ifdef DEBUG_PC
+                  dPrintf("\r\n  --> Error at GetHpnVpn() line:%d", __LINE__);
+                  #endif //DEBUG_PC
+                  return 0;
+                }
+              
+                #ifdef DEBUG_PC
+                if( i != IVF ) dPrintf("\r\nIVF changed %d -> %d ****", i, IVF);
+                #endif //DEBUG_PC
+              
+                SetVCORange( (DWORD)IVF * num * PCMDATA[PcMode].CLOCK );
+              
+                #ifdef DEBUG_PC
+                dPrintf("\r\nRange:%04x to %04x\r\n", low, high);
+                #endif //DEBUG_PC
+              
+                //===== For the PLL div range, seek the Phase Peak =====
+                // if PLL div value is correct, phase RGB values are peak.
+                
+                RGBPeak=0;
+              
+                num = low;  // plldiv of new peak
+                RGBdiff = 0;
+                for(i=low; i <= high; ) {
+              
+                  SetCoarse(i);
+                  WriteADC( 0xCD, 1 );  // init LLPLL
+                  delay(20);
+              
+                  GetPhaseRGB();
+                  RGBPeak = 0;
+                  RGBmin = PhaseRGB;
+              
+                  for(j=0; j<8; j++) {
+                    phase = (7-j)*4;          // HHY 1.10
+                    SetPhase(phase);          // if NO_INPUT stop
+                    if( !GetPhaseRGB() ) return 0;    //
+              
+                    if(RGBPeak < PhaseRGB) {
+                      RGBPeak = PhaseRGB;
+                      phasepeak = phase;
+                      // num = i;
+                      dPuts(" -*"); 
+                    } 
+                    else {
+                      dPuts("   ");
+                    }
+                    if (RGBmin > PhaseRGB ) {
+                      RGBmin = PhaseRGB;
+                      phasemin = phase;
+                    }
+                  }
+                  if ( RGBdiff < (RGBPeak - RGBmin) ) {
+                    RGBdiff = (RGBPeak - RGBmin);
+                    num = i;
+                  }
+              #ifdef REFERENCE
+                  if( Range4Coarse ) i++;
+                  else if(PcMode>=EE_SXGA_60 || PcMode==EE_VGA_60)
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 21  
+
+                    i += 4;
+                  else  
+                    i += 4;
+              #else //REFERENCE
+                  i++;
+              #endif //REFERENCE
+                }
+              
+                if( high!=low ) SetCoarse(num);   // set value of peak
+                Printf("\r\nFind Coarse Number: %x[%d]", num, num );
+                WriteADC( 0xCD, 1 );  // init LLPLL
+                SetPhase(phasemin + 14);
+              //  SetPhase(phasepeak);
+                return num;
+              
+              }
+              
+              //-----------------------------------------------------------------------------
+              //    Final Set ADC [PLL div], [Phase]
+              //-----------------------------------------------------------------------------
+              /*
+              void AutoTunePhase(void)
+              {
+                BYTE  i, j, peak_j, min_j;
+                DWORD Phase0, Phase1, Phase2, PhaseT;
+              
+                dPuts("\r\n-------------Tune-Fine");
+              
+                if( IsDTVInput() ) return;
+              //  WriteTW88(0xff, 1);
+              //  WriteTW88(0xcd, 1);
+              //  WriteTW88(0xff, 0);
+              
+                SetMeasureWindowH( 0,  PCMDATA[PcMode].HAN + 200);
+                SetMeasureWindowV( 0,  PCMDATA[PcMode].VAN + 200);
+              
+                j = GetPhaseCurrent();
+              
+                GetPhaseRGB();
+                Phase0 = PhaseRGB;
+                j++;
+                j &= 0x1f;
+                SetPhase(j);
+                GetPhaseRGB();
+                Phase1 = PhaseRGB;
+                j++;
+                j &= 0x1f;
+                SetPhase(j);
+                GetPhaseRGB();
+                Phase2 = PhaseRGB;
+              
+                PhaseT = Phase0 + Phase1 + Phase2;
+                
+                peak_j = j;
+                RGBPeak = PhaseT;
+                RGBMin = PhaseT;
+                for(i=0; i<32; i++) {
+                  j++;
+                  j &= 0x1f;
+                  SetPhase(j);            // if NO_INPUT stop
+                  if( !GetPhaseRGB() ) return;    //
+              
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 22  
+
+                  Phase0 = Phase1;
+                  Phase1 = Phase2;
+                  Phase2 = PhaseRGB;
+                  PhaseT = Phase0 + Phase1 + Phase2;
+                  if(RGBPeak < PhaseT) {
+                    RGBPeak = PhaseT;
+                    peak_j = j;
+                    dPuts("--peak");
+                  } 
+                  else if(RGBMin > PhaseT) {    // real case is smallest is good diplay
+                    RGBMin = PhaseT;
+                    min_j = j;
+                    dPuts("--min");
+                  }
+                  else {
+                    dPuts("   ");
+                  }
+                }
+              
+              //  j = (min_j + 16 -1 ) & 0x1f;
+                j = (peak_j - 1 ) & 0x1f;
+                SetPhase(j);
+              }
+              */
+              void AutoTunePhase(void)
+              {
+                BYTE  i, j, peak_j, min_j;
+              #ifdef REFERENCE
+                DWORD RGBmin, RGBavg;
+              #else //REFERENCE
+                DWORD RGBmin;
+              #endif //REFERENCE
+              
+                #ifdef DEBUG_PC
+                dPuts("\r\n-------------Tune-Fine");
+                #endif //DEBUG_PC
+              
+                #ifdef SUPPORT_DTV
+                if( IsDTVInput() ) return;
+                #endif //SUPPORT_DTV
+              
+                //j = GetPhaseCurrent() - Start_Phase;  
+              
+                SetMeasureWindowH( 0,  PCMDATA[PcMode].HAN + 200);
+                SetMeasureWindowV( 0,  PCMDATA[PcMode].VAN + 200);
+              
+                  j =0;
+                RGBPeak=0;//9
+                GetPhaseRGB();
+                RGBmin = PhaseRGB;
+                for(i=0; i<32; i++, j++) {    // full scan PHASE
+              
+                  SetPhase(j);            // if NO_INPUT stop
+              
+                  if( !GetPhaseRGB() ) return;    //
+                  
+              
+                  if(RGBPeak < PhaseRGB) {
+                    RGBPeak = PhaseRGB;
+                    peak_j = j;
+                    #ifdef DEBUG_PC
+                    dPuts("--peak");
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 23  
+
+                    #endif //DEBUG_PC
+                  } 
+                  else {
+                    #ifdef DEBUG_PC
+                    dPuts("   ");
+                    #endif //DEBUG_PC
+                  }
+                  if ( PhaseRGB < RGBmin ) {
+                    RGBmin = PhaseRGB;
+                    min_j = j;
+                  }
+                }
+                SetPhase(min_j + 16);   // opposite phase of min value
+                WriteADC( 0xCD, 1 );  // init LLPLL
+                return;
+              
+              /*
+                RGBavg = ( RGBmin + RGBPeak );
+                RGBavg >>= 1;
+                
+                for ( j=min_j; j<min_j+32; j++ ) {
+                  SetPhase(j);            // if NO_INPUT stop
+                  if( !GetPhaseRGB() ) return;    //
+                  
+                  if ( PhaseRGB > RGBavg ) {
+                    for ( i=j+1; i<min_j+32; i++ ) {
+                      SetPhase(i);            // if NO_INPUT stop
+                      if( !GetPhaseRGB() ) return;    //
+                      if ( PhaseRGB < RGBavg ) {
+                        peak_j = (j + i - 1) / 2 - 2;   // center of big value, move 2 points left
+                        SetPhase( peak_j);
+                        #ifdef DEBUG
+                        dPrintf("\r\n set phase: %d, min_j: %d", peak_j, min_j);
+                        #endif
+                        return;
+                      }
+                    }
+                  }
+                }
+                //SetPhase(peak_j);
+                //SetPhase(min_j + 12);   // opposite phase of min value
+                SetPhase(min_j + 16);   // opposite phase of min value
+              */
+              }
+              //-----------------------------------------------------------------------------
+              //      Measure    VPN, HPN
+              //      Calculate  IVF, IHF
+              //-----------------------------------------------------------------------------
+              WORD GetHpnVpn(BYTE en)
+              {
+                WORD  vpn, hpn, sync; //hsync, vsync;
+                BYTE  SyncPol;
+              
+                en = DebugLevel;
+                if( !en && DebugLevel )   DebugLevel = 0;
+              
+                #ifdef DEBUG_PC
+                dPuts("\r\n------ GetHpnVpn()");
+                #endif //DEBUG_PC
+                //----- Measurement Command -------------
+              
+                if( !MeasureAndWait(3) ) {      // field any...
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 24  
+
+                  #ifdef DEBUG_PC
+                  dPrintf(" Error at GetHpnVpn ");
+                  #endif //DEBUG_PC
+                  DebugLevel = en;
+                  return 0;
+                }
+              
+                //----- Get VPN -------------------------
+                vpn = GetVPN();         // VPN = V Period Num
+                sync = GetVSYNCPulse();
+              // in case of 8816 sync is same to vpn so I cannot use below....
+                // Polarity check
+                if( sync > (vpn/3) ) {
+                  InvertVSYNCPolarity();
+                  MeasureAndWait(3);
+                  sync = GetVSYNCPulse();
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf(" --->New VSYNC:%04x(%d)", sync, sync);
+                  #endif //DEBUG_PC_MEAS
+                }
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\n VPN:%04x(%d)  VSYNC:%04x(%d)", vpn, vpn, sync, sync);
+                dPrintf("\r\n IHF:%08lx(%ld)", IHF, IHF);
+                #endif //DEBUG_PC_MEAS
+              
+                //----- Get HPN ---------------------
+                hpn = GetHPN();           // HPN = H Period Num
+                sync = GetHSYNCPulse();     // H sync Pulse Width = HSYNC interval
+              
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\n HPN:%04x(%d)  HSYNC:%04x(%d)", hpn, hpn, sync, sync);
+                dPrintf("\r\n PPF:%08lx(%ld)", GetPPF(), GetPPF() );
+                #endif //DEBUG_PC_MEAS
+              
+                if( sync >= (hpn/3) ) {
+                  SyncPol = ReadDecoder(0x40);  // INVERT SYNC POLARITY
+                  if ( SyncPol & 0x04 )       // b'2 is HSYNC POL
+                    SyncPol &= 0xfb;
+                  else SyncPol |= 0x04;
+                  WriteDecoder(0x40, SyncPol);
+              
+                  MeasureAndWait(3);
+                  sync = GetHSYNCPulse();     // H sync Pulse Width = HSYNC interval
+                  hpn = GetHPN();           // HPN = H Period Num
+                }
+              
+                //----- Get New HPN -------------
+                IHF = (GetPPF()+hpn/2) / hpn;   // IHF = PPF / HPN 
+              
+                //----- Get New VPN -------------
+                vpn = GetVPN();
+                IVF = (WORD)((IHF+vpn/2)/vpn);    // IVF = IHF / VPN 
+              
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\nIHF(New):%08lx(%ld)", IHF, IHF);
+                dPrintf("\r\nHPN(New):%04x(%d)  HSYNC(New):%04x(%d)", hpn, hpn, sync, sync);
+                dPrintf("\r\nVPN(New):%04x(%d)", vpn, vpn);
+                dPrintf("\r\nIVF(New):%04x(%d)", IVF, IVF);
+                dPuts("\r\n-------");
+                #endif //DEBUG_PC_MEAS
+              
+                DebugLevel = en;
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 25  
+
+                return vpn;
+              }
+              
+              //=============================================================================
+              //      Return V active Start
+              //=============================================================================
+              WORD GetVerticalActiveArea(void)
+              {
+              
+                WORD  vstart, vstart1, vend;
+              
+                char  off=0;
+              
+                dPuts("\r\n----- Get V Active Area");
+              
+                //----- if current mode is DTV, use default value----------------
+              
+                //#ifdef SUPPORT_DTV
+                if( IsDTVInput() ) {
+              
+                  #ifdef DEBUG_DTV
+                  dPrintf("  ---> Use fixed data Vstart=%d  VAN=%d", PCMDATA[PcMode].Vstart, PCMDATA[PcMode].VAN);
+                  #endif //DEBUG_DTV
+              
+                  SetVactiveStart( PCMDATA[PcMode].Vstart );
+                  
+                  switch (PcMode) {
+                  case EE_YPbPr_480I:   off = 4;  break;
+                  case EE_YPbPr_1080I:  off = 2;  break;
+                  case EE_RGB_1080I:    off = 4;  break;
+                  default:        off = 0;  break;
+                  }
+                  SetVactiveLen( PCMDATA[PcMode].VAN+off+20 );
+                  
+                  return PCMDATA[PcMode].Vstart;
+                }
+                //#endif
+              
+                //======================== Get the Bottom End ========================
+              #ifdef REFERENCE  
+                vend   = GetVend();
+              
+                if( vend >= GetVPN() ) {
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf("\r\nToo big vend [%04x]", vend);
+                  #endif
+                  vend = GetVPN()-1;
+                }
+                vstart  = vend - PCMDATA[PcMode].VAN + 1;
+                vstart1 = GetVstart();
+              //  vstart  = GetVstart();
+              #else //REFERENCE
+                  vstart  = GetVstart();
+                  vend   = GetVend();
+              #endif //REFERENCE
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\nFind Vend   --- %04x %04x", vstart, vend);
+                #endif //DEBUG_PC_MEAS
+              
+                //================================================= HHY 2.00
+                if( PcMode >= EE_1152_60 && PcMode <=EE_1152_75 ) {
+                  if( vstart1 > vstart && vstart1 <= vstart+3 ) {
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 26  
+
+                    vstart = vstart1;
+                    vend   = vstart + PCMDATA[PcMode].VAN - 1;
+                    #ifdef DEBUG_PC_MEAS
+                    dPuts("    -------> Use Vstart");
+                    #endif //DEBUG_PC_MEAS
+                  }
+                }
+                //=================================================
+              
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\nAuto Measure Vstart=%04x(%d)  Vend=%04x(%d)", vstart, vstart, vend, vend);
+                #endif //DEBUG_PC_MEAS
+              
+                if( (vstart > PCMDATA[PcMode].Vstart + 30) || ((int)vstart < ((int)PCMDATA[PcMode].Vstart - 30) ) ) {
+              
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf("    ==> Out Of Range V Active");
+                  #endif //DEBUG_PC_MEAS
+              
+                  vstart = GetVactiveStartEE(PcMode);
+                  vend   = vstart + PCMDATA[PcMode].VAN - 1;
+                }
+              
+                //----- Compensation mode by mode -------------------------------
+              
+                #ifdef VGA
+                if( PcMode>=EE_VGA_60 || PcMode<=EE_VGA_85 ) {
+                  vstart -= 5;
+                  dPrintf("\r\n      ----------- VGA Bypass !!!");
+                }
+                #endif //VGA
+              
+                if( PcMode==EE_SP2 ) vstart = PCMDATA[EE_SP2].Vstart; // HHY 1.62 640x350
+              
+                //----- set the register values ( Vstart, VAN ) -----------------
+              #ifdef REFERENCE
+                if ( PcMode == EE_VGA_75 ) vstart --;
+                if ( PcMode == EE_VGA_85 ) vstart --;
+              #endif //REFERENCE
+              #ifdef XGA
+                if (PcMode == EE_VGA_72)
+                  SetVactiveStart(vstart-1);
+                else
+                  SetVactiveStart(vstart);
+              #else //XGA
+                SetVactiveStart(vstart);
+              #endif //XGA
+                //SetVactiveStart(vstart1 - 1);
+              
+                //SetVactiveLen(PCMDATA[PcMode].VAN + 6);   // with VAN
+              #ifdef REFERENCE  
+                SetVactiveLen(PCMDATA[PcMode].VAN);   // with VAN
+              #else //REFERENCE
+              #ifdef XGA
+                if (PcMode == EE_VGA_72)
+                  SetVactiveLen(vend - vstart +2);
+                else
+                  SetVactiveLen(vend - vstart +1);
+              #else //XGA
+                SetVactiveLen(vend - vstart +1);
+              #endif //XGA 
+              #endif  //REFERENCE
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 27  
+
+                
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\n@@@@@ Vstart=%04x[%d]  Vend=%04x[%d]", vstart, vstart, vend, vend);
+                #endif //DEBUG_PC_MEAS
+              
+                return vstart;
+              }
+              //=============================================================================
+              //
+              //=============================================================================
+              BYTE GetHorizontalActiveArea(void)
+              {
+                WORD  hstart, hend;
+              
+                dPuts("\r\n----- Get H Active Area ");
+              
+                #ifdef SUPPORT_DTV
+                if( IsDTVInput() ) {
+                  hstart = PCMDATA[PcMode].Hstart;
+                  #ifdef REFERENCE
+                  hend   = hstart + PCMDATA[PcMode].HAN + 1;
+                  else
+                  if ( PcMode >= EE_YPbPr_1080I || PcMode <= EE_YPbPr_1080I50B) 
+                    hend =  PCMDATA[PcMode].HAN + 1;  
+                  #endif //REFERENCE
+                  #ifdef DEBUG_PC
+                  dPrintf("  ---> Use fixed data Hstart=%d  HAN=%d  Hend=%d", hstart, PCMDATA[PcMode].HAN, hend);
+                  #endif //DEBUG_PC
+                  
+                  SetHactiveStart( hstart );
+                  SetHactiveEnd( hend+3 );        // with HAN, Hstart
+                  return TRUE;
+                }
+                #endif //SUPPORT_DTV
+              
+                //======================== Get the Right End ========================
+              
+                hstart = GetHstart();
+                #ifdef REFERENCE
+                //hend   = hstart + PCMDATA[PcMode].HAN + hstart;
+                hend   = hstart + PCMDATA[PcMode].HAN + 5;
+                #else //REFERENCE
+                LastHPN = GetCoarseValue();
+                hend   = LastHPN;
+                #endif //REFERENCE
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\nAuto Measure Hstart=%04x(%d)  Hend=%04x(%d)", hstart, hstart, hend, hend);
+                #endif //DEBUG_PC_MEAS
+                
+                if( (hstart > PCMDATA[PcMode].Hstart + 100) || ((int)hstart < (int)PCMDATA[PcMode].Hstart - 100) ) {
+              
+                  #ifdef DEBUG_PC
+                  ePuts("    ==> Out Of Range H Active");
+                  #endif //DEBUG_PC
+                  
+                  hstart = GetHactiveStartEE(PcMode);
+                  hend   = hstart + PCMDATA[PcMode].HAN + 1;
+              
+                  SetHactiveStart(hstart);      // with Hstart
+                  SetHactiveEnd( hend );        // with HAN, Hstart
+              
+                  return TRUE;
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 28  
+
+                }
+              
+                //----- Compensation mode by mode -------------------------------
+                #ifdef REFERENCE
+                if( PcMode < EE_XGA_60 ) hend++;
+                #endif //REFERENCE
+              
+                if( !IsBypassmode() ) {
+                  #ifdef REFERENCE
+                  hstart -= 2;
+                  hend -= 2;
+                  if ( PcMode == EE_VGA_60 ) {
+                  }
+                  else if ( PcMode <= EE_VGA_72 ) {
+                    hstart++;
+                    hend++;
+                  }
+                  else if ( PcMode <= EE_VGA_85 ) {
+                    hstart++;
+                    hend++;
+                  }
+                  #else //REFERENCE
+                  if ( PcMode <= EE_VGA_85)
+                    hstart -= 1;
+                  else if ( PcMode <= EE_SVGA_85)
+                    hstart -= 2;  
+                  #ifdef XGA
+                  else if( PcMode ==  EE_XGA_60 ) 
+                    hstart -= 1;
+                  #else //XGA
+                  else if( PcMode ==  EE_XGA_60 ) 
+                    hstart -= 4;  
+                  #endif //XGA
+                  hend -= 2;
+                  //if(  PcMode == EE_SVGA_72)
+                  //  hend   = hend -hstart;
+                  #endif //REFERENCE
+                  }
+              
+                #ifdef XGA
+                if( PcMode>=EE_1152_60 ) {
+                  hstart+=3;
+                  hend+=3;
+                }
+                #endif //XGA
+              
+                #ifdef SXGA
+                if( PcMode>=EE_1152_60 && PcMode<=EE_1152_75 ) {
+                  hstart+=2;
+                  hend+=2;
+                }
+                #endif //SXGA
+              
+                //----- set the register values ( Hstart, Hend ) ----------------
+              
+                SetHactiveStart(hstart);      // with Hstart
+                SetHactiveEnd( hend );        // with HAN, Hstart
+              
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\n@@@@@ Hstart=%04x[%d]  Hend=%04x[%d]", hstart, hstart, hend, hend);
+                #endif //DEBUG_PC_MEAS
+                
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 29  
+
+                return TRUE;
+              }
+              
+              //-----------------------------------------------------------------------------
+              //      Calcurate and Save VOback(0xb9) & PVP(0xb7,0xbb)
+              //             - Refer to additional document
+              //-----------------------------------------------------------------------------
+              void SetVValueForPanel(WORD VIstart)
+              {
+                WORD  PVR, VAN, VScale, VIsync, dtmp;
+                BYTE  VOsync, VOback;
+              
+                VIsync  = GetVSYNCPulse();    // active pulse width
+                PVR     = GetPVR();
+                #ifdef REFERENCE
+                VAN     = PCMDATA[PcMode].VAN;
+                #else //REFERENCE
+                VAN     = GetVend() - GetVactiveStart();
+                #endif //REFERENCE
+                VOsync  = ReadTW88(0xb8);
+              
+                if ( VIsync > VAN ) VIsync = 0;   // if reverse, and cannot measure
+                dtmp = VIstart - VIsync + 1;
+                VScale = ReadTW88(0x63) & 0x0c;
+                VScale <<= 6;
+                VScale += ReadTW88(0x62);     // read VScale
+                dtmp <<= 8;     // multiply by 256
+                dtmp += (VScale >> 1);    // 0.5 calculation....
+                dtmp /= VScale;   // divide by scale, calculate 
+                if ( ReadTW88(0xbe) & 2 )   // unset AUTO CALC
+                  VOback = dtmp - VOsync;
+                else
+                  VOback = dtmp - VOsync - 4;
+                #ifdef REFERENCE
+                if ( PcMode == EE_VGA_75 ) {    // vga 75Hz
+                  VOback += 3;
+                }
+                else if ( PcMode == EE_VGA_85 ) {   // vga 85Hz
+                  VOback += 2;
+                }
+                else if ( PcMode == EE_SVGA_56 ) {    // svga 56Hz
+                  VOback++;
+                }
+                #else //REFERENCE
+                #ifdef XGA
+                if ( PcMode == EE_VGA_72 ) 
+                {
+                  VOback += 2;
+                }
+                #endif //XGA
+                #endif //REFERENCE
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\n************ void SetVValueForPanel(WORD VIstart) ************");
+                dPrintf("\r\nVScale=%d VIsync=%d PVR=%d VAN=%d ", (WORD)VScale, (WORD)VIsync, (WORD)PVR, (WORD)VAN);
+                dPrintf("\r\nVIstart=%d VIsync=%d PVR=%d VAN=%d ", (WORD)VIstart, (WORD)VIsync, (WORD)PVR, (WORD)VAN);
+                dPrintf("VOsync=%d", (WORD)VOsync);
+                dPrintf("==> VOback=%02bx(%bd)", VOback, VOback);
+                dPrintf("\r\n**************************************************************");
+                #endif // DEBUG_PC
+              
+              /*
+                //----- Compensation mode by mode -------------------------------
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 30  
+
+                #ifdef XGA
+                if     ( PcMode==EE_DOS ) VOback -= 2;  // HHY 3.00 
+                else if( PcMode==EE_SP1 ) VOback -= 2;  // HHY 3.00 
+                #endif
+              
+                #if defined VGA || defined WVGA
+                if     ( PcMode==EE_DOS ) VOback += 1;
+                else if( (PcMode>=EE_SVGA_56) && (PcMode<=EE_SVGA_85) ) VOback += 1;
+                #endif
+              */
+                //-----------------------------------------------------------
+              
+                SetVBackPorch( (BYTE)VOback );
+                SetPVP(VOsync + VOback + PVR + 10);
+              }
+              //-----------------------------------------------------------------------------
+              //      Calcurate [Panel H. Cycle] = PHP(Panel H Period)
+              //-----------------------------------------------------------------------------
+              #ifndef AUTOCALC_PC
+              BYTE SetHValueForPanel(void)
+              {
+                WORD  sum=0;
+                WORD  php;
+              
+                sum = ReadTW88(0xb3) + ReadTW88(0xb4) + GetPHR(); // sum = AA+AB+AC,AD = From Hsync to Active region
+                
+                MeasureAndWait(3);
+              
+                php = (DWORD)(GetHPN()) * PCMDATA[PcMode].VAN / GetPVR();   // PHP = HPN * (VAN/PVR)
+              
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\nHPN:%04x(%d)", GetHPN(), GetHPN());
+                dPrintf("\r\nVAN:%04x(%d)", PCMDATA[PcMode].VAN, PCMDATA[PcMode].VAN);
+                dPrintf("\r\nPVR:%04x(%d)", GetPVR(), GetPVR());
+                dPrintf("\r\nPanel H. Cycle:%04x(%d),  aa+ab+ac:%04x(%d)", php, php, sum, sum); 
+                #endif //DEBUG_PC_MEAS
+              
+                if( php <= sum ) {
+                  ePuts("--not enough");
+              
+                  #ifdef DEBUG_PC
+                  return FALSE;
+                  #endif //DEBUG_PC_MEAS
+                }
+              
+                //=================================
+              
+                #ifdef SXGA
+                switch( PcMode ) {
+                case EE_RGB_576I:   case EE_YPbPr_576I:   php = 0x70f;  break;
+                case EE_RGB_720P:   case EE_YPbPr_720P:   php = 0x623;  break;
+                case EE_RGB_1080I:    case EE_YPbPr_1080I:  php = 0x618;  break;
+                case EE_RGB_1080I50A: case EE_YPbPr_1080I50A: php -= 6;   break;
+                }
+                #endif //SXGA
+              
+                //=================================
+                
+                //------ Set PHP ----------
+                SetPHP(php);
+              
+                return TRUE;
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 31  
+
+              }
+              #else //AUTOCALC_PC
+              BYTE SetHValueForPanel(void)
+              {
+                return TRUE;
+              }
+              #endif //AUTOCALC_PC
+              //-----------------------------------------------------------------------------
+              //    VAN = V Active Number
+              //    HAN = H active Number
+              //-----------------------------------------------------------------------------
+              BYTE GetActiveRegion(void)
+              {
+                WORD  vstart;
+                #ifdef REFERENCE
+                #else //REFERENCE
+                #ifndef WIDE_SCREEN
+                WORD  vend;
+                #endif //WIDE_SCREEN
+                BYTE  cDelta =0;
+                #endif //REFERENCE
+                DWORD   pres, scale;
+                DWORD ppf;
+              
+                WORD  period, sync;
+              
+                //----- Set Measurement Wondow Size -----
+              
+              
+                SetMeasureWindowV(1, 0x400);
+                MeasureAndWait(3);
+              
+                // Set H window
+                if( (PCMDATA[PcMode].VAN != GetPVR()) || !Flag4Bypass ) { // --- Change hpulse & hpn ---
+                  period = ConvertBasedOnInput( GetHPN() );
+                  sync   = ConvertBasedOnInput( GetHSYNCPulse() );
+                }
+                else {
+                  period = GetCoarse();
+                  sync   = GetHSYNCPulse();
+                }
+                #ifdef REFERENCE
+                SetMeasureWindowH(sync, period);
+                #else //REFERENCE
+                SetMeasureWindowH(sync, period + sync);
+                #endif //REFERENCE
+                // Set V window
+                period = GetVPN();
+                sync   = GetVSYNCPulse();
+                SetMeasureWindowV(1, period);
+              
+                //----- Do Measurement ---------------------------
+                MeasureAndWait(3);
+              
+                //----- Get VAN = Vertical Active Area -----------
+              
+                vstart = GetVerticalActiveArea();  // Measure Input Vstart, Vactive
+              
+                #ifndef REFERENCE
+                SetMeasureWindowV(1, period);
+                #else //REFERENCE
+                SetMeasureWindowV(1, period  + sync);
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 32  
+
+                #endif //REFERENCE
+                //----- Calculate Y-scale Factor, and save -------
+              
+                #if (defined WIDE_SCREEN)
+                Set4WideScreen(GetWideModeEE());
+                #else //WIDE_SCREEN
+                { //NORNAL SCREEN
+                  #ifdef REFERENCE
+                  pres = (DWORD)PVR_;
+                  scale = ((PCMDATA[PcMode].VAN * 0x10000L)+pres/2) / pres;
+                  #else //REFERENCE
+                  vstart  = GetVstart();
+                  vend   = GetVend();
+                  pres = (DWORD)PVR_;
+                  #ifdef XGA
+                  if (PcMode >= EE_XGA_60)
+                    scale = (((vend-vstart +1) * 0x10000L)+pres/2) / pres + 0x64;
+                  else if (PcMode == EE_SVGA_72)
+                    scale = ((PCMDATA[PcMode].VAN * 0x10000L)+pres/2) / pres;
+                  else
+                    scale = (((vend-vstart +1) * 0x10000L)+pres/2) / pres;  
+                  #else //XGA
+                  scale = (((vend-vstart +1) * 0x10000L)+pres/2) / pres;
+                  #endif //XGA
+                  #endif //REFERENCE
+                  Printf("\nVRes = %d\n", PCMDATA[PcMode].VAN );
+                  Printf("\nOutput VRes = %d\n", PVR_);
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf("\r\n VAN=%04x  PVR=%04x", PCMDATA[PcMode].VAN, pres);
+                  dPrintf("\r\nYscaleFactor:%04x(%d)", scale, scale);
+                  #endif //DEBUG_PC_MEAS
+                
+                  #ifndef WXGA
+                  if( scale==0x10000 && Flag4Bypass ) {   // Bypass
+                    BypassZoom();
+                  }
+                  else
+                  #endif //WXGA
+                  {
+                    Clear_bypass();
+                    YScale2(scale);           // save V Scale Up Factor
+                  }
+                } // WIDE
+                #endif //WIDE_SCREEN
+                vstart = GetVactiveStart();
+                //vstart = GetVstart();     // get from input measurement
+                SetVValueForPanel(vstart);    // with VAN, Vstart with offset^^
+              
+                //----- Calcurate Panel H. Cycle(A9,AD) ----------
+              
+                ppf = GetPPF();
+              
+              /**
+                #ifdef DEBUG_PC_MEAS
+                while( !SetHValueForPanel() ) { // we need to use higher PPF
+              
+                  ppf += 2700000;
+                  if( ppf > MAX_PPF ) {
+                    ePuts("\r\n\n--------------Too big IPF\r\n");
+                    return FALSE;
+                  }
+                  ChangeInternPLL(ppf);     // internal PLL
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 33  
+
+                  #ifdef DEBUG_PC
+                  dPrintf("--> Increased PPF:%8ld", ppf);
+                  #endif
+                  delay(10);
+                }
+                #endif
+              /****/
+              
+                //----- Get HAN = Horizontal Active Area ---------
+              
+                GetHorizontalActiveArea();  
+              
+                if( (PCMDATA[PcMode].VAN != GetPVR()) || !Flag4Bypass) {  // non-bypass
+                  pres = (DWORD)GetPHR();
+                  #ifdef REFERENCE
+                  scale = ((PCMDATA[PcMode].HAN * 0x10000L )+pres/2) / pres;  // 256*han/phr
+                  #else //REFERENCE
+                  if ( PcMode <= EE_SP3)
+                  {
+                    LastHPN = GetCoarseValue();
+                    if  (LastHPN == PCMDATA[PcMode].CLOCK)
+                      scale = ((PCMDATA[PcMode].HAN * 0x10000L )+pres/2) / pres;  // 256*han/phr
+                    else 
+                    {
+                      if  (LastHPN < PCMDATA[PcMode].CLOCK)
+                      {
+                        cDelta = PCMDATA[PcMode].CLOCK - LastHPN;
+                        //Printf("xxx");
+                      }
+                      else if  (LastHPN > PCMDATA[PcMode].CLOCK)
+                      {
+                        cDelta = LastHPN - PCMDATA[PcMode].CLOCK;
+                        //Printf("ooo");
+                      }
+                      scale =(((PCMDATA[PcMode].HAN + cDelta) * 0x10000L )+pres/2) / pres;
+                    }
+                  }
+                  if ( PcMode <= EE_VGA_85)
+                  {
+                    scale = ((PCMDATA[PcMode].HAN * 0x10000L )+pres/2) / pres;  // 256*han/phr
+                  }
+                  else if ( PcMode <= EE_SVGA_85)
+                  {
+                    LastHPN = GetCoarseValue();
+                    if  (LastHPN == PCMDATA[PcMode].CLOCK)
+                      #ifdef XGA
+                      scale = ((PCMDATA[PcMode].HAN * 0x10000L )+pres/2) / pres + 64; // 256*han/phr
+                      #else //XGA
+                      scale = ((PCMDATA[PcMode].HAN * 0x10000L )+pres/2) / pres;  // 256*han/phr
+                      #endif //XGA 
+                    else 
+                    {
+                      if  (LastHPN < PCMDATA[PcMode].CLOCK)
+                      {
+                        cDelta = PCMDATA[PcMode].CLOCK - LastHPN;
+                        //Printf("xxx");
+                      }
+                      else if  (LastHPN > PCMDATA[PcMode].CLOCK)
+                      {
+                        cDelta = LastHPN - PCMDATA[PcMode].CLOCK;
+                        //Printf("ooo");
+                      }
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 34  
+
+                      scale =(((PCMDATA[PcMode].HAN + cDelta) * 0x10000L )+pres/2) / pres;
+                    }
+                      
+                  }
+                  else
+                  {
+                    scale = ((PCMDATA[PcMode].HAN * 0x10000L )+pres/2) / pres;  // 256*han/phr
+                    //scale = (PCMDATA[PcMode].HAN * 0x10000L ) / pres + pres/96;
+                  }
+                  #endif //REFERENCE
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf("\r\nPCMDATA[PcMode].HAN = %04x(%d), pres = %04x(%d)", PCMDATA[PcMode].HAN,PCMDATA[PcMode].HAN, 
+             -pres, pres)  ;  // 256*han/phr
+                  dPrintf("\r\nXscaleFactor:%04x(%d)", scale, scale);
+                  #endif //DEBUG_PC_MEAS
+              
+                  //#if (defined SXGA) || (defined WXGA) || (defined WSGA)
+                  #ifdef XGA
+                  if( PCMDATA[PcMode].HAN == 1024 ) {//1100
+                    scale = (PCMDATA[PcMode].HAN * 0x80L ) / 1024 + 1;    // (HAN/1024)*256
+                    XscaleD(scale);
+                    scale = ((PCMDATA[PcMode].HAN -8) * 0x10000L ) / 1024;            // (1024/PHR)*256
+                    XscaleU(scale);
+                  }
+                  else if( PCMDATA[PcMode].HAN > 1024 )
+                  {
+                    scale = (PCMDATA[PcMode].HAN * 0x80L ) / 1024 + 1;    // (HAN/1024)*256
+                    XscaleD(scale);
+                    scale = (1024 * 0x10000L ) / 1024;            // (1024/PHR)*256
+                    XscaleU(scale);
+                  }
+                  #else //XGA
+                  if( PCMDATA[PcMode].HAN > 1024 ) {//1100
+                    scale = (PCMDATA[PcMode].HAN * 0x80L ) / 1024 + 1;    // (HAN/1024)*256
+                    XscaleD(scale);
+                    #ifdef DEBUG_PC_MEAS
+                    dPrintf("\r\nXscaleFactorD:%04x(%d)", scale, scale);
+                    #endif //DEBUG_PC_MEAS
+                    scale = (1024 * 0x10000L ) / 1280;            // (1024/PHR)*256
+                    XscaleU(scale);
+                    #ifdef DEBUG_PC_MEAS
+                    dPrintf("\r\nXscaleFactorU:%04x(%d)", scale, scale);
+                    #endif //DEBUG_PC_MEAS
+                  }
+                  #endif //XGA
+                  else
+                  //#endif
+                  {
+                #ifdef WIDE_SCREEN
+                  if(WideScreenMode == WIDESCREEN_WIDE)
+                #endif // WIDE_SCREEN
+                    XScale2(scale);
+                  }
+                }
+              
+                return TRUE;
+              }
+              /*===========================================================================*/
+              /*            Display The Result for Debugging                   */
+              /*===========================================================================*/
+              void DisplayResultAndSetActiveRange(void)
+              {
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 35  
+
+              
+                WORD  Back, Front;
+              
+                //------- Display the Result ---------------------
+              
+                #ifdef DEBUG_PC_MEAS
+                dPuts  ("\r\n-------------------------------------------");
+                dPrintf("\r\n   Resolution    = %d x %d (%s)", PCMDATA[PcMode].HAN, PCMDATA[PcMode].VAN, PcModeStr[PcMode
+             -]);
+                dPrintf("\r\n   IVF(Refresh)  = (%d)", IVF);
+                dPrintf("\r\n   IHF           = %08lx (%ld)", IHF, IHF);
+                dPrintf("\r\n   IHPN(PLLdiv)  = %04x(%d) %02x", GetCoarse(), GetCoarse(), (WORD)GetPhaseCurrent() );
+                dPrintf("\r\n   VPN           = %04x(%d)", GetVPN(), GetVPN() );
+                dPrintf("\r\n   PPF           = %ld / 2 = %ld", GetPPF(), GetPPF()/2 );
+                dPrintf("\r\n   IPF           = %ld", IHF * GetCoarse() );
+                #endif //DEBUG_PC_MEAS
+              
+                //----- calculate H Pos Range
+                Back  = GetHactiveStart() - GetHSYNCPulse();
+                Front = GetCoarse() - PCMDATA[PcMode].HAN - GetHactiveStart();
+              
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\nH  ~~~|_%d_|~%d~", (WORD)GetHSYNCPulse(), (WORD)Back );
+                dPrintf(":+++ %d +++:~%d~|_%d_|~~~ ",  (WORD)PCMDATA[PcMode].HAN, (WORD)Front, (WORD)GetHSYNCPulse() );
+                #endif //DEBUG_PC_MEAS
+              
+                /*
+                if( (Back>50) && (Front>50) ) {
+                  Back = 50;
+                  Front = 50;
+                }
+                else if( Back+Front>=100 ) {
+                  if( Back>Front )
+                    Back = 100 - Front;
+                  else if( Front>Back ) 
+                    Front = 100 - Back;
+                }
+              
+                HPosCurr = (BYTE)Back;
+                HPosMax  = (BYTE)(Back + Front);
+                */
+                HPosCurr = (WORD)Back;
+                HPosMax = Back + Front;
+                //----- calculate V Pos Range
+                Back  = GetVactiveStart() - GetVSYNCPulse();
+                //Back  = GetVstart() - GetVSYNCPulse();
+                Front = GetVPN() - PCMDATA[PcMode].VAN - GetVactiveStart();
+                //Front = GetVPN() - PCMDATA[PcMode].VAN - GetVstart();
+              
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\nV  ~~~|_%d_|~%d~", (WORD)GetVSYNCPulse(), Back );
+                dPrintf(":+++ %d +++:~%d~|_%d_|~~~ ",  PCMDATA[PcMode].VAN, Front, (WORD)GetVSYNCPulse() );
+                dPuts  ("\r\n-------------------------------------------");
+                #endif //DEBUG_PC_MEAS
+              
+                VPosCurr = Back-4;
+              
+                if( Front <= 0 )
+                  VPosMax = VPosCurr+1;
+                else
+                  VPosMax = VPosCurr + Front;
+              
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 36  
+
+              }
+              /*===========================================================================*/
+              /*              Real Measurement routine                     */
+              /*===========================================================================*/
+              BYTE DoMeasurement(void)
+              {
+                WORD coarse;
+              
+                //------------------------ Clock Tuning -------------------------------
+                #ifdef DEBUG_PAUSE
+                Printf("coarse = AutoTuneClock()");
+                #endif //DEBUG_PAUSE
+              
+                coarse = AutoTuneClock();     // plldiv
+                if( coarse == 0 ) {
+                  ePuts("\r\nToo big IPF");
+                  MeasureAndWait(3);
+                  return FALSE;
+                }
+              
+              
+                //-------------------------- Fine Tuning ------------------------------
+              
+                AutoTunePhase();
+                
+                //-------------------------- Get Active Region ------------------------
+                if( !GetActiveRegion() ) {
+              
+                  GetPCDataEE(PcMode);
+              
+                  MeasureAndWait(3);
+                  return FALSE;
+                }
+              
+                //-------------------------- Display Result ---------------------------
+                DisplayResultAndSetActiveRange();
+              
+                return TRUE;
+              }
+              
+              //#ifdef SUPPORT_DTV
+              void RGBModeFieldDetect(BYTE flag)
+              {
+                BYTE val;
+              
+                val = ReadTW88(0x42);
+                if( flag ) val = val | 0x80;
+                else       val = val & 0x7f;
+                WriteTW88( 0x42, val);
+              }
+              //#endif
+              
+              #include "data\DTV_PC.txt"
+              
+              /*===========================================================================*/
+              /*                                                                           */
+              /*===========================================================================*/
+              BYTE SetADCandInputRegisterByVGAMode(BYTE mode)
+              {
+              
+                CODE_P BYTE *reg=0;
+                BYTE fielddetect=0, ret;
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 37  
+
+              
+                SetCoarse( PCMDATA[mode].CLOCK );
+              //  ret = SetVCORange(IHF * PCMDATA[mode].CLOCK); 
+                ret = SetVCORange(PCMDATA[mode].IPF * 100000L); 
+              
+                {
+                  switch (mode) {
+                  case EE_RGB_480I:   
+                  case EE_RGB_576I:   
+                  case EE_RGB_1080I:    
+                  case EE_RGB_1080I50A:
+                              #ifdef ADD_ANALOGPANEL
+                              if(IsAnalogOn())reg = DTV_RGB_480I_Reg_Analog; 
+                              else
+                              #endif   //ADD_ANALOGPANEL  
+                              reg = DTV_RGB_480I_Reg; fielddetect = 1;  break;
+                  case EE_RGB_576P:
+                  case EE_RGB_480P:
+                              #ifdef ADD_ANALOGPANEL
+                              if(IsAnalogOn())reg = DTV_RGB_480P_Reg_Analog; 
+                              else
+                              #endif  //ADD_ANALOGPANEL 
+                              reg = DTV_RGB_480P_Reg; 
+                  
+                              fielddetect = 0;  break;
+                  case EE_RGB_720P50:   
+                  case EE_RGB_720P:
+                              reg = DTV_RGB_720P_Reg; fielddetect = 0;  break;
+                  default:        reg = PC_RGB_ADC_Reg; fielddetect = 0;  break;
+                  }
+                  
+                }
+              
+                RGBModeFieldDetect(fielddetect);
+                if( reg ) I2CDeviceInitialize( reg );
+              
+                return ret;
+              
+              }
+              #ifdef SUPPORT_DTV
+              /*===========================================================================*/
+              /*                                                                           */
+              /*===========================================================================*/
+              BYTE SetADCandInputRegisterByDTVMode(BYTE mode)
+              {
+              
+                CODE_P BYTE *reg=0;
+                BYTE fielddetect=1, ret;
+                WORD  width, height;
+                DWORD scale;
+              
+                WriteADC_TW88(0xc6, 0x20);
+                ret = SetVCORange(PCMDATA[mode].IPF * 100000L); 
+                SetCoarse( PCMDATA[mode].CLOCK );
+              
+                switch (mode) {
+                  case EE_YPbPr_480I:   reg = DTV_YPbPr_480I_Reg;   break;
+                  case EE_YPbPr_576I:   reg = DTV_YPbPr_576I_Reg;   break;
+                  case EE_YPbPr_480P:   reg = DTV_YPbPr_480P_Reg;   break;
+                  case EE_YPbPr_576P:   reg = DTV_YPbPr_576P_Reg;   break;
+                  case EE_YPbPr_720P:   reg = DTV_YPbPr_720P_Reg;   break;
+                  case EE_YPbPr_720P50: reg = DTV_YPbPr_720P50_Reg;   break;
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 38  
+
+                  case EE_YPbPr_1080I:  reg = DTV_YPbPr_1080I_Reg;    break;
+                  case EE_YPbPr_1080I50A: reg = DTV_YPbPr_1080I50A_Reg; break;
+                  case EE_YPbPr_1080I50B: reg = DTV_YPbPr_1080I50B_Reg; break;
+                  // default: reg = DTV_YPbPr_480I_Reg; width = 706;  height = 240; break;        // default no input setting
+                }
+              
+                RGBModeFieldDetect(1);    // always detect
+                Printf("\r\nMODE: %d", (WORD)mode);
+                if( reg ) {
+                  I2CDeviceInitialize( reg );
+                  WriteTW88(0xB9, PCMDATA[mode].VBack );      // important for panel setting
+                  height = PCMDATA[mode].VAN;           // using table for calc
+                  width = PCMDATA[mode].HAN;
+                  scale = width;
+                  scale *= 0x10000L;        
+                  scale /= PWIDTH;
+                  XScale2(scale);
+                  //#ifdef DEBUG_DTV
+                  Printf("\r\nMODE: %d, width: %d, H scale: %xh - %xh", (WORD)mode, width, (WORD)(scale>>8), (WORD)(scale 
+             -& 0xff));
+                  //#endif
+              
+                  scale = height;
+                  scale *= 0x10000L;
+                  scale /= PHEIGHT;
+                  YScale2(scale);
+                  #ifdef DEBUG_DTV
+                  Printf("\r\nMODE: %d, height: %d, V scale: %xh - %xh", (WORD)mode, height, (WORD)(scale>>8), (WORD)(scal
+             -e & 0xff));
+                  #endif //DEBUG_DTV
+                }
+              
+                //delay(250);
+                //WriteADC_TW88(0xc6, 0x27);
+                return ret;
+              }
+              
+              /*===========================================================================*/
+              /*                                                                           */
+              /*===========================================================================*/
+              BYTE DetectAndSetForDTVInput(BYTE eflag)    // 0: measure    Range4Coarse=0
+                                      // 1: check EEP  Range4Coarse=0
+                                      // 2: measure    Range4Coarse=1
+                                      // 3: restore EEP
+              {
+                bit VCORangeChged;
+                /*
+                BYTE  i;
+                WORD vpn, vpn1, ivf;
+                */
+              #ifdef REFERENCE
+              #else //REFERENCE
+                cLastSyncLoss = 0;
+              #endif //REFERENCE
+                if (eflag > 3) return FALSE;
+                Printf("\r\n 0xd0=%2x", (WORD)ReadTW88(0xd0));
+                if (( ReadTW88(0xD0) & 0x01 ) == 0) {
+                  DisplayPCInfo(CheckDTVCableStr[GetOSDLang()]);
+                  PcMode = EE_PC_UNKNOWN;   // no signal
+                  #ifdef DEBUG_DTV
+                  Puts("\r\nCheck DTV Cable.....");
+                  #endif //DEBUG_DTV
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 39  
+
+                  PanelFreeRun(1);
+                  PanelBlack(1);
+                  return FALSE;
+                }
+                #ifdef DEBUG_DTV
+                Printf("\r\nDetectAndSetForDTVInput_eflag: %2x,", (WORD)eflag);
+                #endif //DEBUG_DTV
+              //  if( DebugLevel<3 && (eflag==1 || eflag==3) )  LCDPowerOFF();//PanelMute(1); 
+              
+                PcMode = DetectDTVInputSource();
+                VCORangeChged = SetADCandInputRegisterByDTVMode(PcMode);
+                //ChangeInternPLL(PCMDATA[PcMode].PPF * 100000L); // Set PPF (Internal PLL)
+              
+                return TRUE;
+              
+              }
+              #endif //SUPPORT_DTV
+              /*===========================================================================*/
+              /*                                                                           */
+              /*===========================================================================*/
+              BYTE DetectAndSetForVGAInput(BYTE eflag)    // 0: measure    Range4Coarse=0
+                                      // 1: check EEP  Range4Coarse=0
+                                      // 2: measure    Range4Coarse=1
+                                      // 3: restore EEP
+              {
+              
+                bit VCORangeChged;
+                BYTE  i;
+                WORD vpn, vpn1, ivf;
+              
+                cLastSyncLoss = 0;
+              
+                if (( ReadTW88(0xD0) & 0x01 ) == 0) {
+                  DisplayPCInfo(CheckPCCableStr[GetOSDLang()]);
+                  PcMode = EE_PC_NO_SIGNAL;   // no signal
+                  #ifdef DEBUG
+                  Puts("\r\nCheck PC Cable.....");
+                  #endif //DEBUG  
+                  PanelFreeRun(1);
+                  PanelBlack(1);
+                  return FALSE;
+                }
+                WriteTW88( 0x44, (ReadTW88(0x44)&0xf3)|0x08 );    // set mode to YUV - direct path
+              
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\nDetectAndSetForVGAInput_eflag: %2x,", (WORD)eflag);
+                #endif //DEBUG_PC_MEAS
+              
+              
+                //---------- Set Panel constant reg.------------------
+              
+                WriteTW88( 0x5c, (ReadTW88(0x5c) & 0x0f) | 0x30 );  // Noise Mask: 3
+                WriteTW88( 0x5d, (ReadTW88(0x5d) & 0x0f) | 0x30 );  // active detect threshold: 3
+              
+                AutoPHPCalEnable();
+              
+                WriteTW88( 0xbd, 8 );       // Vdelay=8
+                WriteTW88( 0xb8, 6 );       // Vsync Pulse Width
+              
+                //------- Assume the PC_XGA input, 60Hz Refresh -----------------
+                WriteTW88( 0xff, 1 );   //set page 1
+                if ( ReadTW88( 0xc1 ) & 0x40 )
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 40  
+
+                { // HSYNC POL ?
+                  dPuts("\r\ninvert CSYNC det pol");
+                  WriteTW88( 0xc0, 0x18 );    //CSYNC det input polarity reverse
+                }
+                else 
+                {
+                  WriteTW88( 0xc0, 0x38 );    //CSYNC det input polarity reverse
+                }
+                if ( ReadTW88( 0xc1 ) & 0x80 ){ // VSYNC POL ?
+                  dPuts("\r\nNo invert VSYNC pol");
+                  WriteTW88( 0xcc, 0x1F );    //CSYNC det input polarity reverse
+                }
+                else {
+                  WriteTW88( 0xcc, 0x1d );    //CSYNC det input polarity reverse
+                }
+                WriteTW88( 0xff, 0 );
+              
+                SetMeasureWindowH(1, 1400);   // default window to 1400
+                SetMeasureWindowV(1, 1200);   //1200
+              
+                //if ( eflag == 1 ) return 0;
+              
+                #ifdef DEBUG_PAUSE
+                Pause("GetHpnVpn_before{CR}");
+                #endif //DEBUG_PAUSE
+                vpn = GetHpnVpn(1);         // VPN, IVF 
+                ivf = IVF;
+              
+                //------- Estimate IPF and Set VCO Range (ADC) ---------------
+                i=0;
+                do {
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf("\r\n=========================== LOOP:%d", (WORD)i);
+                  #endif //DEBUG_PC_MEAS
+                  #ifdef DEBUG_PAUSE
+                  Pause("DecideVGAInputSource{CR}");
+                  #endif //DEBUG_PAUSE
+                  PcMode = DecideVGAInputSource(vpn, IVF);    // check with vertical line and IVF
+                  #ifdef XGA
+                  if (PcMode <= EE_SP3)
+                    WriteTW88( 0xb1, ReadTW88(0xb1) |4);
+                  else
+                    WriteTW88( 0xb1, ReadTW88(0xb1) & 0xf8);
+                  if (PcMode == EE_VGA_72)
+                    WriteTW88( 0xb8, 5 );       // Vsync Pulse Width
+                  #endif //XGA
+              
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf("\r\n-----> Detect PCMODE: %d", (WORD)PcMode);
+                  #endif //DEBUG_PC_MEAS
+                  if( PcMode==EE_PC_UNKNOWN ) { 
+                    #ifdef DEBUG_PC
+                    dPuts("\r\n-----> PC_UNKNOWN");
+                    #endif //DEBUG_PC
+                    if( vpn<200 ) vpn = 250;  // HHY 1.62 if coarse value is too small, ADC is malfunctioned.
+                    VCORangeChged = SetVCORange( IHF * (vpn/3)*4 ); 
+                    SetCoarse(vpn/3*4);           // HHY 1.43
+                  }
+                  else if( PcMode==EE_PC_NO_SIGNAL ) {
+                    #ifdef DEBUG_PC
+                    dPuts("\r\n-----> Sync Loss");
+                    #endif //DEBUG_PC
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 41  
+
+                    if( GetInputSelection()==PC ) goto Failure;
+                  }
+                  else {
+                    #ifdef DEBUG_PC_MEAS
+                    dPuts("\r\n-----> Find PC mode");
+                    #endif //DEBUG_PC_MEAS
+                    if( eflag==1 || eflag==3 ) {  // HHY 2.01
+                      VCORangeChged = SetADCandInputRegisterByVGAMode(PcMode);
+                    
+                      #ifdef DEBUG_PC_MEAS
+                      dPrintf("\r\n   ---->>> Set Initial value by detected mode[%d]", (WORD)PcMode);
+                      #endif //DEBUG_PC_MEAS
+                    }
+                    if ( PcMode < 28 ) {
+                      #ifdef DEBUG_PC_MEAS
+                      dPuts("\r\n-----> stop searching...................");
+                      #endif //DEBUG_PC_MEAS
+                        break;
+                    }
+                    #ifdef REFERENCE
+                    #else
+                    else
+                    {
+                      WriteTW88( 0x40, ReadTW88(0x40) & 0xdf);
+                    }
+                    #endif        
+                  }
+              
+                  vpn1 = GetHpnVpn(1);            // VPN, IVF ***
+              
+                  if( vpn1==0 ) {
+                    #ifdef DEBUG_PC
+                    dPrintf("\r\n   ---> Error at GetHpnVpn line:%d", __LINE__);
+                    #endif //DEBUG_PC
+                    goto Failure;
+                  }
+              
+                  // Check SYNC Loss  // HHY 1.47
+                  if( PcMode == EE_PC_UNKNOWN ) {
+                    StartNewDetect();
+                    if( (ReadTW88(0xd0) & 0x06) )  {
+                      PcMode = EE_PC_NO_SIGNAL;
+                      #ifdef DEBUG_PC
+                      ePuts("\r\n-----> Sync Loss");
+                      #endif //DEBUG_PC
+                      if( GetInputSelection()==PC ) goto Failure;
+                    }
+                  }
+              
+                  vpn = vpn1;
+                  ivf = IVF;
+              
+                  i++;
+                } while( ( (PcMode==EE_PC_UNKNOWN) || VCORangeChged) && i<5 );  // by getting valid VPN
+              
+                if( PcMode==EE_PC_UNKNOWN ) goto Failure;
+                if( PcMode==EE_PC_NO_SIGNAL) goto Failure;
+              
+              
+                //==================================
+                #ifdef ADD_ANALOGPANEL
+                if(IsAnalogOn()) return TRUE;
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 42  
+
+                #endif //ADD_ANALOGPANEL
+              
+                //---------------------------------------------------------------------
+              
+                #ifdef DEBUG_PAUSE
+                Pause("ChangeInternPLL(PCMDATA[PcMode].PPF * 100000L){CR}");
+                #endif //DEBUG_PAUSE
+                ChangeInternPLL(PCMDATA[PcMode].PPF * 100000L); // Set PPF (Internal PLL)
+              
+                //---------------------------------------------------------------------
+              
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\n eflag = %d PcMode = %d(%s)", (WORD)eflag, (WORD)PcMode, PcModeStr[PcMode] );
+                #endif //DEBUG_PC_MEAS
+              
+                //==================================
+                #ifdef DEBUG_PAUSE
+                Pause("Measure_VPN_IHF(&LastVPN, &LastIHF){CR}");
+                #endif //DEBUG_PAUSE
+                Measure_VPN_IHF(&LastVPN, &LastIHF);
+              
+                ivf = (LastIHF + LastVPN/2) / LastVPN;
+              
+                // Check if PcMode same as before
+                #ifdef DEBUG_PAUSE
+                Pause("i = DecideVGAInputSource(LastVPN, ivf){CR}");
+                #endif //DEBUG_PAUSE
+                i = DecideVGAInputSource(LastVPN, ivf);
+                #ifdef DEBUG_PC_MEAS
+                dPrintf("\r\n  --> Detect PcMode again:%d[%s]", (WORD)i, PcModeStr[i] );
+                #endif //DEBUG_PC_MEAS
+                if( PcMode != i )  {
+                  #ifdef DEBUG_PC_MEAS
+                  dPrintf("  --- New PcMode=%d  i=%d", (WORD)PcMode, (WORD)i);
+                  #endif //DEBUG_PC_MEAS
+                  LastVPN = 0;
+                  LastIHF = 0;
+                  PcMode = EE_PC_UNKNOWN;
+                  goto Failure;
+              #ifdef REFERENCE
+                  return FALSE;
+              #endif //REFERENCE
+                }
+              
+                //==================================
+              
+                if( (eflag==3) || (eflag==1) ) {
+              
+                  //==================
+                  GetPCDataEE(PcMode);
+              
+                  goto Success;
+              
+                }
+                else {
+                  switch( eflag ) {
+                  case 0: Range4Coarse = 0; break;
+                  case 1: Range4Coarse = 0; break;
+                  case 2: Range4Coarse = 1; break;
+                  }
+              
+              //    SetADCGainOffset(0x80, 0xd0);
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 43  
+
+              //Abnormal_Test:
+              
+                  //--------------------
+                  #ifdef DEBUG_PAUSE
+                  Pause("i = DoMeasurement(){CR}");
+                  #endif //DEBUG_PAUSE
+                  i = DoMeasurement();      // *** Coarse, Fine, Active
+                  //--------------------
+              //    i = 1;
+              
+                  if( i ) goto Success;
+                  else  goto Failure;
+                }
+              
+              Success:
+                //==============================================
+              
+                WriteTW88( 0x44, (ReadTW88(0x44)&0xf3)|0x0c );    // set mode to RGB
+                if( (ReadTW88(0xd0) & 0x06) )  {
+                  #ifdef DEBUG_PC
+                  ePuts("\r\n---> Finish, but Sync Loss");
+                  #endif //DEBUG_PC
+              #ifdef REFERENCE
+              
+                  LastVPN = 0;
+                  LastIHF = 0;
+                  PcMode = EE_PC_NO_SIGNAL;
+                  return FALSE;
+              #else //REFERENCE
+                  goto Failure;
+              #endif //REFERENCE
+                }
+                else {
+                  ClearPCInfo();
+                  if( eflag==0 || eflag==2 ) SavePCDataEE(PcMode);
+              
+                  WriteTW88( 0xd0, 0xff );
+                  WriteTW88( 0xd1, 0xff );
+                  
+                  return TRUE;
+                }
+              
+              Failure:
+              
+                WriteTW88( 0x44, (ReadTW88(0x44)&0xf3)|0x0c );    // set mode to RGB
+                WriteDecoder( ACNTL, ReadDecoder(ACNTL) | 0x80 );   // SW reset, because sometimes unstable
+              #ifdef REFERENCE
+                PcMode = EE_PC_UNKNOWN;
+                if( (ReadTW88(0xd0) & 0x06) ) {
+              #else //REFERENCE
+                if((ReadTW88(0xd0) & 2) || (ReadTW88(0xd0) & 4)){
+              #endif //REFERENCE
+                  PcMode = EE_PC_NO_SIGNAL;
+              
+                  #ifdef DEBUG_PC
+                  ePuts("\r\n-----> Out Of Range, but Sync Loss");
+                  #endif
+              
+                  LastVPN = 0;
+                  LastIHF = 0;
+              #ifdef REFERENCE
+              #else //REFERENCE
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 44  
+
+                  DisplayPCInfo(CheckPCCableStr[GetOSDLang()]);
+                  PanelFreeRun(1);
+                  PanelBlack(1);
+                  Printf("aaaaa0");
+              #endif //REFERENCE
+                  return FALSE;
+                }
+                else {
+              #ifdef REFERENCE
+              #else //REFERENCE
+                  PcMode = EE_PC_UNKNOWN;
+              #endif //REFERENCE
+                  GetHpnVpn(0);
+              
+                  if( !Measure_VPN_IHF(&LastVPN, &LastIHF) ) {
+                    LastVPN = 0;
+                    LastIHF = 0;
+              
+                    return FALSE;
+                  }
+                  IVF = (LastIHF + LastVPN/2) / LastVPN;
+              
+                  if( PcMode != DecideVGAInputSource(LastVPN, IVF) )  {
+                    LastVPN = 0;
+                    LastIHF = 0;
+              #ifdef REFERENCE
+                    PcMode = EE_PC_UNKNOWN;
+                    return FALSE;
+              #endif //REFERENCE
+                  }
+              
+                  DisplayPCInfo(OutOfRangeStr[GetOSDLang()]);
+                  LastVPN = 0;
+                  LastIHF = 0;
+                  PanelFreeRun(1);
+                  PanelBlack(1);
+                }
+                return FALSE;
+                }
+              /*****************************************************************************/
+              /*          PC Function Main - called by main periodically             */
+              /*****************************************************************************/
+              void CheckPCinput(void)
+              {
+                extern  BYTE InputSelection;
+                BYTE statusD0, statusD1, i, page;
+                
+              
+              
+                DWORD dwIHF;
+                WORD  wIVF;
+                WORD  vpn;
+                BYTE  cCurrentPCMode;
+                BYTE  InputDetectiontemp;
+                //===================== HSYNC/VSYNC loss ========================
+              
+                page = ReadTW88( REG_PAGE);
+                WriteTW88( REG_PAGE, 0 ); 
+                statusD0 = ReadTW88(0xd0);
+                statusD1 = ReadTW88(0xd1);
+                InputDetectiontemp=ReadADC(0xc1);
+              #if 0 
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 45  
+
+              #ifdef REFERENCE
+                if( statusD0 & 0x06 ) {   // 
+                  if ( PcMode == EE_PC_NO_SIGNAL )  return;   // before state is "no signal"
+                  for(i=0; i<3; i++) {
+                    #ifdef DEBUG_PC
+                    ePrintf("\r\nSync Loss cnt=%d", (WORD)i);
+                    #endif //DEBUG_PC
+                    WriteTW88( 0xd0, 0xff); // clear status
+                    WriteTW88( 0xd1, 0xff); // clear status
+                    statusD0 = ReadTW88(0xd0);
+                    if( statusD0 & 0x06 ) 
+                      delay(1);
+                    else {
+                      WriteTW88( REG_PAGE, page );  // save back to page
+                      return;
+                    }
+                  }
+                  PcMode = EE_PC_NO_SIGNAL;   // no signal
+                  //PanelBlack(1);
+                  ClearLogo();
+                  DisplayPCInfo(CheckPCCableStr[GetOSDLang()]);
+                  //PanelBlack(1);
+                  #ifdef DEBUG_PC
+                  Puts("\r\nLost PC signal, Check Cable.....");
+                  #endif //DEBUG_PC
+                  WriteTW88( REG_PAGE, page );  // save back to page
+                  return;
+                }
+                else if ( (statusD1 & 0x30) == 0x30) {    // means VSYNC & HSYNC changed
+              
+                  #ifdef DEBUG_PC
+                  Puts("\r\nPC mode change detected, waiting for stable");
+                  #endif //DEBUG_PC
+                  i = 0;
+                  do {
+                    delay(100);       // wait 0.1sec
+                    WriteTW88( 0xd0, 0xff); // clear status
+                    WriteTW88( 0xd1, 0xff); // clear status
+                    statusD0 = ReadTW88(0xd0);
+                    statusD1 = ReadTW88(0xd1);
+                    i++;
+                    if ( i > 10 ) {
+                      WriteTW88( REG_PAGE, page );  // save back to page
+                      #ifdef DEBUG_PC
+                      Puts("\r\ncannot find stable value...........");
+                      #endif //DEBUG_PC
+                      return;
+                    }
+                  } while ( statusD1 & 0x30 );
+              
+                  #ifdef DEBUG_PC
+                  Puts("\r\nPC mode change detected........");
+                  #endif //DEBUG_PC
+                  i = InputSelection;
+                  InputSelection--;
+                  ChangeInput( i );
+                  delay(100);
+              
+                  WriteTW88( 0xd0, 0xff); // clear status
+                  WriteTW88( 0xd1, 0xff); // clear status
+                }
+              #else //REFERENCE
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 46  
+
+              #endif
+              #endif
+                //Printf("\r\nPcMode=%x",(WORD)PcMode);
+              
+                if ( PcMode == EE_PC_UNKNOWN)
+                {
+                  if(!cLastSyncLoss) 
+                  {
+                    DisplayPCInfo(OutOfRangeStr[GetOSDLang()]);
+                    PanelFreeRun(1);
+                    PanelBlack(1);
+                    cLastSyncLoss = 1;
+                  }
+                }
+                if((statusD0 & 2) || (statusD0 & 4)) 
+                {   
+                  if ( PcMode == EE_PC_NO_SIGNAL)
+                  {
+                    if(!cLastSyncLoss) 
+                    {
+                      DisplayPCInfo(CheckPCCableStr[GetOSDLang()]);
+                      PanelFreeRun(1);
+                      PanelBlack(1);
+                      cLastSyncLoss = 1;
+                    }
+                    return;
+                  } 
+                  for(i=0; i<3; i++) 
+                  {
+                    WriteTW88( 0xd0, 0xff); // clear status
+                    WriteTW88( 0xd1, 0xff); // clear status
+                    statusD0 = ReadTW88(0xd0);
+                    if((statusD0 & 2) || (statusD0 & 4)) 
+                      delay(100);
+                  }
+                  PcMode = EE_PC_NO_SIGNAL;   // no signal
+                  WriteTW88( 0xd0, 0xff); // clear status
+                  WriteTW88( 0xd1, 0xff); // clear status
+                  DisplayPCInfo(CheckPCCableStr[GetOSDLang()]);
+                  PanelFreeRun(1);
+                  PanelBlack(1);
+                  //ClearLogo();
+                  WriteTW88( REG_PAGE, page );  // save back to page
+                  return;
+                }
+                else if ( (statusD1 & 0x10) ||(statusD1 & 0x20) ||(statusD1 & 1)) 
+                {   // means VSYNC & HSYNC changed
+                  i = 0;
+                  do {
+                    delay(100);       // wait 0.1sec
+                    WriteTW88( 0xd0, 0xff); // clear status
+                    WriteTW88( 0xd1, 0xff); // clear status
+                    statusD0 = ReadTW88(0xd0);
+                    statusD1 = ReadTW88(0xd1);
+                    i++;
+                    if ( i > 10 )
+                    {
+                      WriteTW88( REG_PAGE, page );  // save back to page
+                      return;
+                    }
+                  } while ( (statusD1 & 0x10) ||(statusD1 & 0x20) || (statusD1 & 1)) ;
+                  i = InputSelection;
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 47  
+
+                  InputSelection--;
+                  ClearPCInfo();
+                  ChangeInput(i);
+                  return;
+                }
+                  //>>>>>>>>>>>>>>>>>>>>>>>>william-20110429
+                else if(InputDetectiontemp!=InputDetection)
+                  {
+                  Printf("\r\n-> InputDetectiontemp:=%02x,InputDetection:=%02x", InputDetectiontemp, InputDetection);
+                  i = InputSelection;
+                  InputSelection--;
+                  ClearPCInfo();
+                  ChangeInput(i);
+                  InputDetection=InputDetectiontemp;
+                  }
+                //>>>>>>>>>>>>>>>>>>>>>>>>william-20110429
+                // solve to change timing is fast at unstable sync
+                // 2009.01.16 start
+                MeasureAndWait(3);
+                //----- Get New HPN -------------
+                dwIHF = (GetPPF()+GetHPN()/2) / GetHPN();   // IHF = PPF / HPN 
+                MeasureAndWait(3);
+                //----- Get New VPN -------------
+                wIVF = (WORD)((IHF+GetVPN()/2)/GetVPN());   // IVF = IHF / VPN 
+                if((abs(IHF -dwIHF) > 500) ||(abs(IVF -wIVF) >= 2))
+                {
+                  i = InputSelection;
+                  InputSelection--;
+                  delay(100);       // wait 0.1sec
+                  ClearPCInfo();
+                  ChangeInput( i );
+                  WriteTW88( REG_PAGE, page );  // save back to page
+                  return;
+                }
+                vpn = GetHpnVpn(1);         // VPN, IVF 
+                cCurrentPCMode = DecideVGAInputSource(vpn, IVF);    // check with vertical line and IVF
+                if (cCurrentPCMode != PcMode)
+                {
+                  i = InputSelection;
+                  InputSelection--;
+                  ClearPCInfo();
+                  ChangeInput(i);
+                  page = ReadTW88( REG_PAGE );
+                  WriteTW88( REG_PAGE, 0 ); 
+                  delay(100);
+                  WriteTW88( 0xd0, 0xff); // clear status
+                  WriteTW88( 0xd1, 0xff); // clear status
+                }
+                // 2009.01.16 end
+                WriteTW88( REG_PAGE, page );  // save back to page
+              }
+              #ifdef SUPPORT_DTV
+              /*****************************************************************************/
+              /*          DTV Function Main - called by main periodically            */
+              /*****************************************************************************/
+              void CheckDTVinput(void)
+              {
+                extern IDATA BYTE InputSelection;
+                //BYTE statusD0, statusD1, i, page;
+                BYTE i;
+                
+                //===================== HSYNC/VSYNC loss ========================
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 48  
+
+                if ((ReadTW88(0xD0) & 0x01) == 0) 
+                {
+                  if(!cLastSyncLoss) 
+                  {
+                    DisplayPCInfo(CheckDTVCableStr[GetOSDLang()]);
+                    PcMode = EE_PC_UNKNOWN;   // no signal
+                    #ifdef DEBUG_DTV
+                    Puts("\r\nCheck DTV Cable.....");
+                    #endif //DEBUG_DTV
+                    PanelFreeRun(1);
+                    PanelBlack(1);
+                    cLastSyncLoss = 1;
+                  }
+                  return;
+                }
+                i = DetectDTVInputSource();
+                if ( PcMode == i ) return;      // no input change
+                cLastSyncLoss = 0;
+                i = InputSelection;
+                InputSelection--;
+                ChangeInput( i );
+              
+              }
+              #endif //SUPPORT_DTV
+              CODE_P BYTE *GetPCInputSourceName(void)
+              {
+                BYTE *ptr;
+              
+                if( PcMode<EE_PC_MAX ) ptr = PcModeStr[PcMode];
+                else                   ptr = (CODE_P BYTE *)"";
+              
+                #ifdef DEBUG
+                dPrintf("\r\n++(GetPCInputSourceName)=<%s>", ptr);
+                #endif //DEBUG
+              
+                return ptr;
+              }
+              
+              BYTE AutoAdjust(void)
+              {
+                BYTE ret=0;
+              
+                WriteTW88( 0xff, 0 );     // set page 0
+                ClearOSDInfo();
+                DisplayAutoAdjust();
+                ret = DetectAndSetForVGAInput(0); 
+                ClearAutoAdjust();
+                LCDPowerON(0);  //HHY 1.63
+                WriteTW88( 0xd0, 0xff );
+                WriteTW88( 0xd1, 0xff );
+              
+                return ret;
+              }           
+              #endif //defined( SUPPORT_PC ) || defined( SUPPORT_DTV )
+2572          
+2573          
+2574          
+2575          
+2576          
+2577          
+2578          
+2579          
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 49  
+
+2580          
+2581          
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 50  
+
+ASSEMBLY LISTING OF GENERATED OBJECT CODE
+
+
+C51 COMPILER V9.60.0.0   MEASURE                                                           06/22/2022 16:23:02 PAGE 51  
+
+NAME                                    CLASS   MSPACE  TYPE    OFFSET  SIZE
+====                                    =====   ======  ====    ======  ====
+
+
+LAST_TRIG_NON. . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+LAST_TRIG_RIGHT. . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+LAST_TRIG_CAMC . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+LAST_TRIG_REVERSE. . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+LAST_TRIG_LEFT . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+AWT_LAST_TRIGGER . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

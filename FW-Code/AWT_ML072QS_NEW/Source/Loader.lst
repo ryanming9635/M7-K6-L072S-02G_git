@@ -1,0 +1,118 @@
+C51 COMPILER V9.50a   LOADER                                                               08/24/2017 14:31:32 PAGE 1   
+
+
+C51 COMPILER V9.50a, COMPILATION OF MODULE LOADER
+OBJECT MODULE PLACED IN .\Output\Loader.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE Loader.c COMPACT OPTIMIZE(9,SIZE) BROWSE MODDP2 INCDIR(.\Include\) DEFINE(I
+                    -NTERNAL_MCU) DEBUG OBJECTEXTEND PRINT(.\Source\Loader.lst) TABS(2) OBJECT(.\Output\Loader.obj)
+
+line level    source
+
+   1          #include "Config.h"
+   2          
+   3          #ifdef SERIAL
+   4          
+   5          #include "typedefs.h"
+   6          #include "reg.h"
+   7          #include "main.h"
+   8          #include "measure.h"
+   9          #include "adc.h"
+  10          #include "i2c.h"
+  11          #include "debug.h"
+  12          #include "printf.h"
+  13          #include "tw88.h"
+*** ERROR C226 IN LINE 186 OF \ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h: 'RegisterInfo': 
+             -duplicate struct/union/enum tag
+*** ERROR C226 IN LINE 192 OF \ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h: 'LongRegisterInf
+             -o': duplicate struct/union/enum tag
+*** WARNING C312 IN LINE 327 OF .\Include\tw88.h: misplaced endif control
+  14          
+  15          extern  DATA  WORD  tm01;
+  16          extern  DATA  BYTE  tic01;
+  17          
+  18          /*
+  19          //_interrupt(5) void timer2_int1 (void) 
+  20          INTERRUPT(5, timer2_int)
+  21          {
+  22            TR2 = 0;
+  23            TF2 = 0;
+  24          }
+  25          */
+  26          
+  27          void Idle(WORD time)
+  28          {
+  29   1        BYTE ie;
+  30   1      
+  31   1        ie   = IE;          // save IE
+  32   1        IE   = 0x00;
+  33   1      
+  34   1        T2CON  = 0x00;        // Timer2 Clear
+  35   1        RCAP2H = 0x00;
+  36   1        RCAP2L = 0x00;
+  37   1        TH2    = (time>>8) ^ 0xff;  // Timer interval
+  38   1        TL2    = (BYTE)time ^0x00;  //
+  39   1      
+  40   1        TR2    = 1;         // Timer2 Run
+  41   1        ET2    = 1;         // Int Enable
+  42   1        EA     = 1;
+  43   1      
+  44   1        PCON   = PCON | 0x01;   // Enter IDLE mode
+  45   1        //---------------------------------------------
+  46   1        IE   = ie;          // After awaken, restore IE
+  47   1      
+  48   1        TR2  = 0;         // LJY040402 Disable Timer2
+  49   1      }
+C51 COMPILER V9.50a   LOADER                                                               08/24/2017 14:31:32 PAGE 2   
+
+  50          
+  51          
+  52          void ExecuteLoader(void)
+  53          {
+  54   1        BYTE ch;
+  55   1      
+  56   1        Puts("\r\nExcute Loader, Continue ? [y/N] ");
+  57   1      
+  58   1        while(1) {
+  59   2          ch = Getche();
+  60   2          if( ch=='Y' || ch=='y' ) break;
+  61   2          if( ch=='N' || ch=='n' ) return;
+  62   2        }
+  63   1      
+  64   1        Puts("\r\nWait a moment...");
+  65   1        delay(100);
+  66   1        Puts("\r\n\n\n\n\n\n\n\n\n\n");
+  67   1      
+  68   1        CHPENR = 0x87;    // Write Enable
+  69   1        CHPENR = 0x59;    // Write Enable
+  70   1        CHPCON = 0x03;    // Enter ISP Mode, Destination=4K Loader
+  71   1        CHPENR = 0x00;    // Write Enable
+  72   1        Idle(10000);    // Idle 1.5us
+  73   1        
+  74   1        CHPENR = 0x87;    // Write Enable
+  75   1        CHPENR = 0x59;    // Write Enable
+  76   1        CHPCON = 0x83;    // Enter ISP Mode, Destination=4K Loader
+  77   1        Idle(10000);    // Idle 1.5us
+  78   1      
+  79   1      }
+  80          //=============================================================================
+  81          //
+  82          //=============================================================================
+  83          void Loader(BYTE opt)
+  84          {
+  85   1        switch( opt ) {
+  86   2      
+  87   2        case 2:
+  88   2          LCDPowerOFF();
+  89   2          ExecuteLoader();
+  90   2          return;
+  91   2        
+  92   2        default:
+  93   2          Puts("\r\nInvalid command...");
+  94   2          return;
+  95   2        }
+  96   1      }
+  97          
+  98          #endif  // SERIAL
+*** WARNING C312 IN LINE 98 OF Loader.c: misplaced endif control
+
+C51 COMPILATION COMPLETE.  2 WARNING(S),  2 ERROR(S)

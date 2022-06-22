@@ -1,0 +1,551 @@
+//
+// HS_KeyRemo.h
+// Default function for Key Input and Remocon Input For HiSharp Function
+//
+//=============================================================================
+//		                    Operation Key Mapping
+//=============================================================================
+
+#include <math.h>
+#include "Config.h"
+#include "reg.h"
+#include "typedefs.h"
+#include "main.h"
+#include "tw88.h"
+#include "i2c.h"
+#include "adc.h"
+#include "osdbasic.h"
+#include "dispinfo.h"
+#include "debug.h"
+#include "etc_eep.h"
+#include "measure.h"
+#include "Printf.h"
+#include "audio.h"
+#include "osdmenu.h"
+#include "pc_eep.h"
+#include "KeyRemo.h"
+#include "CPU.h"
+#include "rgbmix.h"			
+#include "panel.h"
+//#include "HS_IOdef"
+#include "HS_DisplayOSD.h"
+#include "HS_keyremo.h"
+#include "HS_DVRProtocol.h"
+
+#include "HS_IOdef.h"
+
+
+typedef enum
+{
+	NORMALL_MODE,
+	REVERSE_TRIG,
+	LEFT_TRIG,
+	RIGHT_TRIG,
+	CAMD_TRIG,
+	CAMC_TRIG,
+	VGA_TRIG,
+	PARK_TRIG,
+	No_TRIG,
+	TRIGGER_NUM
+}TriggerModeType;
+
+
+
+#if 0
+code unsigned char SEQTable[]={0x00,0x01,0x02,0x03,0xFF};						  // 0xFF:return (FD SEQ Mode)
+code unsigned char ParkTable[]={0xFE,0x04,0x05,0x06,0x07,0x0C,0x0D,0x08,0x0e,0x00,0x01,0x02,0x03,0xFF};    //2007.4.10 Justin
+code unsigned char LeftTable[]={0x00,0x06,0x09};  
+code unsigned char RightTable[]={0x01,0x07,0x0A};
+code unsigned char ReverseTable[]={0x13,0x06,0x07,0x08,0x0e};				
+code unsigned char JumpTable[]={0x0B,0xFD,0x04,0x05,0x06,0x07,0x0c,0x0d,0x08,0x0e,0x00,0x01,0x02,0x03};   //2007.4.10 Justi
+
+			  BYTE  SourceMode=0;            
+              BYTE  CkPARK=0,CkTMode=0,AVFlag=0,TGFlag=0,TGFlag1=0,TDisplayFlag=0;
+              BYTE  Attr_A=0x02,Attr_B=0x02,Attr_C=0x02,Attr_R=0x03; 
+              BYTE  ParkIndex=0,ParkIndex1=0,JumpIndex=0,ReverseIndex=0,RightIndex=0,LeftIndex=0,SEQIndex=0;
+              BYTE  SEQFlag=0,TimeStep,SEQTime=0;
+              BYTE  ParkTime=0,RightTime=0,LeftTime=0,ReverseTime=0,RtFlag=0,LtFlag=0,ReverseFlag=0,ParkFlag=0;
+extern CODE   BYTE  Init_Osd_MainMenu[];//WILLIAM-V1.43-970403
+		      BYTE	PRIORITY;
+#endif
+#define LEFT_T     P0_0
+#define Right_T    P0_1
+#define REVERSE_T  P0_2
+#define PARK_T     P0_3
+#define VGA_T      P0_4
+#define CAMC_T     P0_5
+#define CAMD_T     P0_6
+
+BYTE  Attr_A=0x02,Attr_B=0x02,Attr_C=0x02,Attr_R=0x03; 
+CODE unsigned char ParkTable[]={0x00,0x00,0x00,0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x0c,0x0d,0x08,0x0e,0x0b,0x09,0x0a,0x00,0x16,0x17,0x18,0x1c,0x14,0x09,0x15,0x19,0x1a,0x1b,0x1f,0x20,0x21};
+CODE unsigned char JumpTable[]={CAM_QUAD,SEQ,CAM_AB,CAM_CR,CAM_AR,CAM_RB,CAM_AC,CAM_CB,CAM_RAB_T,CAM_RAB_H,CAM_A,CAM_B,CAM_C,CAM_R,VGAMode};
+CODE unsigned char RearTable[]={CAM_R,CAM_AR,CAM_RB,CAM_RAB_T,CAM_RAB_H};
+
+#ifdef AWT
+CODE unsigned char LeftTable[]={CAM_A,CAM_AB,CAM_AC,CAM_AR,CAM_ABC,CAM_ABR,CAM_ACR};  
+CODE unsigned char RightTable[]={CAM_B,CAM_BA,CAM_BC,CAM_BR,CAM_BAC,CAM_BAR,CAM_BCR};
+CODE unsigned char TriggerC_Table[]={CAM_C,CAM_CA,CAM_CB,CAM_CR,CAM_CAB,CAM_CAR,CAM_CBR};
+#else
+CODE unsigned char RightTable[]={CAM_B,CAM_RB,CAM_ABR_T4,CAM_BA};
+CODE unsigned char LeftTable[]={CAM_A,CAM_AR,CAM_ABR_T3,CAM_AB};
+#endif
+
+CODE unsigned char SEQTable[]={CAM_A,CAM_B,CAM_C,CAM_R,CAM_D};	//SEQ  	
+//CODE unsigned char PriorityOffSelTable[]={CAM_A,CAM_B,CAM_C,CAM_R,CAM_D,VGAMode};	//Priority Off table
+//CODE unsigned char PriorityOffParkTable[]={CAM_A,CAM_B,CAM_C,CAM_R,CAM_D,VGAMode,AVMode};	//Priority Off table
+
+
+
+BYTE TriggerFlag;
+BYTE NowModeState;
+BYTE TimeStep;
+BYTE SEQFlag;
+BYTE SEQIndex;
+//extern SourceModeType SelectModeType;
+BYTE TriggerMode;
+bit ParkFlag;
+bit AVFlag=0;
+bit VGAAudio=0;
+extern BYTE	TriggerStatus			;
+
+/*------------------------------*/
+/*    選擇SourceMode顯示畫面    */
+/*------------------------------*/
+void SetSourceMode(BYTE Index,char attr0,char attr1,char attr2,char attr3)
+{
+    
+	switch(Index)
+    {
+     case CAM_A:
+	 case CAM_B:	
+	 case CAM_C:
+	 case CAM_R:
+	 case CAM_AB:
+	 case CAM_CR:
+	 case CAM_AR:
+	 case CAM_RB:	 	
+	 case CAM_AC:
+	 case CAM_CB:
+	 case CAM_RAB_T:
+	 case CAM_RAB_H:
+	 case CAM_QUAD:
+	 case CAM_ABR_T3:
+	 case CAM_ABR_T4:
+	 case CAM_BA:
+	 case CAM_BC:
+	 case CAM_BR:
+	 case CAM_CA:
+	 case CAM_ABC:	 
+	 case CAM_ABR:
+	 case CAM_ACR:
+	 case CAM_BAC:
+	 case CAM_BAR:
+	 case CAM_BCR:			 	
+	 case CAM_CAB:
+	 case CAM_CAR:
+	 case CAM_CBR:
+	
+		TW2835Command(ParkTable[Index],attr0,attr1,attr2,attr3);
+		ChangeInput(CH_TW2835);
+		TW2835Cmd("\n\rtouch 1\n\r");
+		TW2835Cmd("\n\ravout 0\n\r");		
+		//AVOutPutSelect=0;
+		break;
+	 case VGAMode:	
+	 	TW2835Cmd("\n\rtouch 0\n\r");
+		TW2835Cmd("\n\ravout 1\n\r");	
+		ChangeInput(PC);		
+		//AVOutPutSelect=1;
+		break;
+	 case CAM_D:
+		ChangeInput(CH_CAMD);
+		TW2835Cmd("\n\rtouch 1\n\r");
+		TW2835Cmd("\n\ravout 0\n\r");		
+		//AVOutPutSelect=0;
+		break;
+	 case AVMode:
+	    ChangeInput(CH_AV);
+		TW2835Cmd("\n\rtouch 1\n\r");
+		TW2835Cmd("\n\ravout 0\n\r");
+		//AVOutPutSelect=0;
+		break;	
+	 case SEQ:
+	 	SEQIndex=0;
+	 	SEQFlag=1;
+		SEQTime=TimeStep;	
+	 	break;
+	}
+}
+
+
+void SetSelectMode(void)
+{
+	BYTE Maxsource;
+	
+	if(Priority)
+		Maxsource=CAM_R;
+	else
+		Maxsource=CAM_RAB_H;
+
+    NowModeState=SelectMode;
+    SEQFlag=0;
+    TW2835Cmd("\n\rmode 0\n\r");
+
+	// trigger AV & VGA
+    if(ParkFlag==1 && TriggerMode == VGA_TRIG)
+	    {
+	    	if(AVFlag==0)
+	 	   	{	   	
+		 	   	SelectModeType=AVMode;
+		 		AVFlag=1;
+	 	   	}
+	 		else
+	 		{
+		 	    if(SelectModeType>=Maxsource)
+		 	     SelectModeType=AVMode;
+		 	    else
+		 	   	 SelectModeType++;
+		 	}
+	    }
+	//trigger AV
+	else if (ParkFlag==1 && TriggerMode!=VGA_TRIG)
+		{
+	    	if(AVFlag==0)
+	 	   	{	   	
+		 	   	SelectModeType=AVMode;
+		 		AVFlag=1;
+	 	   	}
+	 		else
+	 		{
+		 	    if(SelectModeType>=Maxsource)
+		 	     SelectModeType=AVMode;
+				else if (SelectModeType==AVMode)
+				 SelectModeType=CAM_D;	
+		 	    else
+		 	   	 SelectModeType++;
+		 	}
+	    }
+	//trigger VGA
+	else if (ParkFlag==0 && TriggerMode==VGA_TRIG)
+		{
+		if(SelectModeType>=Maxsource)
+			SelectModeType=VGAMode;
+		else
+			SelectModeType++;
+		}
+	//no trigger
+    else
+    	{
+ 	   if(SelectModeType>=Maxsource)
+ 	     SelectModeType=CAM_D;
+ 	   else
+ 	   	 SelectModeType++;
+    	}
+	
+   SetSourceMode(SelectModeType,Attr_A,Attr_B,Attr_C,Attr_R); 
+   if(!(SelectModeType==AVMode||SelectModeType==VGAMode))
+    {WriteEEP(EEP_SelectMode,SelectModeType);}
+   WriteEEP(EEP_NowModeState,NowModeState);
+}
+
+
+
+void SEQMode(void)
+{
+
+	SetSourceMode(SEQTable[SEQIndex],Attr_A,Attr_B,Attr_C,Attr_R);
+	if(SEQIndex<4)
+		SEQIndex++;
+	else
+		SEQIndex=0;
+}
+void SetJumpMode(void)
+{
+   BYTE val;
+ 	//Printf("\r\nNowModeState",(WORD)NowModeState);
+   if(NowModeState==JumpMode)
+   	{
+     
+	 val=ReadEEP(EEP_JUMPMode);
+	 if(val==0x01)
+	 	TW2835Cmd("\n\rmode 2\n\r");
+	 else
+     	TW2835Cmd("\n\rmode 1\n\r");
+     SetSourceMode(JumpTable[val],Attr_A,Attr_B,Attr_C,Attr_R);
+   	} 
+   else
+   	{
+   	  //NowModeState=SelectMode;
+	  SEQFlag=0;
+ 
+     	TW2835Cmd("\n\rmode 0\n\r");
+	  
+	  SetSourceMode(SelectModeType,Attr_A,Attr_B,Attr_C,Attr_R); 
+    }
+    WriteEEP(EEP_NowModeState,NowModeState);
+}
+
+void SetNowMode(void)
+{
+   BYTE val;
+   //Printf("\r\nNowModeState",(WORD)NowModeState);
+   if(NowModeState==SelectMode)
+   	{
+   	 TW2835Cmd("\n\rmode 0\n\r");
+	 SetSourceMode(SelectModeType,Attr_A,Attr_B,Attr_C,Attr_R); 
+   	}
+   else
+   	{
+     val=ReadEEP(EEP_JUMPMode);
+     if(val==0x01)
+	 	TW2835Cmd("\n\rmode 2\n\r");
+	 else
+     	TW2835Cmd("\n\rmode 1\n\r");
+     SetSourceMode(JumpTable[val],Attr_A,Attr_B,Attr_C,Attr_R);
+    }
+   	
+}
+void SetRearSource(void)
+{ 
+   BYTE rev;
+   rev=ReadEEP(EEP_RearMode);
+   SetSourceMode(RearTable[rev],0x02|(Attr_A&0x01),0x02|(Attr_B&0x01),0x02|(Attr_C&0x01),0x0E|(Attr_R&0x01));
+   if( ReadEEP(EEP_GAUGEMode)==0 && ReadEEP(EEP_RearMode)==0)
+  	DisplayGaugeOSD();
+
+}
+
+void SetLeftSource(void)
+{
+    BYTE rev;
+#ifdef AWT	
+    rev=ReadEEP(EEP_IMAGE_A_Mode);
+#else
+    rev=ReadEEP(EEP_IMAGEMode);
+#endif
+    SetSourceMode(LeftTable[rev],0x06|(Attr_A&0x01),0x02|(Attr_B&0x01),0x02|(Attr_C&0x01),0x02|(Attr_R&0x01));
+}
+
+void SetRightSource(void)
+{
+    BYTE rev;
+#ifdef AWT	
+    rev=ReadEEP(EEP_IMAGE_B_Mode);
+#else
+    rev=ReadEEP(EEP_IMAGEMode);
+#endif
+    SetSourceMode(RightTable[rev],0x02|(Attr_A&0x01),0x0A|(Attr_B&0x01),0x02|(Attr_C&0x01),0x02|(Attr_R&0x01));
+}
+
+void SetTriggerCSource(void)
+{
+    BYTE rev;
+	rev=ReadEEP(EEP_IMAGE_C_Mode);
+#ifdef AWT	
+    SetSourceMode(TriggerC_Table[rev],0x02|(Attr_A&0x01),0x0A|(Attr_B&0x01),0x02|(Attr_C&0x01),0x02|(Attr_R&0x01));
+#else
+    SetSourceMode(CAM_C,Attr_A,Attr_B,Attr_C,Attr_R);
+#endif
+}
+
+BYTE CheckTrigger(void)
+{
+   TriggerFlag=0x00;
+
+   LEFT_T=1;
+   if(LEFT_T==0)
+   {
+      Wait_ms(10);
+	  if(LEFT_T==0)
+	  	TriggerFlag=TriggerFlag|0x80;   
+   }
+
+   Right_T=1;
+   if(Right_T==0)
+   {
+      Wait_ms(10);
+	  if(Right_T==0)
+	  	TriggerFlag=TriggerFlag|0x40;  
+   }
+
+   REVERSE_T=1;
+   if(REVERSE_T==0)
+   {
+      Wait_ms(10);
+	  if(REVERSE_T==0)
+	  	TriggerFlag=TriggerFlag|0x20;  
+   }
+
+   PARK_T=1;
+   if(PARK_T==1)
+   {
+      Wait_ms(10);
+	  if(PARK_T==1)
+	  	ParkFlag=1;
+   }
+   else
+		 ParkFlag=0;
+
+   VGA_T=1;
+   if(VGA_T==0)
+   {
+      Wait_ms(10);
+	  if(VGA_T==0)
+	  	TriggerFlag=TriggerFlag|0x08;  
+   }
+
+   CAMC_T=1;
+   if(CAMC_T==0)
+   {
+      Wait_ms(10);
+	  if(CAMC_T==0)
+	  	TriggerFlag=TriggerFlag|0x04;  
+   }
+
+   CAMD_T=1;
+   if(CAMD_T==0)
+   {
+      Wait_ms(10);
+	  if(CAMD_T==0)
+	  	TriggerFlag=TriggerFlag|0x02;  
+   }
+   return TriggerFlag;
+}
+
+void TriggerHandler(BYTE T_Flag)
+{
+BYTE i;
+BYTE ReverseMask,LeftMask,RightMask,CamCMask,CamDMask,VGAMask;
+
+	//if(Priority==0)
+	//{
+		ReverseMask=0x00;
+		LeftMask=0x66;
+		RightMask=0xA6;
+		CamCMask=0xE2;//0xEA;
+		CamDMask=0xE4;//0xEC;
+		VGAMask=0x20;//0xE6;
+	//}
+	//else
+	//{
+	//	ReverseMask=0xC0;
+	//	LeftMask=0x40;
+	//	RightMask=0x80;
+	//	CamCMask=0xC2;//0xCA;
+	//	CamDMask=0xC4;//0xCC;
+	//	VGAMask=0xC6;
+	//}
+
+     if((T_Flag&0x20)!= 0 && (T_Flag&ReverseMask)==0) //RearMode
+  	   {
+        if(TriggerMode!=REVERSE_TRIG)
+          {
+		   TriggerMode=REVERSE_TRIG;
+		   SetRearSource();
+		   TriggerStatus=4;
+		   Hs_DvrTxCmdPaser(SendAlarm);
+          }
+		return;
+      }
+      
+	   if((T_Flag&0x80)!=0 && (T_Flag&LeftMask)==0)
+	     {
+          if(TriggerMode!=LEFT_TRIG)
+            {
+            ClearGAUGEINFO();
+	        TriggerMode=LEFT_TRIG;    
+            SetLeftSource();
+			TriggerStatus=1;
+		    Hs_DvrTxCmdPaser(SendAlarm);
+		    }
+		  return;
+	     }
+	   if((T_Flag&0x40)!=0 &&(T_Flag&RightMask)==0)
+	   {
+         if(TriggerMode!=RIGHT_TRIG)
+           {
+            ClearGAUGEINFO();
+            TriggerMode=RIGHT_TRIG;
+			SetRightSource();
+			TriggerStatus=2;
+		    Hs_DvrTxCmdPaser(SendAlarm);
+		   }
+         return;
+	   }     
+	   if((T_Flag&0x02)!=0 && (T_Flag&CamDMask)==0)
+	     {
+           if(TriggerMode!=CAMD_TRIG)
+              {
+                ClearGAUGEINFO();
+                TriggerMode=CAMD_TRIG;
+			    SetSourceMode(CAM_D,Attr_A,Attr_B,Attr_C,Attr_R);
+		      }
+            return;
+	       }
+	     if((T_Flag&0x04)!=0&& (T_Flag&CamCMask)==0)
+	       {
+             if(TriggerMode!=CAMC_TRIG)
+               {
+                ClearGAUGEINFO();
+                TriggerMode=CAMC_TRIG;
+                TW2835Cmd("\n\rmode 0\n\r");
+				SetTriggerCSource();
+				//SetSourceMode(CAM_C,Attr_A,Attr_B,Attr_C,Attr_R);
+				TriggerStatus=3;
+		   	 	Hs_DvrTxCmdPaser(SendAlarm);
+		       }
+            return;
+	       }
+
+	if(ReadEEP(EEP_TriggerVGA)==0)
+		{
+		     if((T_Flag&0x08)!=0 && (T_Flag&VGAMask)==0)
+		   	   {
+	            if(TriggerMode!=VGA_TRIG)
+	              {
+	               Printf("\r\nTriggerVGA");
+	               ClearGAUGEINFO();
+	               TriggerMode=VGA_TRIG;
+			 SelectModeType=VGAMode;	   			//WILLIAM-AWT1.2-20110107
+				   SetSourceMode(SelectModeType,Attr_A,Attr_B,Attr_C,Attr_R);
+			      }
+	             return;   
+		       }
+		}
+	
+	   if(TriggerMode!=No_TRIG)
+         {
+         if(PowerFlag)
+         	{
+		   for(i=0;i<250;i++) 
+			{
+			CheckTrigger();
+			if(TriggerFlag!=0)//andy HTRV 980625
+			   return;	
+			   Wait_ms(8);	//william-v1.44a-970923		
+			}
+         	} 
+          TriggerMode=No_TRIG;		 
+          ClearGAUGEINFO();
+	   DisplayInput();		//william-20100420
+
+		  if(SelectModeType==VGAMode)				//william-awt1.2 20110107
+		  	SelectModeType=ReadEEP(EEP_SelectMode);
+	      SetNowMode();        
+	   	 } 
+	   
+		if(ParkFlag==0)
+		{
+			AVFlag=0;
+			if(SelectModeType==AVMode)
+			 {
+				SelectModeType=ReadEEP(EEP_SelectMode);
+				SetNowMode();
+			 } 
+		}
+
+		
+    
+}
+
+

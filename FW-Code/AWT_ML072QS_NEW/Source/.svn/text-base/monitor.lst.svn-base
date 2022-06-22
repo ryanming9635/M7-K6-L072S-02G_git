@@ -1,0 +1,1172 @@
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 1   
+
+
+C51 COMPILER V8.16, COMPILATION OF MODULE MONITOR
+OBJECT MODULE PLACED IN .\Output\monitor.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE monitor.c COMPACT OPTIMIZE(9,SIZE) BROWSE MODDP2 INCDIR(.\Include\) DEFINE(
+                    -INTERNAL_MCU) DEBUG OBJECTEXTEND PRINT(.\Source\monitor.lst) OBJECT(.\Output\monitor.obj)
+
+line level    source
+
+   1          /* Monitor.c */
+   2          
+   3          #include "config.h"
+   4          
+   5          #ifdef SERIAL
+   6          
+   7          #include "typedefs.h"
+   8          #include "main.h"
+   9          #include "i2c.h"
+  10          #include "dispinfo.h"
+  11          #include "reg.h"
+  12          #include "regmap.h"
+  13          #include "printf.h"
+  14          //#include "dispinfo.h"
+  15          //#include "video.h"
+  16          //#include "eeprom.h"
+  17          //#include "measure.h"
+  18          #include "tw88.h"
+  19          #include "etc_eep.h"
+  20          #include "osdbasic.h"
+  21          #include "monitor.h"
+  22          #include "cpu.h"
+  23          #include "Measure.h"
+  24          #include "Adc.h"
+  25          
+  26          #include "spi.h"
+  27          
+  28                  IDATA BYTE MonAddress = 0x8a;           // initialize value should be placed to IDATA area
+  29                  BYTE MonIndex;
+  30                  BYTE MonRdata, MonWdata;
+  31          
+  32          data BYTE monstr[30];           // buffer for input string
+  33          BYTE *argv[7];
+  34          BYTE argc=0;
+  35          bit     echo=1;
+  36          
+  37          static bit indirect=0;
+  38          
+  39          //extern                  bit   AutoDetect;
+  40          extern   BYTE InputSelection;
+  41          extern        BYTE      DebugLevel;
+  42          extern  CODE  struct struct_IdName struct_InputSelection[];
+  43          extern            bit   NoInitAccess;
+  44                            bit   AccessEnable;
+  45          
+  46          void Loader(BYTE);
+  47          
+  48          //=============================================================================
+  49          //
+  50          //=============================================================================
+  51          void Prompt(void)
+  52          {
+  53   1      
+  54   1              if ( MonAddress == TW88I2CAddress )
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 2   
+
+  55   1                      Printf("\r\nMCU_I2C[%02x]>", (WORD)MonAddress);
+  56   1              else
+  57   1                      Printf("\r\nI2C[%02x]>", (WORD)MonAddress);
+  58   1      }
+  59          
+  60          void Mon_tx(BYTE ch)
+  61          {
+  62   1              RS_tx(ch);
+  63   1      }
+  64          
+  65          
+  66          
+  67          //=============================================================================
+  68          //              Convert ASCII to Binery                                             
+  69          //=============================================================================
+  70          DWORD a2i(BYTE *str)
+  71          {
+  72   1              DWORD num=0;
+  73   1              BYTE i;
+  74   1      
+  75   1              for(i=0; ; i++, str++) {
+  76   2                      if( *str=='\0' || *str==' ' ) break;
+  77   2                      num = num*10 + *str - '0';
+  78   2              }
+  79   1              return num;
+  80   1      }
+  81          
+  82          BYTE Asc1Bin(BYTE asc)
+  83          {
+  84   1              if(asc>='0' && asc <='9') return (asc - '0');
+  85   1              if(asc>='a' && asc <='f') return (asc - 'a' + 0x0a);
+  86   1              if(asc>='A' && asc <='F') return (asc - 'A' + 0x0a);
+  87   1      }
+  88          
+  89          BYTE Asc2Bin(PDATA_P BYTE *s)
+  90          {
+  91   1              WORD bin;
+  92   1      
+  93   1              bin = 0;
+  94   1              while(*s != '\0' && *s !=' ') {
+  95   2                      bin = bin<<4;
+  96   2                      bin = bin + Asc1Bin(*s);
+  97   2                      s++;
+  98   2              }
+  99   1              return (bin);
+ 100   1      }
+ 101          
+ 102          
+ 103          //=============================================================================
+ 104          BYTE toupper(BYTE ch)
+ 105          {
+ 106   1              if( ch>='a' && ch<='z' )
+ 107   1                      return (ch - 'a' + 'A');
+ 108   1      }
+ 109          
+ 110          int stricmp(BYTE *ptr1, BYTE *ptr2)
+ 111          {
+ 112   1              int             i;
+ 113   1              int             ret;
+ 114   1              
+ 115   1              for(i=0; *ptr1; i++) {
+ 116   2                      ret = toupper(*ptr1++) - toupper(*ptr2++);
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 3   
+
+ 117   2                      if( ret ) return ret;
+ 118   2              }
+ 119   1              return 0;
+ 120   1      }
+ 121          
+ 122          //=============================================================================
+ 123          //
+ 124          //=============================================================================
+ 125          
+ 126          void SetMonAddress(BYTE addr)
+ 127          {
+ 128   1              MonAddress = addr;
+ 129   1      }
+ 130          
+ 131          void MonReadI2C(void)
+ 132          {
+ 133   1              if( argc>=2 ) MonIndex = Asc2Bin( argv[1] );
+ 134   1              else    {
+ 135   2                      Printf("   --> Missing parameter !!!");
+ 136   2                      return;
+ 137   2              }
+ 138   1      
+ 139   1              if ( MonAddress == TW88I2CAddress )
+ 140   1                      MonRdata = ReadTW88(MonIndex);
+ 141   1              else
+ 142   1                      MonRdata = ReadI2C(MonAddress, MonIndex);
+ 143   1      
+ 144   1              if( echo )
+ 145   1                      Printf("\r\nRead %2xh:%2xh", (WORD)MonIndex, (WORD)MonRdata);   
+ 146   1              
+ 147   1              MonWdata = MonRdata;
+ 148   1      }
+ 149          
+ 150          
+ 151          void MonWriteI2C(void)
+ 152          {
+ 153   1              if( argc<3 ) {
+ 154   2                      Printf("   --> Missing parameter !!!");
+ 155   2                      return;
+ 156   2              }
+ 157   1              
+ 158   1              MonIndex = Asc2Bin( argv[1] );
+ 159   1              MonWdata = Asc2Bin( argv[2] );
+ 160   1              
+ 161   1              if( echo ) {
+ 162   2                      Printf("\r\nWrite %2xh:%2xh ", (WORD)MonIndex, (WORD)MonWdata);
+ 163   2                      if ( MonAddress == TW88I2CAddress ) {
+ 164   3                              WriteTW88(MonIndex, MonWdata);
+ 165   3                              MonRdata = ReadTW88(MonIndex);
+ 166   3                      }
+ 167   2                      else {
+ 168   3                              WriteI2C(MonAddress, MonIndex, MonWdata);
+ 169   3                              MonRdata = ReadI2C(MonAddress, MonIndex);
+ 170   3                      }
+ 171   2                      Printf("==> Read %2xh:%2xh", (WORD)MonIndex, (WORD)MonRdata);
+ 172   2              }
+ 173   1              else {
+ 174   2                      if ( MonAddress == TW88I2CAddress ) {
+ 175   3                              WriteTW88(MonIndex, MonWdata);
+ 176   3                      }
+ 177   2                      else {
+ 178   3                              WriteI2C(MonAddress, MonIndex, MonWdata);
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 4   
+
+ 179   3                      }
+ 180   2              }
+ 181   1      }
+ 182          
+ 183          
+ 184          void MonIncDecI2C(BYTE inc)
+ 185          {
+ 186   1      
+ 187   1              switch(inc){
+ 188   2              case 0:  MonWdata--;    break;
+ 189   2              case 1:  MonWdata++;    break;
+ 190   2              case 10: MonWdata-=0x10;        break;
+ 191   2              case 11: MonWdata+=0x10;        break;
+ 192   2              }
+ 193   1      
+ 194   1      
+ 195   1              if ( MonAddress == TW88I2CAddress ) {
+ 196   2                      WriteTW88(MonIndex, MonWdata);
+ 197   2                      MonRdata = ReadTW88(MonIndex);
+ 198   2              }
+ 199   1              else {
+ 200   2                      WriteI2C(MonAddress, MonIndex, MonWdata);
+ 201   2                      MonRdata = ReadI2C(MonAddress, MonIndex);
+ 202   2              }
+ 203   1      
+ 204   1              if( echo ) {
+ 205   2                      Printf("Write %2xh:%2xh ", (WORD)MonIndex, (WORD)MonWdata);
+ 206   2                      Printf("==> Read %2xh:%2xh", (WORD)MonIndex, (WORD)MonRdata);
+ 207   2              }
+ 208   1      
+ 209   1              Prompt();
+ 210   1      
+ 211   1      }
+ 212          
+ 213          void MonDumpI2C(void)
+ 214          {
+ 215   1              BYTE ToMonIndex;
+ 216   1              int  cnt=8;
+ 217   1      
+ 218   1              if( argc>=2 ) MonIndex = Asc2Bin(argv[1]);
+ 219   1              if( argc>=3 ) ToMonIndex = Asc2Bin(argv[2]);
+ 220   1              else ToMonIndex = MonIndex+cnt;
+ 221   1              if ( ToMonIndex < MonIndex ) ToMonIndex = 0xFF;
+ 222   1              cnt = ToMonIndex - MonIndex + 1;
+ 223   1      
+ 224   1              if( echo ) {
+ 225   2                      if ( MonAddress == TW88I2CAddress ) {
+ 226   3                              for ( ; cnt > 0; cnt-- ) {
+ 227   4                                      MonRdata = ReadTW88(MonIndex);
+ 228   4                                      Printf("\r\n==> Read %2xh:%2xh", (WORD)MonIndex, (WORD)MonRdata);
+ 229   4                                      MonIndex++;
+ 230   4                              }
+ 231   3                      }
+ 232   2                      else {
+ 233   3                              for ( ; cnt > 0; cnt-- ) {
+ 234   4                                      MonRdata = ReadI2C(MonAddress, MonIndex);
+ 235   4                                      Printf("\r\n==> Read %2xh:%2xh", (WORD)MonIndex, (WORD)MonRdata);
+ 236   4                                      MonIndex++;
+ 237   4                              }
+ 238   3                      }
+ 239   2              }
+ 240   1              else {
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 5   
+
+ 241   2                      if ( MonAddress == TW88I2CAddress ) {
+ 242   3                              for ( ; cnt > 0; cnt-- ) {
+ 243   4                                      MonRdata = ReadTW88(MonIndex);
+ 244   4                                      MonIndex++;
+ 245   4                              }
+ 246   3                      }
+ 247   2                      else {
+ 248   3                              for ( ; cnt > 0; cnt-- ) {
+ 249   4                                      MonRdata = ReadI2C(MonAddress, MonIndex);
+ 250   4                                      MonIndex++;
+ 251   4                              }
+ 252   3                      }
+ 253   2              }
+ 254   1      }
+ 255          
+ 256          //-----------------------------------------------------------------------------
+ 257          
+ 258          void MonNewReadI2C(void)
+ 259          {
+ 260   1              BYTE Slave;
+ 261   1      
+ 262   1              if( argc>=3 ) MonIndex = Asc2Bin( argv[2] );
+ 263   1              else    {
+ 264   2                      Printf("   --> Missing parameter !!!");
+ 265   2                      return;
+ 266   2              }
+ 267   1              Slave = Asc2Bin(argv[1]);
+ 268   1      
+ 269   1              if ( Slave == TW88I2CAddress )
+ 270   1                      MonRdata = ReadTW88(MonIndex);
+ 271   1              else
+ 272   1                      MonRdata = ReadI2C(Slave, MonIndex);
+ 273   1      
+ 274   1              if( echo )
+ 275   1                      Printf("\r\n<R>%2x[%2x]=%2x", (WORD)Slave, (WORD)MonIndex, (WORD)MonRdata);
+ 276   1              
+ 277   1              MonWdata = MonRdata;
+ 278   1      }
+ 279          
+ 280          void MonNewWriteI2C(void)
+ 281          {
+ 282   1              BYTE Slave;
+ 283   1      
+ 284   1              if( argc<4 ) {
+ 285   2                      Printf("   --> Missing parameter !!!");
+ 286   2                      return;
+ 287   2              }
+ 288   1              
+ 289   1              MonIndex = Asc2Bin( argv[2] );
+ 290   1              MonWdata = Asc2Bin( argv[3] );
+ 291   1              Slave = Asc2Bin(argv[1]);
+ 292   1              
+ 293   1              if ( Slave == TW88I2CAddress ) {
+ 294   2                      WriteTW88(MonIndex, MonWdata);
+ 295   2                      MonRdata = ReadTW88(MonIndex);
+ 296   2              }
+ 297   1              else {
+ 298   2                      WriteI2C(Slave, MonIndex, MonWdata);
+ 299   2                      MonRdata = ReadI2C(Slave, MonIndex);
+ 300   2              }
+ 301   1      
+ 302   1              if( echo )
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 6   
+
+ 303   1                      Printf("\r\n<R>%2x[%2x]=%2x", (WORD)Slave, (WORD)MonIndex, (WORD)MonRdata);
+ 304   1      
+ 305   1      }
+ 306          
+ 307          void MonNewDumpI2C(void)
+ 308          {
+ 309   1              BYTE    ToMonIndex, Slave;
+ 310   1              WORD    i;
+ 311   1              
+ 312   1              if( argc>=2 ) MonIndex = Asc2Bin(argv[2]);
+ 313   1              if( argc>=3 ) ToMonIndex = Asc2Bin(argv[3]);
+ 314   1              Slave = Asc2Bin(argv[1]);
+ 315   1      
+ 316   1              if( echo ) {
+ 317   2                      if ( Slave == TW88I2CAddress ) {
+ 318   3                              for(i=MonIndex; i<=ToMonIndex; i++) {
+ 319   4                                      MonRdata = ReadTW88(i);
+ 320   4                              Printf("\r\n<R>%2x[%2x]=%2x", (WORD)Slave, (WORD)i, (WORD)MonRdata);
+ 321   4                              }
+ 322   3                      }
+ 323   2                      else {
+ 324   3                              for(i=MonIndex; i<=ToMonIndex; i++) {
+ 325   4                                      MonRdata = ReadI2C(Slave, i);
+ 326   4                              Printf("\r\n<R>%2x[%2x]=%2x", (WORD)Slave, (WORD)i, (WORD)MonRdata);
+ 327   4                              }
+ 328   3                      }
+ 329   2              }
+ 330   1              else {
+ 331   2                      if ( Slave == TW88I2CAddress ) {
+ 332   3                              for(i=MonIndex; i<=ToMonIndex; i++) {
+ 333   4                                      MonRdata = ReadTW88(i);
+ 334   4                              }
+ 335   3                      }
+ 336   2                      else {
+ 337   3                              for(i=MonIndex; i<=ToMonIndex; i++) {
+ 338   4                                      MonRdata = ReadI2C(Slave, i);
+ 339   4                              }
+ 340   3                      }
+ 341   2              }
+ 342   1      }
+ 343          
+ 344          
+ 345          void MonWriteBit(void)
+ 346          {
+ 347   1              BYTE mask, i, FromBit, ToBit,  MonMask, val;
+ 348   1              BYTE Slave;
+ 349   1              // b 88 index startbit|endbit data
+ 350   1      
+ 351   1              if( argc<5 ) {
+ 352   2                      Printf("   --> Missing parameter !!!");
+ 353   2                      return;
+ 354   2              }
+ 355   1              Slave = Asc2Bin(argv[1]);
+ 356   1      
+ 357   1              MonIndex = Asc2Bin( argv[2] );
+ 358   1              FromBit  = (Asc2Bin( argv[3] ) >> 4) & 0x0f;
+ 359   1              ToBit  = Asc2Bin( argv[3] )  & 0x0f;
+ 360   1              MonMask  = Asc2Bin( argv[4] );
+ 361   1      
+ 362   1              if( FromBit<ToBit || FromBit>7 || ToBit>7) {
+ 363   2                      Printf("\r\n   --> Wrong range of bit operation !!!");
+ 364   2                      return;
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 7   
+
+ 365   2              }
+ 366   1              
+ 367   1              mask = 0xff; 
+ 368   1              val=0x7f;
+ 369   1              for(i=7; i>FromBit; i--) {
+ 370   2                      mask &= val;
+ 371   2                      val = val>>1;
+ 372   2              }
+ 373   1      
+ 374   1              val=0xfe;
+ 375   1              for(i=0; i<ToBit; i++) {
+ 376   2                      mask &= val;
+ 377   2                      val = val<<1;
+ 378   2              }
+ 379   1      
+ 380   1              if ( Slave == TW88I2CAddress ) {
+ 381   2                      MonRdata = ReadTW88(MonIndex);
+ 382   2                      MonWdata = (MonRdata & (~mask)) | (MonMask & mask);
+ 383   2                                      
+ 384   2                      WriteTW88(MonIndex, MonWdata);
+ 385   2                      MonRdata = ReadTW88(MonIndex);
+ 386   2              }
+ 387   1              else {
+ 388   2                      MonRdata = ReadI2C(Slave, MonIndex);
+ 389   2                      MonWdata = (MonRdata & (~mask)) | (MonMask & mask);
+ 390   2                                      
+ 391   2                      WriteI2C(Slave, MonIndex, MonWdata);
+ 392   2                      MonRdata = ReadI2C(Slave, MonIndex);
+ 393   2              }
+ 394   1      
+ 395   1              if( echo )
+ 396   1                      Printf("\r\n<R>%2x[%2x]=%2x", (WORD)Slave, (WORD)MonIndex, (WORD)MonRdata);
+ 397   1      
+ 398   1      }
+ 399          
+ 400          #if defined( SUPPORT_PC ) || defined( SUPPORT_DTV )
+ 401          void PclkAccess(void)
+ 402          {
+ 403   1              DWORD pclk;
+ 404   1      
+ 405   1              if( argc > 2 ) {
+ 406   2                      Printf("   --> Too many parameter !!!");
+ 407   2                      return;
+ 408   2              }
+ 409   1      
+ 410   1              if( argc==2 ) {
+ 411   2                      pclk = (DWORD)a2i(argv[1]) * 1000000;
+ 412   2                      Printf("\r\n --> Set Pclk:  %ld Hz ", pclk);
+ 413   2      //              Printf("\r\n Not Suuport ");
+ 414   2                      ChangeInternPLL(pclk);
+ 415   2              }
+ 416   1              
+ 417   1              if( argc==1)   GetPPF();
+ 418   1              
+ 419   1      }
+ 420          #endif
+ 421          
+ 422          void MonTxDump(void)
+ 423          {
+ 424   1              WORD    count;
+ 425   1      
+ 426   1              if ( argc < 2 ) {
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 8   
+
+ 427   2                      Puts("\r\nInsufficient parameters...");
+ 428   2                      return;
+ 429   2              }
+ 430   1              count = (WORD)a2i(argv[1]);
+ 431   1              do {
+ 432   2                      RS_tx((count&0x1F)+0x20);
+ 433   2                      count--;
+ 434   2              } while ( count != 0 );
+ 435   1      }
+ 436          
+ 437          //=============================================================================
+ 438          //                      Help Message
+ 439          //=============================================================================
+ 440          void MonHelp(void)
+ 441          {
+ 442   1              Printf("\r\n=======================================================");
+ 443   1              Printf("\r\n>>>     Welcome to Techwell Monitor  Rev 1.00     <<<");
+ 444   1              Printf("\r\n=======================================================");
+ 445   1              Printf("\r\n   R ii             ; Read data");
+ 446   1              Printf("\r\n   W ii dd          ; Write data");
+ 447   1              Printf("\r\n   D [ii] [cc]      ; Dump");
+ 448   1              Printf("\r\n   C aa             ; Change I2C address");
+ 449   1              Printf("\r\n   M ?              ; Current Input");
+ 450   1              Printf("\r\n   M dd             ; Change Input");
+ 451   1              Printf("\r\n   Access [0,1]     ; Program TW88xx Access OFF/ON");
+ 452   1              Printf("\r\n   AutoDetect [0,1] ; PC Automode OFF/ON");
+ 453   1              Printf("\r\n   PCAuto               ; RUN PC Auto Adjust");
+ 454   1              Printf("\r\n   Debug [0..255]   ; Debuging display level");
+ 455   1              Printf("\r\n   Echo On/Off      ; Terminal Echoing On/Off");
+ 456   1              Printf("\r\n   Delta            ; Init DeltaRGB Panel");
+ 457   1              Printf("\r\n   Delta w ii dh dl; SPI Write to DeltaRGB Panel");
+ 458   1              Printf("\r\n");
+ 459   1              Printf("\r\n=======================================================");
+ 460   1              Printf("\r\n");
+ 461   1      }
+ 462          
+ 463          //=============================================================================
+ 464          //
+ 465          //=============================================================================
+ 466          BYTE MonGetCommand(void)
+ 467          {
+ 468   1              static BYTE comment=0;
+ 469   1              static BYTE incnt=0, last_argc=0;
+ 470   1              BYTE i, ch;
+ 471   1              BYTE ret=0;
+ 472   1      
+ 473   1              if( !RS_ready() ) return 0;
+ 474   1              ch = RS_rx();
+ 475   1      
+ 476   1              //----- if comment, echo back and ignore -----
+ 477   1              if( comment ) {
+ 478   2                      if( ch=='\r' || ch==0x1b ) comment = 0;
+ 479   2                      else { 
+ 480   3                              Mon_tx(ch);
+ 481   3                              return 0;
+ 482   3                      }
+ 483   2              }
+ 484   1              else if( ch==';' ) {
+ 485   2                      comment = 1;
+ 486   2                      Mon_tx(ch);
+ 487   2                      return 0;
+ 488   2              }
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 9   
+
+ 489   1      
+ 490   1              //=====================================
+ 491   1              switch( ch ) {
+ 492   2      
+ 493   2              case 0x1b:
+ 494   2                      argc = 0;
+ 495   2                      incnt = 0;
+ 496   2                      comment = 0;
+ 497   2                      Prompt();
+ 498   2                      return 0;
+ 499   2      
+ 500   2              //--- end of string
+ 501   2              case '\r':
+ 502   2      
+ 503   2                      if( incnt==0 ) {
+ 504   3                              Prompt();
+ 505   3                              break;
+ 506   3                      }
+ 507   2      
+ 508   2                      monstr[incnt++] = '\0';
+ 509   2                      argc=0;
+ 510   2      
+ 511   2                      for(i=0; i<incnt; i++) if( monstr[i]!=' ' ) break;
+ 512   2      
+ 513   2                      if( !monstr[i] ) {
+ 514   3                              incnt = 0;
+ 515   3                              comment = 0;
+ 516   3                              Prompt();
+ 517   3                              return 0;
+ 518   3                      }
+ 519   2                      argv[0] = &monstr[i];
+ 520   2                      for(; i<incnt; i++) {
+ 521   3                              if( monstr[i]==' ' || monstr[i]=='\0' ) {
+ 522   4                                      monstr[i]='\0';
+ 523   4                               //Printf("(%s) ",  argv[argc]);
+ 524   4                                      i++;
+ 525   4                                      while( monstr[i]==' ' ) i++;
+ 526   4                                      argc++;
+ 527   4                                      if( monstr[i] ){
+ 528   5                               argv[argc] = &monstr[i];
+ 529   5                                      }
+ 530   4                              }
+ 531   3                      }
+ 532   2      
+ 533   2                      ret = 1;
+ 534   2                      last_argc = argc;
+ 535   2                      incnt = 0;
+ 536   2                      
+ 537   2                      break;
+ 538   2      
+ 539   2              //--- repeat command
+ 540   2              case '/':
+ 541   2                      argc = last_argc;
+ 542   2                      ret = 1;
+ 543   2                      break;
+ 544   2      
+ 545   2              //--- back space
+ 546   2              case 0x08:
+ 547   2                      if( incnt ) {
+ 548   3                              incnt--;
+ 549   3                              Mon_tx(ch);
+ 550   3                              Mon_tx(' ');
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 10  
+
+ 551   3                              Mon_tx(ch);
+ 552   3                      }
+ 553   2                      break;
+ 554   2      
+ 555   2              //--- decreamental write
+ 556   2              case ',':
+ 557   2                      if( incnt ) {
+ 558   3                              Mon_tx(ch);
+ 559   3                              monstr[incnt++] = ch;
+ 560   3                      }
+ 561   2                      else
+ 562   2                              MonIncDecI2C(0);
+ 563   2                      break;
+ 564   2      
+ 565   2              case '<':
+ 566   2                      if( incnt ) {
+ 567   3                              Mon_tx(ch);
+ 568   3                              monstr[incnt++] = ch;
+ 569   3                      }
+ 570   2                      else
+ 571   2                              MonIncDecI2C(10);
+ 572   2                      break;
+ 573   2              //--- increamental write
+ 574   2              case '.':
+ 575   2                      if( incnt ) {
+ 576   3                              Mon_tx(ch);
+ 577   3                              monstr[incnt++] = ch;
+ 578   3                      }
+ 579   2                      else
+ 580   2                              MonIncDecI2C(1);
+ 581   2                      break;
+ 582   2      
+ 583   2              case '>':
+ 584   2                      if( incnt ) {
+ 585   3                              Mon_tx(ch);
+ 586   3                              monstr[incnt++] = ch;
+ 587   3                      }
+ 588   2                      else
+ 589   2                              MonIncDecI2C(11);
+ 590   2                      break;
+ 591   2      
+ 592   2              default:
+ 593   2                      Mon_tx(ch);
+ 594   2                      monstr[incnt++] = ch;
+ 595   2                      break;
+ 596   2              }
+ 597   1      
+ 598   1              if( ret ) {
+ 599   2                      comment = 0;
+ 600   2                      last_argc = argc;
+ 601   2                      return ret;
+ 602   2              }
+ 603   1              else {
+ 604   2                      return ret;
+ 605   2              }
+ 606   1      }
+ 607          
+ 608          //*****************************************************************************
+ 609          //                              Monitoring Command
+ 610          //*****************************************************************************
+ 611          
+ 612          void Monitor(void)
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 11  
+
+ 613          {
+ 614   1              if( !MonGetCommand() ) return;
+ 615   1      
+ 616   1              //--------------------------------------------------
+ 617   1              // Check Indirect command
+ 618   1              /*
+ 619   1              if( !stricmp( argv[0], "I" ) )                  indirect=1;     
+ 620   1              else if( !stricmp( argv[0], "O" ) )     indirect=1;     
+ 621   1      
+ 622   1              else if( !stricmp( argv[0], "," ) )     indirect=0;     
+ 623   1              else if( !stricmp( argv[0], ">" ) )     indirect=0;     
+ 624   1              else if( !stricmp( argv[0], "<" ) )     indirect=0;     
+ 625   1              else if( !stricmp( argv[0], "." ) )     indirect=0;     
+ 626   1              else  indirect=0;       
+ 627   1              */
+ 628   1              indirect = 0;
+ 629   1      
+ 630   1              //---------------- Write Register -------------------
+ 631   1              if( !stricmp( argv[0], "W" ) ) {
+ 632   2                      MonWriteI2C();
+ 633   2              }
+ 634   1              else if( !stricmp( argv[0], ")" ) ) {
+ 635   2                      indirect=0;
+ 636   2                      MonNewWriteI2C();
+ 637   2              }
+ 638   1              /*
+ 639   1              else if( !stricmp( argv[0], "O" ) ) {                   // inderect addressing for 8806
+ 640   1                      MonIndex = Asc2Bin( argv[1] );
+ 641   1                      MonWdata = Asc2Bin( argv[2] );
+ 642   1                      WriteI2C(MonAddress, 0xc5, MonIndex);
+ 643   1                      WriteI2C(MonAddress, 0xc6, MonWdata);
+ 644   1                      MonRdata = ReadI2C(MonAddress, 0xc6);
+ 645   1                      Printf("\r\n==> Read %2xh:%2xh", (WORD)MonIndex, (WORD)MonRdata);
+ 646   1              }
+ 647   1              */
+ 648   1              //---------------- Read Register --------------------
+ 649   1              else if ( !stricmp( argv[0], "R" ) ) {
+ 650   2                      MonReadI2C();
+ 651   2              }
+ 652   1              else if ( !stricmp( argv[0], "(" ) ) {
+ 653   2                      indirect=0;
+ 654   2                      MonNewReadI2C();
+ 655   2              }
+ 656   1              /*
+ 657   1              else if( !stricmp( argv[0], "i" ) ) {
+ 658   1                      MonIndex = Asc2Bin( argv[1] );
+ 659   1                      WriteI2C(MonAddress, 0xc5, MonIndex);
+ 660   1                      MonRdata = ReadI2C(MonAddress, 0xc6);
+ 661   1                      Printf("\r\n==> Read %2xh:%2xh", (WORD)MonIndex, (WORD)MonRdata);
+ 662   1      
+ 663   1              }
+ 664   1              */
+ 665   1              //---------------- Dump Register --------------------
+ 666   1              else if( !stricmp( argv[0], "D" ) ) {
+ 667   2                      Puts("\r\ndump start");
+ 668   2                      MonDumpI2C();
+ 669   2              }
+ 670   1              else if( !stricmp( argv[0], "&" ) ) {
+ 671   2                      indirect=0;
+ 672   2                      MonNewDumpI2C();
+ 673   2              }
+ 674   1      
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 12  
+
+ 675   1              //---------------- Bit Operation --------------------
+ 676   1              else if( !stricmp( argv[0], "B" ) ) {// Write bits - B AA II bb DD
+ 677   2                      MonWriteBit();
+ 678   2              }
+ 679   1              /*      no indirect addressing in TW8816
+ 680   1          //---------------------------------------------------
+ 681   1              else if( !stricmp( argv[0], "@" ) ) { // Indirect address bit access
+ 682   1      
+ 683   1                                              BYTE Slave, mask, FromBit, ToBit,  MonMask, val,i;
+ 684   1                                              // @ 8a iaddr idata index  startbit|endbit  data
+ 685   1                                              // 0  1   2    3     4     5                 6
+ 686   1      
+ 687   1                                              if( argc<7 ) {
+ 688   1                                                      Printf("   --> Missing parameter !!!");
+ 689   1                                                      return;
+ 690   1                                              }
+ 691   1      
+ 692   1                                              Slave = Asc2Bin(argv[1]);
+ 693   1                                              
+ 694   1                                              FromBit = Asc2Bin( argv[5] );
+ 695   1                                              FromBit  = ( FromBit >> 4) & 0x0f;
+ 696   1                                              ToBit = Asc2Bin( argv[5] );
+ 697   1                                              ToBit  =  ToBit & 0x0f;
+ 698   1                                              MonMask  = Asc2Bin( argv[6] );
+ 699   1      
+ 700   1                                              if( FromBit<ToBit || FromBit>7 || ToBit>7) {
+ 701   1                                                      Printf("\r\n   --> Wrong range of bit operation !!!");
+ 702   1                                                      return;
+ 703   1                                              }
+ 704   1              
+ 705   1                                              mask = 0xff; 
+ 706   1                                              val=0x7f;
+ 707   1                                              for(i=7; i>FromBit; i--) {
+ 708   1                                                      mask &= val;
+ 709   1                                                      val = val>>1;
+ 710   1                                              }
+ 711   1      
+ 712   1                                              val=0xfe;
+ 713   1                                              for(i=0; i<ToBit; i++) {
+ 714   1                                                      mask &= val;
+ 715   1                                                      val = val<<1;
+ 716   1                                              }
+ 717   1      
+ 718   1                                              // @ 8a iaddr idata index  startbit|endbit  data
+ 719   1                                              // 0  1   2    3     4     5                 6
+ 720   1                                              MonIndex = Asc2Bin(argv[2]);
+ 721   1                                              MonWdata = Asc2Bin(argv[4]);
+ 722   1                                              WriteI2C( Slave, MonIndex, MonWdata);
+ 723   1      
+ 724   1                                              MonRdata = ReadI2C(Slave, Asc2Bin( argv[3]));
+ 725   1                                              MonWdata = (MonRdata & (~mask)) | (MonMask & mask);
+ 726   1                                              MonIndex = Asc2Bin(argv[3]);
+ 727   1                                              WriteI2C(Slave, MonIndex, MonWdata);
+ 728   1      
+ 729   1                                              MonRdata = ReadI2C(Slave, MonIndex);
+ 730   1      
+ 731   1                                              Printf("\r\n<R>%2x[%2x]=%2x", (WORD)Slave, (WORD)MonIndex, (WORD)MonRdata);
+ 732   1      
+ 733   1              }
+ 734   1              //------------------------------------------------------------------                            
+ 735   1              else if( !stricmp( argv[0], "!" ) ) //  Indirect address write access
+ 736   1              {
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 13  
+
+ 737   1                                              BYTE Slave;
+ 738   1                                              // @ 8a iaddr idata index data
+ 739   1                                              if( argc<6 ) {
+ 740   1                                                      Printf("   --> Missing parameter !!!");
+ 741   1                                                      return;
+ 742   1                                              }
+ 743   1      
+ 744   1                                              Slave = Asc2Bin(argv[1]);
+ 745   1      
+ 746   1                                              MonIndex = Asc2Bin(argv[2]);
+ 747   1                                              MonWdata = Asc2Bin(argv[4]);
+ 748   1                                              WriteI2C(Slave, MonIndex, MonWdata);
+ 749   1      
+ 750   1                                              MonIndex = Asc2Bin(argv[3]);
+ 751   1                                              MonWdata = Asc2Bin(argv[5]);
+ 752   1                                              WriteI2C(Slave, MonIndex, MonWdata);
+ 753   1      
+ 754   1                                              MonRdata = ReadI2C(Slave, MonIndex);
+ 755   1      
+ 756   1                                              Printf("\r\n<R>%2x[%2x]=%2x", (WORD)Slave, (WORD)MonIndex, (WORD)MonRdata);
+ 757   1      
+ 758   1              }
+ 759   1              */    
+ 760   1      
+ 761   1              //---------------- Change I2C -----------------------
+ 762   1              else if( !stricmp( argv[0], "C" ) ) {
+ 763   2                      MonAddress = Asc2Bin( argv[1] );
+ 764   2              }
+ 765   1      
+ 766   1              //---------------- Help -----------------------------
+ 767   1              else if( !stricmp( argv[0], "H" ) || !stricmp( argv[0], "HELP" ) || !stricmp( argv[0], "?" ) ) {
+ 768   2                      MonHelp();
+ 769   2      
+ 770   2              }
+ 771   1              //---------------------------------------------------
+ 772   1              else if( !stricmp( argv[0], "*" ) ) {
+ 773   2                              
+ 774   2                                      if( argc==1 ) {
+ 775   3                                              Printf("\r\n  * 0 : Program default Loader");
+ 776   3                                              Printf("\r\n  * 1 : Program external Loader");
+ 777   3                                              Printf("\r\n  * 2 : Execute Loader");
+ 778   3                                      }
+ 779   2                                      else { 
+ 780   3                                              BYTE mode;
+ 781   3                                              mode = Asc2Bin(argv[1]);
+ 782   3                                              Loader(mode);
+ 783   3                                      }
+ 784   2              }
+ 785   1      
+ 786   1              //---------------------------------------------------
+ 787   1      #if defined( SUPPORT_PC ) || defined( SUPPORT_DTV )
+ 788   1              else if( !stricmp( argv[0], "PCLK" ) ) {
+ 789   2                      PclkAccess();                   
+ 790   2              }
+ 791   1      #endif  
+ 792   1      
+ 793   1              //---------------------------------------------------
+ 794   1              else if( !stricmp( argv[0], "POWER" ) ) {
+ 795   2                      LCDPower();
+*** WARNING C206 IN LINE 795 OF MONITOR.C: 'LCDPower': missing function-prototype
+ 796   2              }
+ 797   1      
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 14  
+
+ 798   1              //---------------------------------------------------
+ 799   1      #if defined( SUPPORT_PC ) || defined( SUPPORT_DTV )
+ 800   1              else if( !stricmp( argv[0], "M" ) ) {
+ 801   2                      if( argc==2 ) {
+ 802   3                              if( !stricmp( argv[1], "?" ) ) {
+ 803   4                                      BYTE i;
+ 804   4                                      Printf("\r\nCurrent Input:%d \r\n", (WORD)InputSelection);
+ 805   4                                      for(i=1; struct_InputSelection[i].Id!=0 ; i++)
+ 806   4                                                      Printf("%s:%d  ",struct_InputSelection[i].Name,(WORD)struct_InputSelection[i].Id );
+ 807   4                                      Printf("\r\n");
+ 808   4                              }
+ 809   3                              else
+ 810   3                                      ChangeInput(Asc2Bin( argv[1] ));
+ 811   3                      }
+ 812   2                      else
+ 813   2                              ChangeInput(GetNextInputSelection());
+ 814   2              }       
+ 815   1              //---------------------------------------------------
+ 816   1              else if( !stricmp( argv[0], "ACCESS" ) ) {
+ 817   2                      if( argc==2 ) {
+ 818   3                              AccessEnable = Asc2Bin(argv[1]);
+ 819   3                      }
+ 820   2                      Printf("\r\nTW88xx AUTO ACCESS = %d", (WORD)AccessEnable);
+ 821   2              }
+ 822   1              #if 0
+                      //---------------------------------------------------
+                      else if( !stricmp( argv[0], "AUTODETECT" ) ) {
+                              if( argc==2 ) {
+                                      AutoDetect = Asc2Bin(argv[1]);
+                              }
+                              Printf("\r\nPC Auto Detect = %d", (WORD)AutoDetect);
+                      }       
+                      #endif
+ 831   1              //---------------------------------------------------
+ 832   1              else if( !stricmp( argv[0], "PCAUTO" ) ) {
+ 833   2                      Puts("\r\nPC Auto Measurement");
+ 834   2                      AutoAdjust();
+ 835   2              }       
+ 836   1              //---------------------------------------------------
+ 837   1              else if( !stricmp( argv[0], "PCCOLOR" ) ) {
+ 838   2                      Puts("\r\nPC Color Auto Measurement");
+ 839   2                      AutoColorAdjust();
+ 840   2              }       
+ 841   1              //---------------------------------------------------
+ 842   1              else if( !stricmp( argv[0], "7" ) ) {
+ 843   2                      Puts("\r\nGet HPN / VPN");
+ 844   2                      GetHpnVpn(DebugLevel);
+ 845   2              }       
+ 846   1      #endif
+ 847   1              //---------------- Debug Level ---------------------
+ 848   1              else if ( !stricmp( argv[0], "DEBUG" ) ) {
+ 849   2                      if( argc==2 ) {
+ 850   3                              DebugLevel = Asc2Bin(argv[1]);
+ 851   3                              SaveDebugLevelEE(DebugLevel);
+ 852   3                      }
+ 853   2                      Printf("\r\nDebug Level = %2x", (WORD)DebugLevel);
+ 854   2              }
+ 855   1              
+ 856   1              //---------------- Display on/off -------------------
+ 857   1              else if ( !stricmp( argv[0], "echo" ) ) {
+ 858   2                      if( !stricmp( argv[1], "off" ) ) {
+ 859   3                              echo = 0;
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 15  
+
+ 860   3                              Printf("\r\necho off");
+ 861   3                      }
+ 862   2                      else {
+ 863   3                              echo = 1;
+ 864   3                              Printf("\r\necho on");
+ 865   3                      }
+ 866   2              }
+ 867   1              //---------------- RESET/ TEST / POWER_DOWN -------------------
+ 868   1              else if ( !stricmp( argv[0], "reset" ) ) {
+ 869   2                      if( !stricmp( argv[1], "0" ) ) {
+ 870   3                              P3_4 = 0;
+ 871   3                              Printf("\r\nTW_reset_pin => 0");
+ 872   3                      }
+ 873   2                      else if( !stricmp( argv[1], "1" ) ) {
+ 874   3                              P3_4 = 1;
+ 875   3                              Printf("\r\nTW_reset_pin => 1");
+ 876   3                      }
+ 877   2                      else {
+ 878   3                              Printf("\r\nTW_reset_pin = %d", (WORD)P3_4);
+ 879   3                      }
+ 880   2              }
+ 881   1              else if ( !stricmp( argv[0], "test" ) ) {
+ 882   2                      if( !stricmp( argv[1], "0" ) ) {
+ 883   3                              //P0_7 = 0;
+ 884   3                              Printf("\r\nTW_test_pin => 0");
+ 885   3                      }
+ 886   2                      else if( !stricmp( argv[1], "1" ) ) {
+ 887   3                              //P0_7 = 1;
+ 888   3                              Printf("\r\nTW_test_pin => 1");
+ 889   3                      }
+ 890   2                      else {
+ 891   3                              Printf("\r\nTW_test_pin = %d", (WORD)P0_7);
+ 892   3                      }
+ 893   2              }
+ 894   1              else if ( !stricmp( argv[0], "pdn" ) ) {
+ 895   2                      if( !stricmp( argv[1], "0" ) ) {
+ 896   3                              P3_7 = 0;
+ 897   3                              Printf("\r\nTW_PowerDown_pin => 0");
+ 898   3                      }
+ 899   2                      else if( !stricmp( argv[1], "1" ) ) {
+ 900   3                              P3_7 = 1;
+ 901   3                              Printf("\r\nTW_PowerDown_pin => 1");
+ 902   3                      }
+ 903   2                      else {
+ 904   3                              Printf("\r\nTW_PowerDown_pin = %d", (WORD)P3_7);
+ 905   3                      }
+ 906   2              }
+ 907   1              //---------------- OSD test for parallel -----------------------------------
+ 908   1              else if( !stricmp( argv[0], "OSD" ) ) {
+ 909   2                      if( !stricmp( argv[1], "logo" ) ) {
+ 910   3                              DisplayLogo();
+ 911   3                      }
+ 912   2                      else if( !stricmp( argv[1], "end" ) ) {
+ 913   3                              Puts("\r\nIf you'd like to exit, press any Key....");
+ 914   3                              while ( !RS_ready() ){
+ 915   4                                      P2 = ReadTW88( 0x95 );
+ 916   4                              }
+ 917   3                      }
+ 918   2                      else if( !stricmp( argv[1], "input" ) ) {
+ 919   3                              DisplayInput();
+ 920   3                      }
+ 921   2                      else if( !stricmp( argv[1], "off" ) ) {
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 16  
+
+ 922   3                              ShowOSDWindowAll(OFF);
+ 923   3                      }
+ 924   2                      //else if( !stricmp( argv[1], "grid" ) ) {
+ 925   2                      //      DisplayGrid();
+ 926   2                      //}
+ 927   2      #if 0           
+              #ifndef BANKING
+                              else if( !stricmp( argv[1], "cone" ) ) {
+                                      DisplayCone();
+                                      DisplayJapanese();
+                              }
+              #endif          
+              #endif
+ 935   2                      #ifdef BANKING
+                              else if( !stricmp( argv[1], "agrid" ) ) {
+                                      BYTE i, j, k;
+                                      Puts("\r\nIf you'd like to exit, press any Key....");
+                                      j = 0;
+                                      k = 0;
+                                      DisplayMessage();
+                                      if ( argc == 3 )
+                                              i = Asc2Bin(argv[2]);
+                                      else i = 0;
+                                      while ( !RS_ready() ){
+                                              if ( j < 9 )
+                                                      DisplayGridBank0(j);
+                                              else
+                                                      DisplayGridBank1(j);
+                                              if ( i )
+                                                      delay(10*i);
+                                              if (k==0) {
+                                                      if (j==16) {
+                                                              k = 1;
+                                                              j--;
+                                                      }
+                                                      else j++;
+                                              }
+                                              else {
+                                                      if ( j==0 ) {
+                                                              k = 0;
+                                                              j++;
+                                                      }
+                                                      else j--;
+                                              }
+                                      }
+                              }
+                              else if( !stricmp( argv[1], "cgrid" ) ) {
+                                      BYTE i, j, k;
+                                      Puts("\r\nIf you'd like to exit, press any Key....");
+                                      j = 0;
+                                      k = 0;
+                                      DisplayChinese();
+                                      if ( argc == 3 )
+                                              i = Asc2Bin(argv[2]);
+                                      else i = 0;
+                                      while ( !RS_ready() ){
+                                              if ( j < 9 )
+                                                      DisplayGridBank0(j);
+                                              else
+                                                      DisplayGridBank1(j);
+                                              if ( i )
+                                                      delay(10*i);
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 17  
+
+                                              if (k==0) {
+                                                      if (j==16) {
+                                                              k = 1;
+                                                              j--;
+                                                      }
+                                                      else j++;
+                                              }
+                                              else {
+                                                      if ( j==0 ) {
+                                                              k = 0;
+                                                              j++;
+                                                      }
+                                                      else j--;
+                                              }
+                                      }
+                              }
+                              else if( !stricmp( argv[1], "jgrid" ) ) {
+                                      BYTE i, j, k;
+                                      Puts("\r\nIf you'd like to exit, press any Key....");
+                                      j = 0;
+                                      k = 0;
+                                      DisplayJapanese();
+                                      if ( argc == 3 )
+                                              i = Asc2Bin(argv[2]);
+                                      else i = 0;
+                                      while ( !RS_ready() ){
+                                              if ( j < 9 )
+                                                      DisplayGridBank0(j);
+                                              else
+                                                      DisplayGridBank1(j);
+                                              if ( i )
+                                                      delay(10*i);
+                                              if (k==0) {
+                                                      if (j==16) {
+                                                              k = 1;
+                                                              j--;
+                                                      }
+                                                      else j++;
+                                              }
+                                              else {
+                                                      if ( j==0 ) {
+                                                              k = 0;
+                                                              j++;
+                                                      }
+                                                      else j--;
+                                              }
+                                      }
+                              }
+                              else if( !stricmp( argv[1], "kgrid" ) ) {
+                                      BYTE i, j, k;
+                                      Puts("\r\nIf you'd like to exit, press any Key....");
+                                      j = 0;
+                                      k = 0;
+                                      DisplayKorean();
+                                      if ( argc == 3 )
+                                              i = Asc2Bin(argv[2]);
+                                      else i = 0;
+                                      while ( !RS_ready() ){
+                                              if ( j < 9 )
+                                                      DisplayGridBank0(j);
+                                              else
+                                                      DisplayGridBank1(j);
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 18  
+
+                                              if ( i )
+                                                      delay(10*i);
+                                              if (k==0) {
+                                                      if (j==16) {
+                                                              k = 1;
+                                                              j--;
+                                                      }
+                                                      else j++;
+                                              }
+                                              else {
+                                                      if ( j==0 ) {
+                                                              k = 0;
+                                                              j++;
+                                                      }
+                                                      else j--;
+                                              }
+                                      }
+                              }
+                              #endif
+1065   2              }
+1066   1              
+1067   1              //---------------- serial tx test with some number -----------------------------------
+1068   1              else if( !stricmp( argv[0], "TX" ) ) {
+1069   2                      MonTxDump();
+1070   2              }
+1071   1              //---------------- OSD FONTtest for parallel -----------------------------------
+1072   1              else if( !stricmp( argv[0], "FONT" ) ) {
+1073   2                      if ( !stricmp( argv[1], "RAM" ) ) {
+1074   3                              DisplayRAMFont( Asc2Bin(argv[2]) );
+*** WARNING C206 IN LINE 1074 OF MONITOR.C: 'DisplayRAMFont': missing function-prototype
+*** ERROR C267 IN LINE 1074 OF MONITOR.C: 'DisplayRAMFont': requires ANSI-style prototype
+1075   3                      }
+1076   2                      else if ( !stricmp( argv[1], "ROM" ) ) {
+1077   3                              DisplayROMFont(Asc2Bin(argv[2]));
+1078   3                      }
+1079   2                      else {
+1080   3                              Puts("\r\n Font ROM # or Font RAM # for testing");
+1081   3                      }
+1082   2              }
+1083   1              
+1084   1              //---------------- Delta RGB Panel Test -------------------------
+1085   1              #ifdef SUPPORT_DELTA_RGB
+              
+                      else if( !stricmp( argv[0], "delta" ) ) {
+                              if( argc==1 )   DeltaRGBPanelInit();
+                              else {
+                                      
+                                      if( !stricmp( argv[1], "w" ) ) {
+              
+                                              WORD val;
+                                              val= Asc2Bin(argv[3])<<8 | Asc2Bin(argv[4]);
+                                              Printf("\r\n SPI Write: Addr:%2x  Data:%4x", (WORD)Asc2Bin(argv[2]), val);
+                                              WriteSPI(Asc2Bin(argv[2]), val );
+                                      }
+                                      else if( !stricmp( argv[1], "r" ) ) {
+                                              WORD val;
+                                              val = ReadSPI(Asc2Bin(argv[2]));
+                                              Printf("\r\n SPI Read: Addr:%2x  Data:%4x", (WORD)Asc2Bin(argv[2]), val);
+                                      }
+                              }
+                      }
+                      #endif
+C51 COMPILER V8.16   MONITOR                                                               03/04/2011 11:08:04 PAGE 19  
+
+1106   1              //----------------------------------------------------
+1107   1              else {
+1108   2                      Printf("\r\nInvalid command...");
+1109   2              }
+1110   1      
+1111   1      
+1112   1              Prompt();
+1113   1      
+1114   1      
+1115   1      }
+1116          
+1117          
+1118          //-------------------------------------------------------------------------
+1119          
+1120          
+1121          #endif
+
+C51 COMPILATION COMPLETE.  2 WARNING(S),  1 ERROR(S)

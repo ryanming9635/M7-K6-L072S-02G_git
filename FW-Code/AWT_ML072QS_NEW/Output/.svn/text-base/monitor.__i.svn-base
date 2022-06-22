@@ -1,0 +1,1 @@
+"monitor.c" COMPACT OPTIMIZE (9,SIZE) BROWSE MODDP2 INCDIR(.\Include\) DEFINE (INTERNAL_MCU) DEBUG OBJECTEXTEND PRINT(.\Source\monitor.lst) OBJECT(.\Output\monitor.obj)

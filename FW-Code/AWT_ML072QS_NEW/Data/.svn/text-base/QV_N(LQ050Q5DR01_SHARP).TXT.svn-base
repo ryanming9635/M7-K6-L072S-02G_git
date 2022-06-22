@@ -1,0 +1,171 @@
+/*===========================================================================*/
+/*                    Register Setting for TW8816     08/02/07               */
+/*===========================================================================*/
+//	Input	: NTSC
+//	Panel	: QVGA   LQ050Q5DR01 SHARP
+//-----------------------------------------------------------------------------
+//	Below listed registers should not be set.
+//	0x02, 0x06, 
+//
+//
+
+TW88I2CAddress, 0x8a,
+
+0xff, 0x01,
+0xc0, 0x25, // ADC PLL=27Mhz
+
+0xff, 0x00,
+
+//------------ Decoder (16) ---------------------------------------------------
+
+0x1c, 0x08,				// Standard, shadow 		** N/P
+
+0x07, 0x02,				// Cropping H				** N/P, panel
+0x08, 0x13,				// V delay L				** N/P, panel
+0x09, 0xf0,				// V active L				** N/P, panel?
+0x0a, 0x23,				// H delay L				** N/P, panel
+0x0b, 0xd0,				// H active L				** N/P, panel?
+0x0c, 0xcc,				// Control Reg 1
+
+0x10, 0x00,				// Brightness
+0x11, 0x5C,				// Contrast
+0x12, 0x61,				// Sharpness Ctrl 1
+0x13, 0x80,				// Chroma(U) gain
+0x14, 0x80,				// chroma(V) gain
+0x15, 0x00,				// Hue
+0x17, 0x31,				// V peaking Ctrl 1			
+
+0x35, 0x00, // Y Clamp Current 
+0x38, 0x0E,
+
+//---------- Input/Output (4)-----------------------------------------------------
+
+0x40, 0x00,				// Input
+0x41, 0x20,				// Output
+0x43, 0x12,
+0x44, 0x08,				// Input control
+	
+//------------ Zoom (6+2)-----------------------------------------------------------
+
+0x63, 0x01,				// H/V scale up/dn H		** N/P panel
+0x60, 0x00,				// H-scale up L			** N/P panel
+0x61, 0x80,				// H-scale dn L			** N/P panel
+0x62, 0xF7,				// V-scale up L			** N/P panel
+0x64, 0x00,				// H-scale up offset		** N/P panel
+0x65, 0x80,				// V-scale up offset		** N/P panel
+
+0x77, 0x30,
+0x78, 0x0A,
+//--------- Display control (15)---------------------------------------------------
+0x95, 0x10,				// OSD for QVGA
+
+0xb0, 0x40,				//
+0xb1, 0x80,				//
+0xbb, 0x01,				//PVR-H:PVP-H			**     panel
+0xb7, 0x07,				//PVR-L				**     panel
+0xb8, 0x01,				//V Sync			**     panel
+0xb9, 0x17,				//V Back Porch			** N/P panel
+0xba, 0xf2,				//PVR-L				**     panel
+0xb6, 0x23,				//PHR-H:PHP-H			** N/P panel
+0xb2, 0x05,				//PHP-L				** N/P panel
+0xb3, 0x18,				//H sync			**
+0xb4, 0x30,				//H Back Porch			**     panel
+0xb5, 0x82,				//PHR-L				**     panel
+
+0xbc, 0x21,				// Dithering
+0xbe, 0x02,				//Auto Calc.
+//--------- Misc. Input -------------------------------------------------------
+//--------- Output Interface --------------------------------------------------
+//--------- Clolor Enhancement (6----------------------------------------------
+0xDA, 0x3D,
+0xDB, 0xC3,
+0xDC, 0xFC,
+0xDD, 0xFF,
+0xDE, 0x6F,
+0xDF, 0x6F,
+
+//--------- PLL (6)---------------------------------------------------------------
+//0xf9, 0x21,
+//0xfa, 0xDE,				// 12.6/2=6.3MHz	** N/P panel
+//0xfb, 0x00,				//			** N/P panel
+//0xfc, 0x00,				//			** N/P panel
+//0xfd, 0x06,				//			** N/P panel
+//0xfe, 0x08,				//			** N/P panel
+0xf9, 0x00,
+0xfa, 0xCC,				// 12.6/2=6.3MHz	** N/P panel
+0xfb, 0x00,				//			** N/P panel
+0xfc, 0x40,				//			** N/P panel
+0xfd, 0x30,				//			** N/P panel
+0xfe, 0x08,				//			** N/P panel
+
+//--------- TCON ASIC Register (16) ---------------------------------------
+0xff, 0x01,
+
+0x80,0x61,
+
+0x81,0x00,
+
+0x82,0x00,
+
+0x83,0x05,
+
+0x84,0x09, 
+
+0x8d,0x01,
+
+0x8e,0x01,
+
+0x8f,0x10,
+
+//--------- Latch Pulse (16) -----------------------------------------------
+0x90,0x00,
+
+0x91,0x0c,
+
+0x92,0x02,
+
+0x93,0xD0,
+
+0x94,0x02,
+
+0x95,0xD2,
+
+0x9b,0x2C,
+
+0x9d,0x44,
+
+//--------- Row Clock (08) -----------------------------------------------
+0xa0,0x00,
+
+0xa1,0x00,
+
+0xa2,0x00,
+
+0xa3,0x0A,
+
+//--------- Row Starting Puls (04) -----------------------------------------------
+0xa5,0x12,
+
+0xa7,0x13,
+
+//--------- Charp Pump & Vcom (8) -------------------------------------------------
+//0xf0,0x00,
+//0xf1,0x87,
+//0xf2,0x00,
+//0xf3,0x22,
+0xb1,0x00,
+0xb2,0x87,
+0xb3,0x00,
+0xb4,0x22,
+
+//(1)-----------------------------------------------------------------------------
+
+0xff, 0x00,
+
+0xff, 0xff		// end of data
+
+
+
+
+
+

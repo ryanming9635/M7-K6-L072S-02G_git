@@ -1,0 +1,71 @@
+/*===========================================================================*/
+/*                    Register Setting for TW8816                            */
+/*===========================================================================*/
+//	Input	: NTSC
+//	Panel	: WQVGA T-51945GD065ZU-MFW-ANN -OPTREX-
+//-----------------------------------------------------------------------------
+
+TW88I2CAddress, 1,
+
+0xff, 0x01,
+
+0xff, 0x00,
+//------------ Decoder (32) ---------------------------------------------------
+0x1c, 0x08,				// Standard, shadow 		** N/P
+
+0x07, 0x02,				// Cropping H				** N/P, panel
+0x08, 0x15,				// V delay L				** N/P, panel
+0x09, 0xf0,				// V active L				** N/P, panel?
+0x0a, 0x19,				// H delay L				** N/P, panel
+
+//---------- Input/Output -----------------------------------------------------
+0x40, 0x00,				// Input
+0x41, 0x20,				// Output
+0x44, 0x08,				// Input control
+
+//------------ Zoom -----------------------------------------------------------
+0x60, 0x00,				// H-scale up L				** N/P panel
+0x61, 0xDB,				// H-scale dn L				** N/P panel
+0x62, 0xFB,				// V-scale up L				** N/P panel
+0x63, 0x01,				// H/V scale up/dn H		** N/P panel
+
+0x77, 0x00,
+0x89, 0x40,
+//--------- Display control ---------------------------------------------------
+0x95, 0x10,				// OSD for QVGA
+
+0xb0, 0x58,				//
+0xb1, 0x04,				//
+0xb2, 0x66,			//PHP-L							** N/P panel
+0xb3, 0x14,			//H sync							**
+0xb4, 0x05,				//H Back Porch							**     panel
+0xb5, 0x92,			//PHR-L							**     panel
+0xb6, 0x13,				//PHR-H:PHP-H							** N/P panel
+0xb7, 0x06,				//PVR-L							**     panel
+0xb8, 0x04,				//V Sync							**     panel
+0xb9, 0x16,				//V Back Porch							** N/P panel
+0xba, 0xf0,				//PVR-L							**     panel
+0xbb, 0x01,				//PVR-H:PVP-H							**     panel
+0xbc, 0x21,				// Dithering
+0xbe, 0xC2,               	//Auto Calc.
+
+//--------- PLL ---------------------------------------------------------------
+0xf9, 0x02,
+0xfa, 0x11,				// 6.7000MHz				** N/P panel
+0xfb, 0x00,				//							** N/P panel
+0xfc, 0x48,				//							** N/P panel
+0xfd, 0x30,				//							** N/P panel
+0xfe, 0xE2,				//							** N/P panel
+
+//Page 1 ------------------------------------------------------------------
+
+0xff, 0x01,
+0xC0, 0x01,
+
+//-----------------------------------------------------------------------------
+0xff, 0x80,
+0xd1, 0xff,
+0xff, 0xff
+
+
+

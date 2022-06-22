@@ -1,0 +1,116 @@
+<html>
+<body>
+<pre>
+<h1>µVision Build Log</h1>
+<h2>Project:</h2>
+C:\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\TW8816BMCU.uvproj
+Project File Date:  08/21/2017
+
+<h2>Output:</h2>
+Rebuild target 'Target 1'
+compiling adc.c...
+compiling audio.c...
+.\Include\main.h(194): warning C312: misplaced endif control
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(186): error C226: 'RegisterInfo': duplicate struct/union/enum tag
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(192): error C226: 'LongRegisterInfo': duplicate struct/union/enum tag
+.\Include\tw88.h(327): warning C312: misplaced endif control
+compiling CPU.c...
+.\Include\main.h(194): warning C312: misplaced endif control
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(186): error C226: 'RegisterInfo': duplicate struct/union/enum tag
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(192): error C226: 'LongRegisterInfo': duplicate struct/union/enum tag
+.\Include\TW88.h(327): warning C312: misplaced endif control
+.\Include\main.h(186): error C226: 'RegisterInfo': duplicate struct/union/enum tag
+.\Include\main.h(192): error C226: 'LongRegisterInfo': duplicate struct/union/enum tag
+.\Include\main.h(194): warning C312: misplaced endif control
+CPU.c(451): error C202: 'S2CON': undefined identifier
+CPU.c(452): error C202: 'S2BRT': undefined identifier
+CPU.c(455): error C202: 'AUXR2': undefined identifier
+CPU.c(458): error C202: 'AUXIE': undefined identifier
+CPU.c(463): error C202: 'CCAPM4': undefined identifier
+CPU.c(464): error C202: 'CCON': undefined identifier
+CPU.c(471): error C202: 'P3M0': undefined identifier
+CPU.c(472): error C202: 'P3M1': undefined identifier
+CPU.c(588): error C202: 'P4': undefined identifier
+CPU.c(590): error C202: 'P4': undefined identifier
+CPU.c(595): error C202: 'P4': undefined identifier
+CPU.c(609): error C141: syntax error near '}'
+CPU.c(698): error C202: 'P4': undefined identifier
+CPU.c(699): error C202: 'P4': undefined identifier
+CPU.c(705): error C202: 'P4': undefined identifier
+CPU.c(706): error C202: 'P4': undefined identifier
+CPU.c(712): error C202: 'P4': undefined identifier
+CPU.c(713): error C202: 'P4': undefined identifier
+CPU.c(870): error C202: 'S2CON': undefined identifier
+CPU.c(873): error C202: 'S2CON': undefined identifier
+CPU.c(874): error C202: 'S2BUF': undefined identifier
+CPU.c(880): error C202: 'S2CON': undefined identifier
+CPU.c(882): error C202: 'S2CON': undefined identifier
+CPU.c(941): error C202: 'S2BUF': undefined identifier
+compiling Debug.c...
+.\Include\main.h(194): warning C312: misplaced endif control
+compiling dispinfo.c...
+.\Include\main.h(194): warning C312: misplaced endif control
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(186): error C226: 'RegisterInfo': duplicate struct/union/enum tag
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(192): error C226: 'LongRegisterInfo': duplicate struct/union/enum tag
+.\Include\tw88.h(327): warning C312: misplaced endif control
+compiling etc_eep.c...
+.\Include\main.h(194): warning C312: misplaced endif control
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(186): error C226: 'RegisterInfo': duplicate struct/union/enum tag
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(192): error C226: 'LongRegisterInfo': duplicate struct/union/enum tag
+.\Include\TW88.h(327): warning C312: misplaced endif control
+compiling I2c.c...
+.\Include\main.h(194): warning C312: misplaced endif control
+compiling keyremo.c...
+.\Include\main.h(194): warning C312: misplaced endif control
+compiling Loader.c...
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(186): error C226: 'RegisterInfo': duplicate struct/union/enum tag
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(192): error C226: 'LongRegisterInfo': duplicate struct/union/enum tag
+.\Include\tw88.h(327): warning C312: misplaced endif control
+Loader.c(98): warning C312: misplaced endif control
+compiling Main.c...
+.\Include\main.h(194): warning C312: misplaced endif control
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(186): error C226: 'RegisterInfo': duplicate struct/union/enum tag
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(192): error C226: 'LongRegisterInfo': duplicate struct/union/enum tag
+.\Include\tw88.h(327): warning C312: misplaced endif control
+compiling Measure.c...
+compiling monitor.c...
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(186): error C226: 'RegisterInfo': duplicate struct/union/enum tag
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(192): error C226: 'LongRegisterInfo': duplicate struct/union/enum tag
+.\Include\tw88.h(327): warning C312: misplaced endif control
+monitor.c(1122): warning C312: misplaced endif control
+compiling Osdbasic.c...
+.\Include\main.h(194): warning C312: misplaced endif control
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(186): error C226: 'RegisterInfo': duplicate struct/union/enum tag
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(192): error C226: 'LongRegisterInfo': duplicate struct/union/enum tag
+.\Include\tw88.h(327): warning C312: misplaced endif control
+compiling osdmenu.c...
+.\Include\main.h(194): warning C312: misplaced endif control
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(186): error C226: 'RegisterInfo': duplicate struct/union/enum tag
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(192): error C226: 'LongRegisterInfo': duplicate struct/union/enum tag
+.\Include\Tw88.h(327): warning C312: misplaced endif control
+.\Include\main.h(186): error C226: 'RegisterInfo': duplicate struct/union/enum tag
+.\Include\main.h(192): error C226: 'LongRegisterInfo': duplicate struct/union/enum tag
+.\Include\main.h(194): warning C312: misplaced endif control
+compiling pc_eep.c...
+compiling Printf.c...
+Printf.c(291): warning C312: misplaced endif control
+compiling spi.c...
+compiling table.c...
+compiling TW88.c...
+.\Include\main.h(194): warning C312: misplaced endif control
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(186): error C226: 'RegisterInfo': duplicate struct/union/enum tag
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(192): error C226: 'LongRegisterInfo': duplicate struct/union/enum tag
+.\Include\tw88.h(327): warning C312: misplaced endif control
+TW88.c(368): error C202: 'P4': undefined identifier
+TW88.c(418): error C202: 'P4': undefined identifier
+TW88.c(468): error C202: 'P4': undefined identifier
+TW88.c(472): error C202: 'P4': undefined identifier
+compiling udfont.c...
+compiling cone.c...
+compiling Japanese.c...
+compiling HS_keyremo.c...
+.\Include\main.h(194): warning C312: misplaced endif control
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(186): error C226: 'RegisterInfo': duplicate struct/union/enum tag
+\ML072S\AWT_ML072QS_8816_20170821\FW-Code\AWT_ML072QS_NEW\Include\main.h(192): error C226: 'LongRegisterInfo': duplicate struct/union/enum tag
+.\Include\tw88.h(327): warning C312: misplaced endif control
+Target not created

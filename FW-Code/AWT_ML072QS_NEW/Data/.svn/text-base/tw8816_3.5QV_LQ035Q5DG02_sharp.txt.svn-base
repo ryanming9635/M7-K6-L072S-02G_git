@@ -1,0 +1,35 @@
+C 8A
+
+w FF 00
+
+w 60 00
+w 61 20
+w 62 00
+w 63 07
+
+w B0 58
+w B1 40
+w B2 B0
+w B3 14
+w B4 41
+w B5 40
+w B6 11
+w B7 55
+w B8 03
+w B9 12
+w BA F0
+w BB 01
+w BC 21
+W BE 42
+
+
+w F9 00
+w FA 20
+w FB 00
+w FC 40
+w FD 30
+w FE 08
+
+
+
+

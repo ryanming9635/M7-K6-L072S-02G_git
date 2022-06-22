@@ -1,0 +1,4096 @@
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 1   
+
+
+C51 COMPILER V8.16, COMPILATION OF MODULE AUDIO
+OBJECT MODULE PLACED IN .\Output\audio.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE audio.c COMPACT OPTIMIZE(9,SIZE) BROWSE INCDIR(.\Include\) DEBUG OBJECTEXTE
+                    -ND CODE LISTINCLUDE SYMBOLS PRINT(.\Source\audio.lst) OBJECT(.\Output\audio.obj)
+
+line level    source
+
+   1          //============ Audio ====================================================
+   2          
+   3          #include "Config.h"
+   1      =1  /*****************************************************************************/
+   2      =1  /*                           System Configurations                           */
+   3      =1  /*                                                      rev 0.10 include auto test                                               */
+   4      =1  // 0.11 change DTV, PC input initial download data correct for Charge Pump
+   5      =1  // 0.12 correct phase measurement routine '>>3'
+   6      =1  // 0.13 enable function for SPI control... only EXT MCU case
+   7      =1  // 0.14 corrected PC measurement......
+   8      =1  // 0.0a test function only for CVBS, SVIDEO
+   9      =1  // 0.15 corrected DTV scaler setting for panel resolutions
+  10      =1  // 0.0b panel for AND 640x480 TICON panel
+  11      =1  // 0.16 corrected COMPONENT scaler setting for panel resolutions        11/21/2007
+  12      =1  // 0.0c automatic chip test
+  13      =1  // 0.17 add monitor function, osd grid for writing grid
+  14      =1  // 0.18 add component, dtv pc for analogpanel, 12/06/2007
+  15      =1  // 0.19 correct pal input for CES, 12/20/2007
+  16      =1  // 0.1a CCFL control, 12/28/2007
+  17      =1  // 0.19 Multi Grid for Banking on Internal MCU  01/17/2008
+  18      =1  // 0.20 CCFL contol for backlight brightness    01/21/2008
+  19      =1  // 0.21 CCFL contol for backlight brightness    01/25/2008
+  20      =1  // 0.22 phase setting 02/07/2008
+  21      =1  // 0.221 display input correction 04/03/2008
+  22      =1  // 0.23 PC, DTV mode, no signal display
+  23      =1  // 0.24 PC Auto Color adjustment
+  24      =1  // 0.25 revised PC Auto Clock adjustment - find divide number and phase
+  25      =1  // 0.26 Digital RGB for TW8826
+  26      =1  // 0.27 Correct LVDS control                                    08/22/2008
+  27      =1  // 0.28 Add WSVGA resolution                                    10/23/2008
+  28      =1  // 0.29 Add NEW GRID                                                    11/14/2008
+  29      =1  // 0.30 Fix DTV input                                                   12/10/2008
+  30      =1  // 0.31 Add 1080i23, 24, 25A, 25B                               01/20/2009
+  31      =1  // 0.32 TCON setting FIX all mode                               01/22/2009
+  32      =1  // 0.33 autodetect is auto on/off by dip sw1    02/02/2009
+  33      =1  // 0.34 Fix autocolor function and clamp position 02/08/2009
+  34      =1  /*****************************************************************************/
+  35      =1  #ifndef __CONFIG_H__
+  36      =1  #define __CONFIG_H__
+  37      =1  
+  38      =1  //#define INTERNAL_MCU -- defined by Project Compiler session
+  39      =1  
+  40      =1  
+  41      =1  //-----------------------------------------------------------------------------
+  42      =1  //              Firmware Version
+  43      =1  //-----------------------------------------------------------------------------
+  44      =1  #define FWVER                   0x140                   // Rev 0.14
+  45      =1  //-----------------------------------------------------------------------------
+  46      =1  //              Compiler
+  47      =1  //-----------------------------------------------------------------------------
+  48      =1  #define KEILC                                           // Keil C 5.0
+  49      =1  //-----------------------------------------------------------------------------
+  50      =1  //              MPU Clock
+  51      =1  //-----------------------------------------------------------------------------
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 2   
+
+  52      =1  #ifndef INTERNAL_MCU
+  53      =1  //#define CLOCK_11M                                     // 11.0592MHz
+  54      =1  #define CLOCK_22M                                       // 22.1184MHz
+  55      =1  #else                                                           // INTERNAL_MCU
+           =1 #define CLOCK_27M                                       // 27MHz
+           =1 #define REG_START_ADDRESS       0xc000          // register start 0xc000, for page0, 0xc100-page1 
+           =1 #endif
+  59      =1  //-----------------------------------------------------------------------------
+  60      =1  //              TW88 Version
+  61      =1  //-----------------------------------------------------------------------------
+  62      =1  #define TW8816
+  63      =1  //-----------------------------------------------------------------------------
+  64      =1  //              Options for Backlight control
+  65      =1  //-----------------------------------------------------------------------------
+  66      =1  //#define       BACKLIGHT_CCFL
+  67      =1  //#define       BACKLIGHT_LED
+  68      =1  #define BACKLIGHT_PWM
+  69      =1  
+  70      =1  //-----------------------------------------------------------------------------
+  71      =1  //              Panel Resolution
+  72      =1  //-----------------------------------------------------------------------------
+  73      =1  // ---- Select Default Panel
+  74      =1  //
+  75      =1  //#define UXGA                                          // 1600 x 1200
+  76      =1  //#define SXGA                                          // 1280 x 1024
+  77      =1  //#define XGA  // 1024 x 768
+  78      =1  #ifdef XGA
+           =1         #define LVDS                                    
+           =1         #define PWIDTH  1024
+           =1         #define PHEIGHT 768
+           =1 #endif
+  83      =1  //#define SVGA                                          //  800 x 600
+  84      =1  //#define VGA                                           //  640 x 480
+  85      =1  #ifdef VGA
+           =1         #define PWIDTH  640
+           =1         #define PHEIGHT 480
+           =1         //#define       HITACHI_640_B_160               //--> 640 x 160
+           =1         #define AND_640_480
+           =1 #endif
+  91      =1  //#define WXGA                                          // 1280 x 768 (15:9) // 1366 x 768 (16:9)
+  92      =1  #ifdef WXGA
+           =1     //#define WX_SHARP_LQ106K1LA
+           =1         #define PWIDTH  1280
+           =1         #define PHEIGHT 768
+           =1 #endif
+  97      =1  //#define WSVGA                                         // 1024 x 600   *** only video mode
+  98      =1  #ifdef WSVGA
+           =1         #define PWIDTH  1024
+           =1         #define PHEIGHT 600
+           =1         #define UNIDEN_1024_600
+           =1 #endif
+ 103      =1  #define WVGA                                            //  800 x 480
+ 104      =1  #ifdef WVGA
+ 105      =1          #define PWIDTH  800
+ 106      =1          #define PHEIGHT 600//480
+ 107      =1          // If WVGA, you have to select panel.
+ 108      =1          //#define AU_10INCH
+ 109      =1          //#define WVGA_TPO
+ 110      =1          //#define SAMSUNG_10INCH
+ 111      =1          //#define SAMSUNG_TICONLESS_10INCH
+ 112      =1          //#define SHARP_TICONLESS_7INCH
+ 113      =1          #define AU_TICONLESS_7INCH
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 3   
+
+ 114      =1          //#define INNOLUX_AT080TN03
+ 115      =1          //#define AU_TICONLESS_7INCH_CCFL
+ 116      =1          //#define CMO                   // CHIMEI panel
+ 117      =1          //#define AU_TICONLESS_10INCH
+ 118      =1          //#define HITACHI_T01
+ 119      =1          //#define HITACHI_TX23D12
+ 120      =1          //#define HITACHI_TX18D24
+ 121      =1          //#define HITACHI_TX18D16
+ 122      =1          //#define TMD_LTA070A320F
+ 123      =1          //#define TMD_LTA080B
+ 124      =1  #endif  //WVGA
+ 125      =1  //#define HVGA                                          //  480 x 320
+ 126      =1  //#define QVGA                                          //  320 x 240   *** only video mode
+ 127      =1  #ifdef QVGA
+           =1         #define PWIDTH  320
+           =1         #define PHEIGHT 240
+           =1         //#define HITACHI_TX09D73
+           =1         //#define AU_DELTARGB
+           =1         //#define SHARP_LQ050Q5DR01
+           =1         //#define SHARP_LQ035
+           =1         //#define       TMD
+           =1 #endif
+ 136      =1  
+ 137      =1  //#define WQVGA                                         //  480 x 234   *** only video mode
+ 138      =1  #ifdef WQVGA
+           =1         #define PWIDTH  480
+           =1         #define PHEIGHT 240
+           =1         // If WQVGA, you have to select panel   
+           =1     #define ANALOG_7INCH
+           =1         //#define       PWIDTH  400
+           =1         //#define PHEIGHT       240
+           =1         //#define SHARP_LQ043T3DX02             //  400 x 237
+           =1         //#define LG_ANALOG
+           =1         //#define TMD_ANALOG                            //TMD_LTA05B352A
+           =1         //#define       T_51945GD                               // Optorex Panel
+           =1 #endif  // WQVGA
+ 150      =1  
+ 151      =1  //if LVDS pannel disable TICONLESS
+ 152      =1  
+ 153      =1  //-----------------------------------------------------------------------------
+ 154      =1  //---- Add Support One more panel with DIPSW#1
+ 155      =1  //---- Ex. Add Analog AU 7" Panel with Default Panel for evalution
+ 156      =1  //#define ADD_ANALOGPANEL               // Added Analog panel(AU7") from default set panel(expect WQVGA) with DIP #1 sw
+             -itch.(DIP#1=L:ANALOG, H:DEFAULT)
+ 157      =1                                                          // It can't support WQVGA and ADD_ANALOGPANEL same time!!
+ 158      =1          //#define ADD_ANALOG_7INCH
+ 159      =1          //#define ADD_TMD_LTA05B352A
+ 160      =1                                                                          
+ 161      =1  //---- Support Wide panel function
+ 162      =1  #if (defined WXGA) || (defined WSVGA) || (defined WVGA) || (defined WQVGA)
+ 163      =1  #define WIDE_SCREEN                             // Can support 4 display mode, i.e. Normal, Wide, Full, Zoom
+ 164      =1  #endif                                                          // Tested panasonic WVGA panel.
+ 165      =1  
+ 166      =1  //-----------------------------------------------------------------------------
+ 167      =1  //              Panel Vendor Specific
+ 168      =1  //-----------------------------------------------------------------------------
+ 169      =1  
+ 170      =1  //-----------------------------------------------------------------------------
+ 171      =1  //              TV Tuner
+ 172      =1  //-----------------------------------------------------------------------------
+ 173      =1  #define PHILIPS                         0
+ 174      =1  #define ALPS                            1               // ALPS, LG
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 4   
+
+ 175      =1  #define TEMIC                           2
+ 176      =1  #define TVAVA                           3
+ 177      =1  #define LGTUNER                         4
+ 178      =1  #define SAMSUNGMUTITUNER        5
+ 179      =1  
+ 180      =1  #define TVTunerDevice           4
+ 181      =1  //-----------------------------------------------------------------------------
+ 182      =1  //              IR Remote Controller Type
+ 183      =1  //-----------------------------------------------------------------------------
+ 184      =1  //#define REMO_RC5                                      // RC5 style
+ 185      =1  #define TECHWELL_REMOCON
+ 186      =1  //#define REMO_NEC                                      // NEC style
+ 187      =1  //#define PHILIPS_REMOCON // New remocon 
+ 188      =1  
+ 189      =1  
+ 190      =1  //-----------------------------------------------------------------------------
+ 191      =1  //              I2C Device Access Address Mapping
+ 192      =1  //-----------------------------------------------------------------------------
+ 193      =1  
+ 194      =1  #define EEPROMI2CAddress        0xa0    // EEPROM (24C16)
+ 195      =1  #define TW88I2CAddress          0x8a    // TW880x
+ 196      =1  
+ 197      =1  #define MSPI2CAddress           0x80    // MSP
+ 198      =1  
+ 199      =1  //-----------------------------------------------------------------------------
+ 200      =1  //              Options for Possible Inputs
+ 201      =1  //-----------------------------------------------------------------------------
+ 202      =1  #define         AWT
+ 203      =1  //#define       E_Wintek 
+ 204      =1  //#define SUPPORT_SVIDEO                     //andy Awt 20090914
+ 205      =1  //#define SUPPORT_COMPONENT                     // support component analog to decoder//andy Awt 20090914
+ 206      =1  
+ 207      =1  //#define SUPPORT_DTV                           // support DTV input through component( to ADC ).//andy Awt 20090914
+ 208      =1  #define SUPPORT_PC                              // support PC function
+ 209      =1  //#define SUPPORT_DVI                           // support DVI input
+ 210      =1  #define SUPPORT_SDCARD
+ 211      =1  
+ 212      =1  //#define SUPPORT_RS485
+ 213      =1  
+ 214      =1  //-----------------------------------------------------------------------------
+ 215      =1  //              Options for Possible Standards
+ 216      =1  //              Default:NTSC
+ 217      =1  //-----------------------------------------------------------------------------
+ 218      =1  #define SUPPORT_PAL                     
+ 219      =1  #define SUPPORT_SECAM
+ 220      =1  #define SUPPORT_NTSC4           
+ 221      =1  #define SUPPORT_PALM    
+ 222      =1  #define SUPPORT_PALN            
+ 223      =1  #define SUPPORT_PAL60           
+ 224      =1  
+ 225      =1  
+ 226      =1  //#define ID_CHECK_BY_FW                        // in Video mode, check input system ID by firmware
+ 227      =1  
+ 228      =1  //-----------------------------------------------------------------------------
+ 229      =1  //              Options for Debugging/Release
+ 230      =1  //-----------------------------------------------------------------------------
+ 231      =1  //#define SUPPORT_PATTERN                       // support LCD test pattern
+ 232      =1  
+ 233      =1  
+ 234      =1  #ifndef WQVGA
+ 235      =1          #ifndef QVGA
+ 236      =1  #define SUPPORT_OSDPOSITIONMOVE
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 5   
+
+ 237      =1          #endif
+ 238      =1  #endif
+ 239      =1  
+ 240      =1  #define SERIAL                                  // include serial communication routines
+ 241      =1  
+ 242      =1  //#define SUPPORT_DEBUG                         // Support to use Read & Write in debug OSD Window by remocon.
+ 243      =1  
+ 244      =1  //#define DEBUG                                         // include debug information
+ 245      =1  #ifdef DEBUG
+           =1         //#define DEBUG_MAIN
+           =1         //#define DEBUG_TIME
+           =1         //#define DEBUG_KEYREMO
+           =1         //#define DEBUG_TW88
+           =1         //#define DEBUG_DECODER
+           =1         //#define DEBUG_I2C
+           =1         //#define DEBUG_EEP
+           =1         //#define DEBUG_OSD
+           =1         //#define DEBUG_AUDIO
+           =1         //#define DEBUG_SETPANEL
+           =1         //#define DEBUG_DTV
+           =1         #define DEBUG_PC
+           =1         //#define DEBUG_PC_MEAS
+           =1         #define DEBUG_PC_COLOR
+           =1         //#define DEBUG_COMPONENT
+           =1         //#define DEBUG_BANK
+           =1         //#define DEBUG_PAUSE
+           =1         //#define DEBUG_MCU
+           =1 #endif
+ 265      =1  
+ 266      =1  #define AUTOCALC_PC                                     // in PC mode, Enable Auto Calcuration
+ 267      =1  //#define SUPPORT_USERCOLORFROMTXT      // Use color setting of text file in Color mode=USER MODE which is as B
+             -rightness(Reg10), Contast(Reg11),
+ 268      =1                                                                          //    Sat_U(Reg13),Sat_V(Reg14),Sharpness(Reg12,Reg78)                                                                  
+ 269      =1  //#define SUPPORT_GAMMA
+ 270      =1  
+ 271      =1  //#define CHIP_MANUAL_TEST                      // DIPSW#1
+ 272      =1  
+ 273      =1  #ifndef INTERNAL_MCU
+ 274      =1  //#define NO_INITIALIZE                         // After Power switch turn on with DIP SW4 Enable(Low), or pressed MENU button 
+             -for internal MCU
+ 275      =1                                      //     micom works to access only I2C bus by serial command.
+ 276      =1  #endif
+ 277      =1  
+ 278      =1  //#define SUPPORT_KRS_OSDDEMO           // For KRS Company Demo 
+ 279      =1  //#define SUPPORT_LINE_OSDDEMO
+ 280      =1  
+ 281      =1  //-----------------------------------------------------------------------------
+ 282      =1  //              Special Features
+ 283      =1  //-----------------------------------------------------------------------------
+ 284      =1  
+ 285      =1  #ifndef INTERNAL_MCU
+ 286      =1  //#define       SUPPORT_DELTA_RGB
+ 287      =1  #endif
+ 288      =1  #define SUPPORT_SELECTKEY                       // choose the keymap of using select key or left,right key.
+ 289      =1  //-----------------------------------------------------------------------------
+ 290      =1  #endif  //__CONFIG_H__
+   4          
+   5          #include        "reg.h"
+   1      =1  //
+   2      =1  //Registers.h   : Register declaration
+   3      =1  //
+   4      =1  
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 6   
+
+   5      =1  #ifndef __REGISTERS__
+   6      =1  #define __REGISTERS__
+   7      =1  
+   8      =1  #ifdef INTERNAL_MCU
+           =1 /*  BYTE Registers  */
+           =1 sfr P0    = 0x80;
+           =1 sfr P1    = 0x90;
+           =1 sfr P2    = 0xA0;
+           =1 sfr P3    = 0xB0;
+           =1 sfr PSW   = 0xD0;
+           =1 sfr ACC   = 0xE0;
+           =1 sfr B     = 0xF0;
+           =1 sfr SP    = 0x81;
+           =1 sfr DPL   = 0x82;
+           =1 sfr DPH   = 0x83;
+           =1 sfr PCON  = 0x87;
+           =1 sfr TCON  = 0x88;
+           =1 sfr TMOD  = 0x89;
+           =1 sfr TL0   = 0x8A;
+           =1 sfr TL1   = 0x8B;
+           =1 sfr TH0   = 0x8C;
+           =1 sfr TH1   = 0x8D;
+           =1 sfr IE    = 0xA8;
+           =1 sfr IP    = 0xB8;
+           =1 sfr SCON  = 0x98;
+           =1 sfr SBUF  = 0x99;
+           =1 
+           =1 //sfr P4    = 0xd8;
+           =1 
+           =1 /*  8052 Extensions  */
+           =1 sfr EXIF  = 0x91;               // external interrupt 2,3,4,5 flags should be cleared by software
+           =1 sfr T2CON = 0xC8;
+           =1 sfr RCAP2L = 0xCA;
+           =1 sfr RCAP2H = 0xCB;
+           =1 sfr TL2   = 0xCC;
+           =1 sfr TH2   = 0xCD;
+           =1 sfr EICON = 0xD8;
+           =1 sfr EIE   = 0xE8;
+           =1 sfr EIP   = 0xF8;
+           =1 
+           =1 /*      TW88 Core Extension */
+           =1 sfr     BANKREG         = 0x9A;
+           =1 sfr     SPICONTROL      = 0x9B;
+           =1 sfr     T0HIGH          = 0x9C;
+           =1 sfr     T0LOW           = 0x9D;
+           =1 sfr     T1HIGH          = 0x9E;
+           =1 sfr     T1LOW           = 0x9F;
+           =1 sfr     T2HIGH          = 0x93;
+           =1 sfr     T2LOW           = 0x94;
+           =1 
+           =1 /*  BIT Registers  */
+           =1 /*  PSW  */
+           =1 sbit CY    = 0xD7;
+           =1 sbit AC    = 0xD6;
+           =1 sbit F0    = 0xD5;
+           =1 sbit RS1   = 0xD4;
+           =1 sbit RS0   = 0xD3;
+           =1 sbit OV    = 0xD2;
+           =1 sbit P     = 0xD0;
+           =1 
+           =1 /*  TCON  */
+           =1 sbit TF1   = 0x8F;
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 7   
+
+           =1 sbit TR1   = 0x8E;
+           =1 sbit TF0   = 0x8D;
+           =1 sbit TR0   = 0x8C;
+           =1 sbit IE1   = 0x8B;
+           =1 sbit IT1   = 0x8A;
+           =1 sbit IE0   = 0x89;
+           =1 sbit IT0   = 0x88;
+           =1 
+           =1 /*  IE  */
+           =1 sbit EA    = 0xAF;
+           =1 sbit ES    = 0xAC;
+           =1 sbit ET1   = 0xAB;
+           =1 sbit EX1   = 0xAA;
+           =1 sbit ET0   = 0xA9;
+           =1 sbit EX0   = 0xA8;
+           =1 
+           =1 /*  EIE  */
+           =1 sbit EWDI  = 0xEC;              // Watch dog timer interrupt enable
+           =1 sbit EX5   = 0xEB;              // external interrupt 5 enable
+           =1 sbit EX4   = 0xEA;              // external interrupt 4 enable
+           =1 sbit EX3   = 0xE9;              // external interrupt 3 enable
+           =1 sbit EX2   = 0xE8;              // external interrupt 2 enable
+           =1 
+           =1 /*  IP  */
+           =1 sbit PS    = 0xBC;
+           =1 sbit PT1   = 0xBB;
+           =1 sbit PX1   = 0xBA;
+           =1 sbit PT0   = 0xB9;
+           =1 sbit PX0   = 0xB8;
+           =1 
+           =1 /*  EIP  */
+           =1 sbit PWDI  = 0xFC;              // Watch dog timer interrupt priority
+           =1 sbit PX5   = 0xFB;              // external interrupt5 priority
+           =1 sbit PX4   = 0xFA;              // external interrupt4 priority
+           =1 sbit PX3   = 0xF9;              // external interrupt3 priority
+           =1 sbit PX2   = 0xF8;              // external interrupt2 priority
+           =1 
+           =1 /*  P3  */
+           =1 sbit RD    = 0xB7;
+           =1 sbit WR    = 0xB6;
+           =1 sbit T1    = 0xB5;
+           =1 sbit T0    = 0xB4;
+           =1 sbit INT1  = 0xB3;
+           =1 sbit INT0  = 0xB2;
+           =1 sbit TXD   = 0xB1;
+           =1 sbit RXD   = 0xB0;
+           =1 
+           =1 /*  SCON  */
+           =1 sbit SM0   = 0x9F;
+           =1 sbit SM1   = 0x9E;
+           =1 sbit SM2   = 0x9D;
+           =1 sbit REN   = 0x9C;
+           =1 sbit TB8   = 0x9B;
+           =1 sbit RB8   = 0x9A;
+           =1 sbit TI    = 0x99;
+           =1 sbit RI    = 0x98;
+           =1 
+           =1 /*  8052 Extensions  */
+           =1 /*  IE  */
+           =1 sbit ET2   = 0xAD;
+           =1 
+           =1 /*  IP  */
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 8   
+
+           =1 sbit PT2   = 0xBD;
+           =1 
+           =1 /*  P1  */
+           =1 sbit T2EX  = 0x91;
+           =1 sbit T2    = 0x90;
+           =1              
+           =1 /*  T2CON  */
+           =1 sbit TF2   = 0xCF;
+           =1 sbit EXF2  = 0xCE;
+           =1 sbit RCLK  = 0xCD;
+           =1 sbit TCLK  = 0xCC;
+           =1 sbit EXEN2 = 0xCB;
+           =1 sbit TR2   = 0xCA;
+           =1 sbit C_T2  = 0xC9;
+           =1 sbit CP_RL2= 0xC8;
+           =1 
+           =1 sfr     CHPENR = 0xF6;
+           =1 sfr     CHPCON = 0xBF;
+           =1 sfr     SFRAL  = 0xC4;
+           =1 sfr     SFRAH  = 0xC5;
+           =1 sfr     SFRFD  = 0xC6;
+           =1 sfr     SFRCN  = 0xC7;
+           =1 
+           =1 sbit P0_0  = 0x80;
+           =1 sbit P0_1  = 0x81;
+           =1 sbit P0_2  = 0x82;
+           =1 sbit P0_3  = 0x83;
+           =1 sbit P0_4  = 0x84;
+           =1 sbit P0_5  = 0x85;
+           =1 sbit P0_6  = 0x86;
+           =1 sbit P0_7  = 0x87;
+           =1 
+           =1 sbit P1_0  = 0x90;
+           =1 sbit P1_1  = 0x91;
+           =1 sbit P1_2  = 0x92;
+           =1 sbit P1_3  = 0x93;
+           =1 sbit P1_4  = 0x94;
+           =1 sbit P1_5  = 0x95;
+           =1 sbit P1_6  = 0x96;
+           =1 sbit P1_7  = 0x97;
+           =1 
+           =1 sbit P2_0  = 0xa0;
+           =1 sbit P2_1  = 0xa1;
+           =1 sbit P2_2  = 0xa2;
+           =1 sbit P2_3  = 0xa3;
+           =1 sbit P2_4  = 0xa4;
+           =1 sbit P2_5  = 0xa5;
+           =1 sbit P2_6  = 0xa6;
+           =1 sbit P2_7  = 0xa7;
+           =1 
+           =1 sbit P3_0  = 0xb0;
+           =1 sbit P3_1  = 0xb1;
+           =1 sbit P3_2  = 0xb2;
+           =1 sbit P3_3  = 0xb3;
+           =1 sbit P3_4  = 0xb4;
+           =1 sbit P3_5  = 0xb5;
+           =1 sbit P3_6  = 0xb6;
+           =1 sbit P3_7  = 0xb7;
+           =1 
+           =1 #else   // external MCU=WINBOND
+ 189      =1  /*  BYTE Registers  */
+ 190      =1  sfr P0    = 0x80;
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 9   
+
+ 191      =1  sfr P1    = 0x90;
+ 192      =1  sfr P2    = 0xA0;
+ 193      =1  sfr P3    = 0xB0;
+ 194      =1  sfr PSW   = 0xD0;
+ 195      =1  sfr ACC   = 0xE0;
+ 196      =1  sfr B     = 0xF0;
+ 197      =1  sfr SP    = 0x81;
+ 198      =1  sfr DPL   = 0x82;
+ 199      =1  sfr DPH   = 0x83;
+ 200      =1  sfr PCON  = 0x87;
+ 201      =1  sfr TCON  = 0x88;
+ 202      =1  sfr TMOD  = 0x89;
+ 203      =1  sfr TL0   = 0x8A;
+ 204      =1  sfr TL1   = 0x8B;
+ 205      =1  sfr TH0   = 0x8C;
+ 206      =1  sfr TH1   = 0x8D;
+ 207      =1  sfr CKCON = 0x8E;               //clock control register, default =0x01
+ 208      =1  sfr IE    = 0xA8;
+ 209      =1  sfr IP    = 0xB8;
+ 210      =1  sfr SCON  = 0x98;
+ 211      =1  sfr SBUF  = 0x99;
+ 212      =1  sfr P4 = 0xE8; //Megawin Ryan@970716
+ 213      =1  //sfr P4    = 0xa5;      //SST MCU
+ 214      =1  //sfr P4    = 0xd8;             //winbond<960820>
+ 215      =1  
+ 216      =1  
+ 217      =1  /*  8052 Extensions  */
+ 218      =1  sfr T2CON = 0xC8;
+ 219      =1  sfr RCAP2L = 0xCA;
+ 220      =1  sfr RCAP2H = 0xCB;
+ 221      =1  sfr TL2   = 0xCC;
+ 222      =1  sfr TH2   = 0xCD;
+ 223      =1  
+ 224      =1  // for UART2
+ 225      =1  sfr S2CON  = 0xAA;
+ 226      =1  sfr S2BRT  = 0xBA;
+ 227      =1  sfr S2BUF  = 0x9A;
+ 228      =1  sfr AUXR2  = 0xA6;
+ 229      =1  sfr AUXIE  = 0xAD;
+ 230      =1  
+ 231      =1  
+ 232      =1  sfr P1M0  = 0x91;
+ 233      =1  sfr P1M1  = 0x92;
+ 234      =1  sfr P0M0  = 0x93;
+ 235      =1  sfr P0M1  = 0x94;
+ 236      =1  
+ 237      =1  
+ 238      =1  
+ 239      =1  // for PCA
+ 240      =1  sfr CCON   = 0xD8;
+ 241      =1  sfr CMOD   = 0xD9;
+ 242      =1  sfr CCAPM0 = 0xDA;
+ 243      =1  sfr CCAPM1 = 0xDB;
+ 244      =1  sfr CCAPM2 = 0xDC;
+ 245      =1  sfr CCAPM3 = 0xDD;
+ 246      =1  sfr CCAPM4 = 0xDE;
+ 247      =1  sfr CCAPM5 = 0xDF;
+ 248      =1  sfr CL     = 0xE9;
+ 249      =1  sfr CH     = 0xF9;
+ 250      =1  sfr CCAP0L = 0xEA;
+ 251      =1  sfr CCAP0H = 0xFA;
+ 252      =1  sfr CCAP1L = 0xEB;
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 10  
+
+ 253      =1  sfr CCAP1H = 0xFB;
+ 254      =1  sfr CCAP2L = 0xEC;
+ 255      =1  sfr CCAP2H = 0xFC;
+ 256      =1  sfr CCAP3L = 0xED;
+ 257      =1  sfr CCAP3H = 0xFD;
+ 258      =1  sfr CCAP4L = 0xEE;
+ 259      =1  sfr CCAP4H = 0xFE;
+ 260      =1  sfr CCAP5L = 0xEF;
+ 261      =1  sfr CCAP5H = 0xFF;
+ 262      =1  sfr PCAPWM0= 0xF2;
+ 263      =1  sfr PCAPWM1= 0xF3;
+ 264      =1  sfr PCAPWM2= 0xF4;
+ 265      =1  sfr PCAPWM3= 0xF5;
+ 266      =1  sfr PCAPWM4= 0xF6;
+ 267      =1  sfr PCAPWM5= 0xF7;
+ 268      =1  
+ 269      =1  /*  BIT Registers  */
+ 270      =1  /*  PSW  */
+ 271      =1  sbit CY    = 0xD7;
+ 272      =1  sbit AC    = 0xD6;
+ 273      =1  sbit F0    = 0xD5;
+ 274      =1  sbit RS1   = 0xD4;
+ 275      =1  sbit RS0   = 0xD3;
+ 276      =1  sbit OV    = 0xD2;
+ 277      =1  sbit P     = 0xD0;
+ 278      =1  
+ 279      =1  /*  TCON  */
+ 280      =1  sbit TF1   = 0x8F;
+ 281      =1  sbit TR1   = 0x8E;
+ 282      =1  sbit TF0   = 0x8D;
+ 283      =1  sbit TR0   = 0x8C;
+ 284      =1  sbit IE1   = 0x8B;
+ 285      =1  sbit IT1   = 0x8A;
+ 286      =1  sbit IE0   = 0x89;
+ 287      =1  sbit IT0   = 0x88;
+ 288      =1  
+ 289      =1  /*  IE  */
+ 290      =1  sbit EA    = 0xAF;
+ 291      =1  sbit ES    = 0xAC;
+ 292      =1  sbit ET1   = 0xAB;
+ 293      =1  sbit EX1   = 0xAA;
+ 294      =1  sbit ET0   = 0xA9;
+ 295      =1  sbit EX0   = 0xA8;
+ 296      =1  
+ 297      =1  /*  IP  */
+ 298      =1  sbit PS    = 0xBC;
+ 299      =1  sbit PT1   = 0xBB;
+ 300      =1  sbit PX1   = 0xBA;
+ 301      =1  sbit PT0   = 0xB9;
+ 302      =1  sbit PX0   = 0xB8;
+ 303      =1  
+ 304      =1  /*  P3  */
+ 305      =1  sbit RD    = 0xB7;
+ 306      =1  sbit WR    = 0xB6;
+ 307      =1  sbit T1    = 0xB5;
+ 308      =1  sbit T0    = 0xB4;
+ 309      =1  sbit INT1  = 0xB3;
+ 310      =1  sbit INT0  = 0xB2;
+ 311      =1  sbit TXD   = 0xB1;
+ 312      =1  sbit RXD   = 0xB0;
+ 313      =1  
+ 314      =1  /*  SCON  */
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 11  
+
+ 315      =1  sbit SM0   = 0x9F;
+ 316      =1  sbit SM1   = 0x9E;
+ 317      =1  sbit SM2   = 0x9D;
+ 318      =1  sbit REN   = 0x9C;
+ 319      =1  sbit TB8   = 0x9B;
+ 320      =1  sbit RB8   = 0x9A;
+ 321      =1  sbit TI    = 0x99;
+ 322      =1  sbit RI    = 0x98;
+ 323      =1  
+ 324      =1  /*  8052 Extensions  */
+ 325      =1  /*  IE  */
+ 326      =1  sbit ET2   = 0xAD;
+ 327      =1  
+ 328      =1  /*  IP  */
+ 329      =1  sbit PT2   = 0xBD;
+ 330      =1  
+ 331      =1  /*  P1  */
+ 332      =1  sbit T2EX  = 0x91;
+ 333      =1  sbit T2    = 0x90;
+ 334      =1               
+ 335      =1  /*  T2CON  */
+ 336      =1  sbit TF2   = 0xCF;
+ 337      =1  sbit EXF2  = 0xCE;
+ 338      =1  sbit RCLK  = 0xCD;
+ 339      =1  sbit TCLK  = 0xCC;
+ 340      =1  sbit EXEN2 = 0xCB;
+ 341      =1  sbit TR2   = 0xCA;
+ 342      =1  sbit C_T2  = 0xC9;
+ 343      =1  sbit CP_RL2= 0xC8;
+ 344      =1  
+ 345      =1  sfr     CHPENR = 0xF6;
+ 346      =1  sfr     CHPCON = 0xBF;
+ 347      =1  sfr     SFRAL  = 0xC4;
+ 348      =1  sfr     SFRAH  = 0xC5;
+ 349      =1  sfr     SFRFD  = 0xC6;
+ 350      =1  sfr     SFRCN  = 0xC7;
+ 351      =1  
+ 352      =1  sbit P0_0  = 0x80;
+ 353      =1  sbit P0_1  = 0x81;
+ 354      =1  sbit P0_2  = 0x82;
+ 355      =1  sbit P0_3  = 0x83;
+ 356      =1  sbit P0_4  = 0x84;
+ 357      =1  sbit P0_5  = 0x85;
+ 358      =1  sbit P0_6  = 0x86;
+ 359      =1  sbit P0_7  = 0x87;
+ 360      =1  
+ 361      =1  sbit P1_0  = 0x90;
+ 362      =1  sbit P1_1  = 0x91;
+ 363      =1  sbit P1_2  = 0x92;
+ 364      =1  sbit P1_3  = 0x93;
+ 365      =1  sbit P1_4  = 0x94;
+ 366      =1  sbit P1_5  = 0x95;
+ 367      =1  sbit P1_6  = 0x96;
+ 368      =1  sbit P1_7  = 0x97;
+ 369      =1  
+ 370      =1  sbit P2_0  = 0xa0;
+ 371      =1  sbit P2_1  = 0xa1;
+ 372      =1  sbit P2_2  = 0xa2;
+ 373      =1  sbit P2_3  = 0xa3;
+ 374      =1  sbit P2_4  = 0xa4;
+ 375      =1  sbit P2_5  = 0xa5;
+ 376      =1  sbit P2_6  = 0xa6;
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 12  
+
+ 377      =1  sbit P2_7  = 0xa7;
+ 378      =1  
+ 379      =1  sbit P3_0  = 0xb0;
+ 380      =1  sbit P3_1  = 0xb1;
+ 381      =1  sbit P3_2  = 0xb2;
+ 382      =1  sbit P3_3  = 0xb3;
+ 383      =1  sbit P3_4  = 0xb4;
+ 384      =1  sbit P3_5  = 0xb5;
+ 385      =1  sbit P3_6  = 0xb6;
+ 386      =1  sbit P3_7  = 0xb7;
+ 387      =1  
+ 388      =1  sbit P4_0  = P4^0;
+ 389      =1  sbit P4_1  = P4^1;
+ 390      =1  sbit INT3  = P4^2;
+ 391      =1  sbit INT2  = P4^3;
+ 392      =1  #endif  // INTERNAL_MCU
+ 393      =1  
+ 394      =1  #endif  //__REGISTERS__
+   6          #include        "typedefs.h"
+   1      =1  #ifndef __TYPEDEFS__
+   2      =1  #define __TYPEDEFS__
+   3      =1  
+   4      =1  
+   5      =1  #define DATA            data
+   6      =1  #define PDATA           pdata
+   7      =1  #define IDATA           data
+   8      =1  #define CODE            code
+   9      =1  #define CODE_P
+  10      =1  #define PDATA_P
+  11      =1  #define IDATA_P
+  12      =1  #define DATA_P
+  13      =1  
+  14      =1  #define INTERRUPT( num, name ) name() interrupt num
+  15      =1  
+  16      =1  #define _between(x, a, b)       (a<=x && x<=b)
+  17      =1  #define _swap(a, b)                     { a^=b; b^=a; a^=b; }
+  18      =1  
+  19      =1  typedef unsigned char   Register;
+  20      =1  typedef unsigned char   BYTE;
+  21      =1  typedef unsigned short  WORD;
+  22      =1  typedef unsigned long   DWORD;
+  23      =1  
+  24      =1  #define TRUE    1
+  25      =1  #define FALSE   0
+  26      =1  
+  27      =1  //VInputStdDetectMode
+  28      =1  #define AUTO    0
+  29      =1  
+  30      =1  //VInputStd
+  31      =1  #define NTSC    1                       
+  32      =1  #define PAL             2
+  33      =1  #define SECAM   3
+  34      =1  #define NTSC4   4
+  35      =1  #define PALM    5
+  36      =1  #define PALN    6
+  37      =1  #define PAL60   7
+  38      =1  
+  39      =1  #define MAXINPUTSTD     PAL60+1 // 
+  40      =1  
+  41      =1  #define UNKNOWN 0xfe
+  42      =1  #define NOINPUT 0       //0xff
+  43      =1  
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 13  
+
+  44      =1  
+  45      =1  
+  46      =1  
+  47      =1  #define NIL                     0xff
+  48      =1  
+  49      =1  enum SourceModeTypeEnum
+  50      =1  {       
+  51      =1          AVMode,            // 0
+  52      =1          VGAMode,       // 1
+  53      =1          CAM_D,         // 2
+  54      =1          CAM_A,         // 3
+  55      =1          CAM_B,         // 4
+  56      =1          CAM_C,         // 5
+  57      =1          CAM_R,         // 6
+  58      =1          CAM_AB,        // 7
+  59      =1          CAM_CR,        // 8
+  60      =1          CAM_AR,        // 9
+  61      =1          CAM_RB,        // 10
+  62      =1          CAM_AC,        // 11
+  63      =1          CAM_CB,        // 12
+  64      =1          CAM_RAB_T,     // 13
+  65      =1          CAM_RAB_H,     // 14
+  66      =1  
+  67      =1          CAM_QUAD,      // 15
+  68      =1          CAM_ABR_T3,    // 16
+  69      =1          CAM_ABR_T4,    // 17
+  70      =1          SEQ,           // 18
+  71      =1          CAM_BA,                 //19
+  72      =1          
+  73      =1          CAM_BC,
+  74      =1          CAM_BR,
+  75      =1          CAM_CA,
+  76      =1          CAM_ABC,
+  77      =1          CAM_ABR,
+  78      =1          CAM_ACR,
+  79      =1          CAM_BAC,
+  80      =1          CAM_BAR,
+  81      =1          CAM_BCR,
+  82      =1          CAM_CAB,
+  83      =1          CAM_CAR,
+  84      =1          CAM_CBR,        
+  85      =1          CAM_NUM
+  86      =1  };
+  87      =1  
+  88      =1  typedef unsigned char SourceModeType;
+  89      =1  
+  90      =1  #endif  /* __TYPEDEFS__ */
+   7          #include        "i2c.h"
+   1      =1  #ifndef __I2C_H__
+   2      =1  #define __I2C_H__
+   3      =1  
+   4      =1  
+   5      =1  void I2CReadByte3(BYTE *);
+   6      =1  void I2CRead8Byte(BYTE *);
+   7      =1  #if 0
+           =1 void I2CReadByteMSP(BYTE addr, BYTE index, BYTE *pd, BYTE cnt);
+           =1 #endif
+  10      =1  BYTE I2CWriteByte2(BYTE);
+  11      =1  BYTE I2CWriteByte3(BYTE*);
+  12      =1  BYTE I2CWrite8Byte(BYTE *);
+  13      =1  
+  14      =1  void I2CStart(void);
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 14  
+
+  15      =1  void I2CWriteData(BYTE value);
+  16      =1  BYTE I2CReadData(void);
+  17      =1  #if 0
+           =1 BYTE I2CReadDataWithACK(void);
+           =1 #endif
+  20      =1  void I2CStop(void);
+  21      =1  void I2Cdelay(void);
+  22      =1  
+  23      =1  
+  24      =1  #define WriteTW88(a,b)          WriteI2C(TW88I2CAddress, a, b)
+  25      =1  #define ReadTW88(a)                     ReadI2C(TW88I2CAddress, a)
+  26      =1  
+  27      =1  BYTE WriteTW88_Wait     (BYTE, BYTE);
+  28      =1  void WriteADC           (BYTE, BYTE);
+  29      =1  BYTE ReadADC            (BYTE);
+  30      =1  BYTE ReadADC_TW88(BYTE index);
+  31      =1  void WriteADC_TW88(BYTE index, BYTE dat);
+  32      =1  
+  33      =1  void WriteEEP           (WORD, BYTE);
+  34      =1  BYTE ReadEEP            (WORD);
+  35      =1  
+  36      =1  
+  37      =1  BYTE ReadI2C            (BYTE addr, BYTE index);
+  38      =1  void WriteI2C           (BYTE addr, BYTE index, BYTE val);
+  39      =1  
+  40      =1  void WriteI2Cn_(BYTE addr, BYTE *val, BYTE cnt);
+  41      =1  void WriteI2Cn (BYTE addr, BYTE index, BYTE *val, BYTE cnt);
+  42      =1  void WriteI2CnD(BYTE addr, BYTE index, BYTE val, BYTE cnt);
+  43      =1  
+  44      =1  void ReadI2Cmn(BYTE addr, BYTE wcnt, BYTE rcnt, BYTE *rwdata);
+  45      =1  
+  46      =1  #define         WriteADC(a,b)   WriteADC_TW88(a,b)
+  47      =1  #define         ReadADC(a)              ReadADC_TW88(a)
+  48      =1  
+  49      =1  #endif  /* __I2C_H__ */
+   8          #include        "main.h"
+   1      =1  #ifndef __MAIN__
+   2      =1  #define __MAIN__
+   3      =1  
+   4      =1  #define ON                                      1
+   5      =1  #define OFF                                     0
+   6      =1  //#define Hs_debug
+   7      =1  //#define       DVR
+   8      =1  
+   9      =1  //================= DIP SW Definition =========================================
+  10      =1  ///#define PIXEL_SINGLE         P0_0
+  11      =1  #define DIP_PANEL_SWITCH        P0_0    // Samsung(0) // Sharp-Noticon(1)
+  12      =1  #define DIP_AUTO_DETECT         P0_1
+  13      =1  #define DIP_EDGE_ENHANCE        P0_2
+  14      =1  #define DIP_BW_STRETCH          P0_3
+  15      =1  
+  16      =1  #define Panel_Enable()          P4=P4|0x08 //andy 980908
+  17      =1  #define Panel_Disable()                 P4=P4&0xf7
+  18      =1  
+  19      =1  #define SetBacklight()      P4=P4|0x04
+  20      =1  #define clrBacklight()      P4=P4&0xfb
+  21      =1  
+  22      =1  
+  23      =1  //InputSelection
+  24      =1  struct struct_IdName {
+  25      =1          BYTE    Id;
+  26      =1          BYTE    Name[16];
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 15  
+
+  27      =1  };
+  28      =1  
+  29      =1  #define CH_TW2835              1
+  30      =1  #define CH_CAMD                2
+  31      =1  #define CH_AV                  3
+  32      =1  #define PC                                         7
+  33      =1  #define ChineseDefaultMenu   8
+  34      =1  
+  35      =1  #define SVIDEO                          2
+  36      =1  #define COMPONENT                       3
+  37      =1  //#define ANALOGDTV                     4
+  38      =1  #define DTV                                     4
+  39      =1  #define TV                                      5
+  40      =1  #define SCART                           6
+  41      =1  
+  42      =1  #define DIGITALVGA                      8
+  43      =1  
+  44      =1  #define AIRTV                           0 //9
+  45      =1  #define CABLETV                         1 //0xa
+  46      =1  
+  47      =1  
+  48      =1  #define TVTUNER                         0xd             //10
+  49      =1  #define MUTE                            1       
+  50      =1  #define MENU                            2       
+  51      =1  #define TVVOL                           4       
+  52      =1  #define CC                                      8       
+  53      =1  #define INPUTINFO                       0x10
+  54      =1  #define PCINFO                          0x20
+  55      =1  #define GAUGEINFO           0x40
+  56      =1  //#define RATINGINFO                    0x40
+  57      =1  #define TVCHN                           0x80
+  58      =1  //#define MUTE                          0x40
+  59      =1  
+  60      =1  #define YPBPR_480i                      0
+  61      =1  #define YPBPR_576i                      1
+  62      =1  #define YPBPR_480p                      2
+  63      =1  #define YPBPR_576p                      3
+  64      =1  #define YPBPR_1080i                     4
+  65      =1  #define YPBPR_720p                      5
+  66      =1  #define YPBPR_720p50            6
+  67      =1  
+  68      =1  
+  69      =1  //--------------------------- P0 Define -----------------------------
+  70      =1  #define SEL_MIX                 P0_6    // 
+  71      =1  //--------------------------- P1 Define -----------------------------
+  72      =1  #define SEL_DVI                 P3_5    //LJY062001             
+  73      =1  
+  74      =1  #define TW88HWReset                     P3_4    //LJY001010 //LJY000721
+  75      =1  #define PowerUp             P1_4
+  76      =1  //======================= CDS Control ================================= 
+  77      =1  #define CDS_CTRL           P1_5
+  78      =1  extern BYTE     SelectModeType;
+  79      =1  extern BYTE InputSelection;
+  80      =1  extern BYTE SEQTime;
+  81      =1  extern BYTE     Priority;
+  82      =1  extern BYTE AutoDayNight;
+  83      =1  extern BYTE PowerFlag;
+  84      =1  
+  85      =1  BYTE keyIn(void);
+  86      =1  void TimerForRemocon(void);
+  87      =1  void TimerForTick(void);
+  88      =1  void DisableRemoconInt(void);
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 16  
+
+  89      =1  BYTE SetSupport_remocon(BYTE newd);
+  90      =1  
+  91      =1  void delay(BYTE cnt);
+  92      =1  
+  93      =1  BYTE RS_ready(void);
+  94      =1  BYTE RS_rx(void);
+  95      =1  void RS_tx(BYTE tx_buf);
+  96      =1  
+  97      =1  BYTE RS2_rx(void);
+  98      =1  void RS2_tx(BYTE tx_buf);
+  99      =1  
+ 100      =1  void NewLine(void);
+ 101      =1  void PutsP(PDATA_P BYTE *ptr);
+ 102      =1  #ifdef Hs_debug
+           =1 void MonWriteI2C(BYTE addr, BYTE index, BYTE val);
+           =1 BYTE MonReadI2C(BYTE addr, BYTE index);
+           =1 #endif
+ 106      =1  BYTE Asc1Bin(BYTE asc);
+ 107      =1  BYTE Asc2Bin(PDATA_P BYTE *s);
+ 108      =1  
+ 109      =1  void I2CDeviceInitialize( CODE_P BYTE *RegSet);
+ 110      =1  
+ 111      =1  //void RestartSystemClock(WORD clock_hm);
+ 112      =1  WORD GetTime_ms(void);
+ 113      =1  BYTE GetTime_H(void);
+ 114      =1  BYTE GetTime_M(void);
+ 115      =1  void ChangeTime_H( char add );
+ 116      =1  void ChangeTime_M( char add );
+ 117      =1  //WORD GetWakeupTime(void);
+ 118      =1  //void SetWakeupTime(WORD wtime);
+ 119      =1  
+ 120      =1  
+ 121      =1  //WORD GetOffTime(void);
+ 122      =1  //void SetOffTime(WORD wtime);
+ 123      =1  //BYTE GetSleepTimer(void);
+ 124      =1  //void SetSleepTimer(BYTE stime);
+ 125      =1  WORD DiffTime_ms( WORD stime, WORD etime );
+ 126      =1  //void SetLastBlockedTime(void);
+ 127      =1  void SetLastCCTime(void);                               //ljy010904...CC_FIX_CLEAR_ON_TIME
+ 128      =1  
+ 129      =1  void SetOSDLastKeyInTime(void);
+ 130      =1  WORD GetOSDLastKeyInTime(void);
+ 131      =1  WORD GetIVF(void);
+ 132      =1  DWORD GetIHF(void);
+ 133      =1  BYTE ReadVInputSTD(void);
+ 134      =1  void SetVInputStd(BYTE newd);
+ 135      =1  BYTE GetVInputStd(void);
+ 136      =1  BYTE GetInputSelection(void);
+ 137      =1  #ifdef ADD_ANALOGPANEL
+           =1 BYTE IsAnalogOn(void);
+           =1 #endif
+ 140      =1  void InitVideoData(BYTE src);
+ 141      =1  void ChangeVInputStdDetectMode(BYTE val);
+ 142      =1  BYTE GetVInputStdInx(void);
+ 143      =1  
+ 144      =1  void MonWriteI2Cn_(BYTE addr, BYTE *val, BYTE cnt) ;
+ 145      =1  
+ 146      =1  ///void Usage(void);
+ 147      =1  #ifdef Hs_debug
+           =1         void Prompt(void);
+           =1 #endif
+ 150      =1  void DebugKeyIn(BYTE ikey);
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 17  
+
+ 151      =1  void DVIPowerDown(bit flag);
+ 152      =1  void PowerDown_XTAL(bit flag);
+ 153      =1  
+ 154      =1  void ChangeInput(BYTE newsel);
+ 155      =1  
+ 156      =1  
+ 157      =1  void WaitPowerOn(void);
+ 158      =1  void PowerOff(void);
+ 159      =1  BYTE GetNextInputSelection(void);
+ 160      =1  
+ 161      =1  BYTE WantToStopTVScan(void);
+ 162      =1  
+ 163      =1  //BYTE IsTW8801(void);
+ 164      =1  //BYTE IsTW8803(void);
+ 165      =1  //BYTE ConvertVideoVSAT(BYTE reg);
+ 166      =1  
+ 167      =1  BYTE IsNoInput(void);
+ 168      =1  void LoadEEPROM (void);
+ 169      =1  void Hs_InitVars(void);
+ 170      =1  void AdjustAutoDayNight(BYTE val);
+ 171      =1  void ACCPowerControl(void);
+ 172      =1  struct RegisterInfo
+ 173      =1  {
+ 174      =1     int  Min;
+ 175      =1     int  Max;
+ 176      =1     int  Default;
+ 177      =1  };
+ 178      =1  struct LongRegisterInfo
+ 179      =1  {
+ 180      =1     WORD Min;
+ 181      =1     WORD Max;
+ 182      =1     WORD Default;
+ 183      =1  };
+ 184      =1  
+ 185      =1  #endif  // __MAIN__
+   9          #include    "dispinfo.h"
+   1      =1  #ifndef __DISPINFO__
+   2      =1  #define __DISPINFO__
+   3      =1  //==================================================================
+   4      =1  //                              Display Information
+   5      =1  //==================================================================
+   6      =1  #if (defined WQVGA) && (defined ANALOG_7INCH)
+           =1 #define         INPUTINFO_ZOOM          WINZOOMx1
+           =1 #define         LOGO_ZOOM                       WINZOOMx3
+           =1 
+           =1 #else // (defined WQVGA) && (defined SHARP_LQ043T3DX02)
+  11      =1  #define         INPUTINFO_ZOOM          WINZOOMx2
+  12      =1  #define         LOGO_ZOOM                       WINZOOMx2
+  13      =1  #endif
+  14      =1  //#define               VOL_ZOOM                        WINZOOMx4
+  15      =1  #define         MUTE_ZOOM                       WINZOOMx3
+  16      =1  #define         TVCHN_ZOOM                      WINZOOMx4
+  17      =1  #define         RATINGINFO_ZOOM         WINZOOMx3
+  18      =1  #define     SCANTV_ZOOM                 WINZOOMx2               //ljy012304
+  19      =1  #define         PCINFO_ZOOM                     WINZOOMx2
+  20      =1  #define     BAR_ZOOM                    WINZOOMx2
+  21      =1  
+  22      =1  
+  23      =1  #define DVRStatus_OSDWIN        4 
+  24      =1  #define DVRStatus_ADDR  195 
+  25      =1  
+  26      =1  extern  IDATA BYTE  DisplayedOSD;
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 18  
+
+  27      =1  
+  28      =1  
+  29      =1  void ClearDisplayedOSD( BYTE newd );
+  30      =1  void SetDisplayedOSD( BYTE newd );
+  31      =1  BYTE GetDisplayedOSD(void);
+  32      =1  void ClearOSDInfo(void);
+  33      =1  
+  34      =1  void DisplayInput(void);
+  35      =1  BYTE ClearInput(void);
+  36      =1  
+  37      =1  
+  38      =1  void DisplayLogo(void);
+  39      =1  void ClearLogo(void);
+  40      =1  
+  41      =1  void DisplayPCInfo(BYTE CODE *ptr);
+  42      =1  void ClearPCInfo(void);
+  43      =1  void DisplayAutoAdjust(void);
+  44      =1  void ClearAutoAdjust(void);
+  45      =1  
+  46      =1  
+  47      =1  void DisplayVol(void);
+  48      =1  #if 0
+           =1 void DisplayMuteInfo(void);
+           =1 #endif
+  51      =1  void ClearMuteInfo(void);
+  52      =1  BYTE CheckAndClearOSD(void);
+  53      =1  
+  54      =1  //==================================================================
+  55      =1  //                                              TV Info
+  56      =1  //==================================================================
+  57      =1  
+  58      =1  BYTE ClearTVInfo(void);
+  59      =1  
+  60      =1  #endif  // __DISPINFO__
+  10          #include        "osdmenu.h"
+   1      =1  //osdmenu.h
+   2      =1  //LJY10292001
+   3      =1  #ifndef __OSDMENU__
+   4      =1  #define __OSDMENU__
+   5      =1  
+   6      =1  //=======================================================================
+   7      =1  // 
+   8      =1  //BYTE GetOSDDuration(void);
+   9      =1  
+  10      =1  void ResetVideoValue(void);
+  11      =1  //#if defined( SUPPORT_PC ) || defined( SUPPORT_DTV )
+  12      =1  //void ResetPCValue(void);
+  13      =1  //#endif
+  14      =1  BYTE GetOSDMenuLevel( void );
+  15      =1  
+  16      =1  void DrawMenulist(BYTE);
+  17      =1  void Display_EnterPin(void);
+  18      =1  void OSDHighMenu_sub(void);
+  19      =1  void ResetOSDValue(void);
+  20      =1  #ifdef E_Wintek
+           =1 void ResetUESROSDValue(void);
+           =1 #endif
+  23      =1  //BYTE OnChangingValue(void);
+  24      =1  //Not used yet *******************BYTE OnChangingTime(void);
+  25      =1  
+  26      =1  //WORD GetOSDclock(void);
+  27      =1  
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 19  
+
+  28      =1  void InitOSDMenu(void);
+  29      =1  BYTE CloseOSDMenu(void);
+  30      =1  void OpenOSDMenu(void);
+  31      =1  void OSDHighMenu(void);
+  32      =1  void OSDSelect(void);
+  33      =1  void OSDCursorMove(BYTE flag );
+  34      =1  void OSDLeftRight(BYTE flag );
+  35      =1  void OSDValueUpDn(BYTE flag);
+  36      =1  WORD SetItemValue( BYTE id, BYTE flag );
+  37      =1  BYTE DoAction(BYTE id);
+  38      =1  
+  39      =1  BYTE SaveValue1(void);
+  40      =1  void ClearValueWin(void);
+  41      =1  
+  42      =1  void OSDNumber( BYTE num );
+  43      =1  
+  44      =1  void Set4WideScreen(BYTE id);
+  45      =1  
+  46      =1  void SetRGBContrast( BYTE id, BYTE val );
+  47      =1  BYTE SetPCColorTemp(BYTE flag);
+  48      =1  void ResetPanelAttributeValue(void);
+  49      =1  WORD GetItemValue( BYTE);
+  50      =1  void DisplayViewBar( WORD,BYTE);
+  51      =1  void DrawNum(WORD, CODE_P struct NumType *, WORD);
+  52      =1  void DrawStringByLang( WORD, CODE_P struct EnumType *, WORD);
+  53      =1  
+  54      =1  void DisplayVolumebar(BYTE val);
+  55      =1  BYTE GetOSDLang(void);
+  56      =1  void InitOSDMenuXY(void);
+  57      =1  
+  58      =1  void Display_TVGuide_Window(void);
+  59      =1  void Display_TVGuide_Status(void);
+  60      =1  
+  61      =1  void ChangeVchip_LevelCursor(BYTE);
+  62      =1  void ChangeVchip_ContentCursor(BYTE);
+  63      =1  void Select_VchipLevel(void);
+  64      =1  void SetVideoMode(BYTE mode);
+  65      =1  BYTE GetVideoDatawithOffset(BYTE offset);
+  66      =1  void SetVideoContrast(BYTE newv);
+  67      =1  void SetVideoBrightness(BYTE newv);
+  68      =1  void SetVideoHue(BYTE newv) ;
+  69      =1  void SetVideoSaturation(BYTE svtype, BYTE newv) ;
+  70      =1  BYTE SetVideoSharpness(BYTE flag) ;
+  71      =1  void SetVideoBacklight(BYTE newv) ;
+  72      =1  //------------------------------------------------andy awt 981013
+  73      =1  //void DaySelect(BYTE);
+  74      =1  void CAMOutDSel(BYTE val);
+  75      =1  void DVRAodioSel(BYTE  val);
+  76      =1  
+  77      =1  //------------------------------------------------andy awt 981013
+  78      =1  
+  79      =1  void DisplayLineOSD(void);      // OSD Line display Demo
+  80      =1  
+  81      =1  
+  82      =1  struct MenuType {
+  83      =1          BYTE    width,  height;
+  84      =1          BYTE    TitleColor;     
+  85      =1          BYTE    CursorColor;
+  86      =1  };
+  87      =1  
+  88      =1  struct NumType {
+  89      =1          BYTE    PrePostCharLen;         // high nibble(pre) / low nibble(post)
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 20  
+
+  90      =1          BYTE    PrePostChar[4];
+  91      =1  };
+  92      =1  
+  93      =1  struct NumberStringType {
+  94      =1          BYTE    x, y;
+  95      =1          BYTE    width;
+  96      =1          BYTE    BackColor;
+  97      =1          BYTE    Radix;
+  98      =1          BYTE    NumColor;
+  99      =1          BYTE    MaxLen;                         // maximum length of string
+ 100      =1          BYTE    PrePostCharLen;         // high nibble(pre) / low nibble(post)
+ 101      =1          BYTE    PrePostChar[3];
+ 102      =1  };
+ 103      =1  
+ 104      =1  struct TimeType {
+ 105      =1          BYTE    x, y;
+ 106      =1          BYTE    width;
+ 107      =1          BYTE    BackColor;
+ 108      =1          BYTE    Format;                         //_24H_TIME
+ 109      =1          BYTE    TimeColor;
+ 110      =1          BYTE    CursorColor;
+ 111      =1  };
+ 112      =1  
+ 113      =1  struct EnumType {
+ 114      =1          BYTE    Sz;//size
+ 115      =1          BYTE    ByLang;
+ 116      =1          BYTE    Str[15];                        // doesn't matter the size !!!
+ 117      =1  };
+ 118      =1  
+ 119      =1  #define ICON_CH_SZ              2
+ 120      =1  //#define BAR_NUM_SZ            4
+ 121      =1  #define ICON_BUF_SZ             2
+ 122      =1  struct DefineMenu {
+ 123      =1          //WORD                                          Icon[ICON_BUF_SZ];      
+ 124      =1          BYTE                            CODE    *Icon;
+ 125      =1          BYTE                                            **Desc;                         
+ 126      =1          BYTE                                            PreFnId, 
+ 127      =1                                                                  PostFnId;
+ 128      =1  //      void            (*CalltoFunction)(void);                                    // Un/Dn/Sel Function
+ 129      =1          BYTE                                            IconColor;                      //NIL: not to display icon
+ 130      =1          BYTE                                            DescColor;                      //NIL: not to display desc. (IconColor==NIL && DescColor==NIL)->Last Item
+ 131      =1          struct DefineMenu       CODE    *Child;
+ 132      =1          BYTE                                            Type;                           // MENU, CHOICEMENU, BAR, NUMBER, TIME, ACTION, ENUM_STRING
+ 133      =1          BYTE                                            ActiveWithCursor;
+ 134      =1          BYTE                                            Id;
+ 135      =1          BYTE                            CODE    *TypeData;      //MenuType, BarType, NumType,,,
+ 136      =1  } ;
+ 137      =1  
+ 138      =1  struct PictureInfo {
+ 139      =1  
+ 140      =1          BYTE Register_Addr;
+ 141      =1          BYTE EEPROM_Addr;
+ 142      =1          struct RegisterInfo     CODE    *Control_Range;
+ 143      =1  };
+ 144      =1  
+ 145      =1  
+ 146      =1  //-------------------------------------------------------------------
+ 147      =1  // OSD Window Information
+ 148      =1  //-------------------------------------------------------------------
+ 149      =1  // Window Number
+ 150      =1  #define OSDCURSORWINDOW                 1
+ 151      =1  #define OSDMENUWINDOW                   OSDCURSORWINDOW+1
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 21  
+
+ 152      =1  #define OSDMENU_TOPWIN                  OSDCURSORWINDOW+2
+ 153      =1  #define OSDMENU_TITLEWIN                OSDCURSORWINDOW+3
+ 154      =1  #define OSDBARWINDOW                    OSDCURSORWINDOW
+ 155      =1  
+ 156      =1  #define TECHWELLOGO_OSDWIN      1       
+ 157      =1  #define TVINFO_OSDWIN           2       
+ 158      =1  #define FONTTEST_OSDWIN         2       
+ 159      =1  #define INPUTINFO_OSDWIN        3  
+ 160      =1  #define RATINGINFO_OSDWIN       1       
+ 161      =1  #define PCINFO_OSDWIN           3//4/   
+ 162      =1  
+ 163      =1  //-------------OSDMENU_TITLEWIN------------------------------------------------------
+ 164      =1  // Window Start address
+ 165      =1  #define OSDMENU_MAINADDR        0
+ 166      =1  #define OSDMENU_SUBADDR     OSDMENU_MAINADDR+15    //25*9:196
+ 167      =1  #define OSDMENU_BARADDR         175 //OSDMENU_SUBADDR+225    //256   //25x2:50
+ 168      =1  
+ 169      =1  #define INPUTINFO_ADDR          160     // 9x1:9
+ 170      =1  #ifdef WQVGA
+           =1 #define INPUTINFO1_ADDR         INPUTINFO_ADDR+17       //17x3:51
+           =1 #else
+ 173      =1  #define INPUTINFO1_ADDR         INPUTINFO_ADDR+34       //17x2:51
+ 174      =1  #endif
+ 175      =1  
+ 176      =1  #define MUTEINFO_ADDR       INPUTINFO1_ADDR+51  // 4x1:4
+ 177      =1  #define TVCHINFO_ADDR           MUTEINFO_ADDR//324      // 3X1:3
+ 178      =1  #define LOGO_ADDR                       0
+ 179      =1  #define RATINGINFO_ADDR         0       //addr:210(8x1:8)
+ 180      =1  #define PCMEASUREINFO_ADDR  OSDMENU_BARADDR //10x1
+ 181      =1  
+ 182      =1  
+ 183      =1  //--------------------------------------------------------------------
+ 184      =1  // OSD Menu Position Range
+ 185      =1  #if ((defined WQVGA) && (defined ANALOG_7INCH)) || ((defined QVGA) && (defined SHARP_LQ050Q5DR01))
+           =1         #define OSD_PHR_ PHR_/2
+           =1 #else
+ 188      =1          #define OSD_PHR_ PHR_
+ 189      =1  #endif
+ 190      =1  
+ 191      =1  #define OSDHSTART_MAX (OSD_PHR_-(12+1)*25 - 56*2 -4)  //PHR - (pixelsize +Hspace)*MenuWidth - Hborder*2 - 
+             -outlinewidth*2
+ 192      =1  #define OSDVSTART_MAX (PVR_-(18+11)*9 - 5*2 ) //  PVR - (Linesize+Vspace)*MENU_HEIGHT - Vborder*2  - outli
+             -newidth*2
+ 193      =1  
+ 194      =1  #define OSDMENUX_MIN 1//0
+ 195      =1  #define OSDMENUX_MAX (OSDHSTART_MAX>>3)
+ 196      =1  #define OSDMENUX_50  (OSDHSTART_MAX>>4)
+ 197      =1  
+ 198      =1  #define OSDMENUY_MIN 2//0
+ 199      =1  #define OSDMENUY_MAX (OSDVSTART_MAX>>2)
+ 200      =1  #define OSDMENUY_50  (OSDVSTART_MAX>>3)
+ 201      =1  
+ 202      =1  //--------------------------------------------------------------------
+ 203      =1  // OSD Menu Width, Height 
+ 204      =1  #ifdef E_Wintek
+           =1 #define ICON_HIGH                               0x14
+           =1 #else
+ 207      =1  #define ICON_HIGH                               0x0a
+ 208      =1  #endif
+ 209      =1  #define TOTAL_MAX_HIGHT                 9
+ 210      =1  
+ 211      =1  #define TOPMENU_WIDTH                   2
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 22  
+
+ 212      =1  #define TOTAL_TOP_HEIGHT                5       // Include blank line!
+ 213      =1  
+ 214      =1  #define TOPMENU_HEIGHT                  4       
+ 215      =1  
+ 216      =1  #if (defined QVGA) && (defined SHARP_LQ050Q5DR01)
+           =1 #define MENU_WIDTH                              17 //23//25 
+           =1 #define TITLE_MAX_DESC                  17//25  //
+           =1 #define BAR_LENGTH                              0
+           =1 #else
+ 221      =1  #define MENU_WIDTH                              23//23//25 
+ 222      =1  #define TITLE_MAX_DESC                  23//25  //
+ 223      =1  #define BAR_LENGTH                              5//8
+ 224      =1  #endif
+ 225      =1  
+ 226      =1  #define MENU_HEIGHT                             7//6 
+ 227      =1  
+ 228      =1  #define BARNUM_LENGTH                   8       //11
+ 229      =1  #ifdef REFERENCE
+           =1 #define BACK_COLOR                              BG_COLOR_CYAN
+           =1 #define DEFAULT_COLOR                   BG_COLOR_CYAN   | CH_COLOR_WHITE
+           =1 //#define ACTIVE_COLOR                  BG_COLOR_YELLOW | CH_COLOR_WHITE
+           =1 #define TITLE_BACK_COLOR                BG_COLOR_MAGENTA
+           =1 #define TITLE_COLOR                             TITLE_BACK_COLOR | CH_COLOR_YELLOW
+           =1 #define COMMENT_COLOR                   TITLE_BACK_COLOR | CH_COLOR_WHITE
+           =1 #define CURSOR_COLOR                    BG_COLOR_YELLOW | CH_COLOR_BLUE
+           =1 #define OSD_INFO_COLOR                  DEFAULT_COLOR
+           =1 #define BAR_COLOR                               DEFAULT_COLOR   
+           =1 #define BAR_NUM_COLOR                   DEFAULT_COLOR
+           =1 #define NUM_COLOR                               DEFAULT_COLOR
+           =1 
+           =1 #define OSDMENU_OUTLINE_COLOR   BG_COLOR_BLUE
+           =1 
+           =1 #else
+ 245      =1  #define BACK_COLOR                              BG_COLOR_CYAN
+ 246      =1  #define DEFAULT_COLOR                   BG_COLOR_CYAN | CH_COLOR_WHITE
+ 247      =1  //#define ACTIVE_COLOR                  BG_COLOR_YELLOW | CH_COLOR_WHITE
+ 248      =1  #define TITLE_BACK_COLOR                BG_COLOR_BLUE
+ 249      =1  #define TITLE_COLOR                             TITLE_BACK_COLOR | CH_COLOR_YELLOW
+ 250      =1  #define COMMENT_COLOR                   TITLE_BACK_COLOR | CH_COLOR_WHITE
+ 251      =1  #define CURSOR_COLOR                    BG_COLOR_YELLOW  | CH_COLOR_BLUE
+ 252      =1  #define OSD_INFO_COLOR                  BG_COLOR_CYAN    | CH_COLOR_GREEN
+ 253      =1  #define BAR_COLOR                               DEFAULT_COLOR   
+ 254      =1  #define BAR_NUM_COLOR                   DEFAULT_COLOR
+ 255      =1  #define NUM_COLOR                               DEFAULT_COLOR
+ 256      =1  
+ 257      =1  #define VER_COLOR               BG_COLOR_CYAN   | CH_COLOR_YELLOW   /// V1.1 03/07/07 simonsung
+ 258      =1  
+ 259      =1  
+ 260      =1  #define OSDMENU_OUTLINE_COLOR   BG_COLOR_CYAN
+ 261      =1  #endif 
+ 262      =1  
+ 263      =1  
+ 264      =1  //DisplayedOSD
+ 265      =1  //              new       |     MENU    TVINFO          CC              INPUTINFO               PCINFO          RATINGINFO
+ 266      =1  //      current   |
+ 267      =1  //============|=========================================================================
+ 268      =1  //      MENU      |                     TVINFO          --              INPUTINFO               PCINFO          MENU + RATINGINFO       
+ 269      =1  //                        |                                              
+ 270      =1  //------------|-------------------------------------------------------------------------
+ 271      =1  //      TVINFO    |     MENU    TVINFO          --              INPUTINFO               PCINFO          TVINFO+RATING
+ 272      =1  //------------|-------------------------------------------------------------------------
+ 273      =1  //      CC                |     MENU->  TVINFO->                        INPUTINFO->             PCINFO          RATINGINFO
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 23  
+
+ 274      =1  //                        |      CC              CC                                      CC                                              
+ 275      =1  //------------|-------------------------------------------------------------------------
+ 276      =1  //      INPUTINFO |     MENU    TVINFO          --              INPUTINFO               PCINFO          --
+ 277      =1  //------------|-------------------------------------------------------------------------
+ 278      =1  //      PCINFO    |     MENU    x                       x               INPUTINFO               PCINFO          x
+ 279      =1  //------------|-------------------------------------------------------------------------
+ 280      =1  //      RATINGINFO|     MENU    TVINFO     RATING   INPUTINFO           x                       RATINGINFO
+ 281      =1  //                                                                      
+ 282      =1  
+ 283      =1  //=======================================================================================
+ 284      =1  // OSD Menu Constant define.
+ 285      =1  //=======================================================================================
+ 286      =1  //Time type
+ 287      =1  #define _24H_TIME               1
+ 288      =1  
+ 289      =1  //for previous, next, parent or child
+ 290      =1  #define YES                             0xfe    
+ 291      =1  #define NO                              0
+ 292      =1  
+ 293      =1  
+ 294      =1  //#define OVERWRITE             0
+ 295      =1  //#define POPUP                 1
+ 296      =1  
+ 297      =1  //CursorMove
+ 298      =1  #define VERT                    0
+ 299      =1  #define HORI                    1
+ 300      =1  
+ 301      =1  //Type of MenuItem
+ 302      =1  #define OSDMENU                 1
+ 303      =1  #define CHOICEMENU              2
+ 304      =1  #define ACTION                  3
+ 305      =1  #define BAR                             4
+ 306      =1  #define NUMBER                  5
+ 307      =1  #define CHOICE                  6
+ 308      =1  #define ENUM_STRING             7 //YESNO                       7
+ 309      =1  #define CHOICE1                 8
+ 310      =1  #define TIME                    9
+ 311      =1  #define NUMBER_STRING   10
+ 312      =1  #define TEXT_STR              11   // V1.1 02/28/07 simonsung
+ 313      =1  
+ 314      =1  
+ 315      =1  //Bar type
+ 316      =1  #define LEFT_FILLED             1
+ 317      =1  #define RIGHT_FILLED    2
+ 318      =1  #define NO_FILLED               3
+ 319      =1  
+ 320      =1  //OSDmenu up and down key
+ 321      =1  #define UP                                      1
+ 322      =1  #define DN                                      2
+ 323      =1  #define RIGHT                           3
+ 324      =1  #define LEFT                            4
+ 325      =1  
+ 326      =1  // Action Id
+ 327      =1  #define DISP_INFO                       0x16
+ 328      =1  
+ 329      =1  #define INPUTSELECTION                          0x2f
+ 330      =1  
+ 331      =1  #define CHANGE_TO_COMPOSITE                     (0x20|CH_TW2835)                        // Low nibble need to start from 1 
+ 332      =1  #define CHANGE_TO_SVIDEO                        (0x20|SVIDEO)                           // so that it match with COMPOSITE...
+ 333      =1  #define CHANGE_TO_COMPONENT                     (0x20|COMPONENT)                
+ 334      =1  #define CHANGE_TO_DTV                           (0x20|DTV)              
+ 335      =1  #define CHANGE_TO_TV                            (0x20|TV)                                       
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 24  
+
+ 336      =1  #define CHANGE_TO_PC                            (0x20|PC)                                       
+ 337      =1  #define CHANGE_TO_DIGITALVGA            (0x20|DIGITALVGA)                       
+ 338      =1  #define CHANGE_TO_SCART                         (0x20|SCART)                            
+ 339      =1  
+ 340      =1  
+ 341      =1  #define OSDPOSITIONMODE     0x10
+ 342      =1  #define OSD_VPOS                        0x11
+ 343      =1  #define OSD_HPOS                        0x12
+ 344      =1  #define OSD_HALFTONE            0x13
+ 345      =1  #define OSD_DURATION            0x14
+ 346      =1  #define RESET_OSDVALUE          0x15
+ 347      =1  #define OSDLANG                         0x16
+ 348      =1  
+ 349      =1  #define PANEL_CONTRAST          0x58
+ 350      =1  #define PANEL_BRIGHTNESS        0x59
+ 351      =1  #define PANEL_HUE                       0x5a
+ 352      =1  #define PANEL_SHARPNESS         0x5b
+ 353      =1  #define PANEL_SATURATION        0x5c
+ 354      =1  
+ 355      =1  #define PC_VPOS                         0x43
+ 356      =1  #define PC_HPOS                         0x44
+ 357      =1  #define PC_HSIZE                        0x4d
+ 358      =1  
+ 359      =1  #define PC_CLOCK                        0x45
+ 360      =1  #define PC_PHASE                        0x46
+ 361      =1  
+ 362      =1  #define AUTOADJUST                      0x47
+ 363      =1  #define AUTOADJUST2                     0x48
+ 364      =1  //#define SAVE_AUTOADJUST               0x49
+ 365      =1  #define RESET_AUTOADJUST        0x4a
+ 366      =1  
+ 367      =1  #define PCCOLORADJUST           0x4b
+ 368      =1  #define SAVE_COLORADJUST        0x4c
+ 369      =1  //#define RESET_COLORADJUST     0x4d
+ 370      =1  
+ 371      =1  #define RESET_PCVALUE           0x4e
+ 372      =1  #define CameraOSD                       0x4f
+ 373      =1  
+ 374      =1  #define PC_COLOR_MODE           0x3f
+ 375      =1  #define PC_COLOR_TEMP           0x30
+ 376      =1  #define PC_COLOR_MODE1          0x31
+ 377      =1  #define PC_COLOR_MODE2          0x32
+ 378      =1  #define PC_COLOR_MODE3          0x33
+ 379      =1  #define PC_COLOR_USER           0x34
+ 380      =1  #define PC_COLOR_R                      0x35
+ 381      =1  #define PC_COLOR_G                      0x36
+ 382      =1  #define PC_COLOR_B                      0x37
+ 383      =1  
+ 384      =1  #define VIDEO_MODE                      0x90
+ 385      =1  #define VIDEO_MODE1                     0x91
+ 386      =1  #define VIDEO_MODE2                     0x92
+ 387      =1  #define VIDEO_MODE3                     0x93
+ 388      =1  #define VIDEO_USER                      0x94
+ 389      =1  #define VIDEO_CONTRAST          0x95
+ 390      =1  #define VIDEO_BRIGHTNESS        0x96
+ 391      =1  #define VIDEO_SATURATION        0x97
+ 392      =1  #define VIDEO_HUE                       0x99
+ 393      =1  #define VIDEO_SHARPNESS         0x9a
+ 394      =1  #define VIDEO_BACKLIGHT         0x9c            // add new value 
+ 395      =1  #define RESET_VIDEOVALUE        0x9b
+ 396      =1  #ifdef E_Wintek
+           =1 #define RESET_USERVALUE 0x9d
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 25  
+
+           =1 #endif
+ 399      =1  #define VIDEOPICTURE            0x9f
+ 400      =1  
+ 401      =1  #define INPUTSTD                        0x6f
+ 402      =1  #define CHANGE_TO_AUTO          0x60
+ 403      =1  #define CHANGE_TO_NTSC          (0x60 | NTSC)
+ 404      =1  #define CHANGE_TO_PAL           (0x60 | PAL)
+ 405      =1  #define CHANGE_TO_SECAM         (0x60 | SECAM)
+ 406      =1  #define CHANGE_TO_NTSC4         (0x60 | NTSC4)
+ 407      =1  #define CHANGE_TO_PALM          (0x60 | PALM)
+ 408      =1  #define CHANGE_TO_PALN          (0x60 | PALN)
+ 409      =1  #define CHANGE_TO_PAL60         (0x60 | PAL60)
+ 410      =1  
+ 411      =1  
+ 412      =1  
+ 413      =1  
+ 414      =1  #define CLOSED_CAPTION          0x7f
+ 415      =1  #define CLOSEDCAP_OFF           0x70
+ 416      =1  #define CLOSEDCAP_CC1           0x71
+ 417      =1  #define CLOSEDCAP_CC2           0x72
+ 418      =1  #define CLOSEDCAP_CC3           0x73
+ 419      =1  #define CLOSEDCAP_CC4           0x74
+ 420      =1  #define CLOSEDCAP_T1            0x75
+ 421      =1  #define CLOSEDCAP_T2            0x76
+ 422      =1  #define CLOSEDCAP_T3            0x77
+ 423      =1  #define CLOSEDCAP_T4            0x78
+ 424      =1  
+ 425      =1  #define TV_GUIDE                        0x8f
+ 426      =1  #define NO_VCHIP_LOCK           0
+ 427      =1  #define VCHIP_TV_Y                      1
+ 428      =1  #define VCHIP_TV_Y7                     2
+ 429      =1  #define VCHIP_TV_G                      3
+ 430      =1  #define VCHIP_TV_PG                     4
+ 431      =1  #define VCHIP_TV_14                     5
+ 432      =1  #define VCHIP_TV_MA                     6
+ 433      =1  #define PASSWORD                        0x87
+ 434      =1  #define NEW_PASSWORD            0x88
+ 435      =1  #define CHK_PASSWORD            0x89
+ 436      =1  #define RET_CHK_PASSWORD        0x8a
+ 437      =1  
+ 438      =1  #define MPAA_RATING                     0x9f
+ 439      =1  #define NO_MPAA_RATING          0
+ 440      =1  #define MPAA_G                          1
+ 441      =1  #define MPAA_PG                         2
+ 442      =1  #define MPAA_PG_13                      3
+ 443      =1  #define MPAA_R                          4
+ 444      =1  #define MPAA_NC_17                      5
+ 445      =1  #define MPAA_X                          6
+ 446      =1  
+ 447      =1  #define TVINSTALL                       0xa0
+ 448      =1  #define SCAN_CHANNEL            0xa1
+ 449      =1  #define AIR_CABLE_TV            0xa3
+ 450      =1  #define STORE_CLEAR_TVCHN       0xa4
+ 451      =1  #define MTS                                     0xa5
+ 452      =1  #define EDIT_CHANNEL            0xa6
+ 453      =1          #define         MTS_STEREO                      0//0x10
+ 454      =1          #define         MTS_MONO                        1//0x11
+ 455      =1  
+ 456      =1  #define AUDIO_VOLUME            0xb7
+ 457      =1  
+ 458      =1  #if 0 //andy AWT8.4 20090811
+           =1 
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 26  
+
+           =1 #define AUDIO_BALANCE           0xb9
+           =1 #define AUDIO_BASS                      0xba
+           =1 #define AUDIO_TREBLE            0xbb
+           =1 
+           =1 #define AUDIO_LOUDNESS          0xbc
+           =1 #define AUDIO_EFFECT            0xbd
+           =1 #define AUDIO_MUTE                      0xbe
+           =1 #endif
+ 468      =1  
+ 469      =1  #define DayChoice           0xb8
+ 470      =1  #define CAMOSDONOFF         0xb9
+ 471      =1  #define GAUGEChoice         0xba
+ 472      =1  #define OsdLockChoice       0xbb
+ 473      =1  #define PRIORITYChoice      0xcA
+ 474      =1  #define DVRDisplay              0xcc
+ 475      =1  
+ 476      =1  #define CAMAONOFF                   0xc1
+ 477      =1  #define CAMBONOFF               0xc2
+ 478      =1  #define CAMCONOFF                   0xc3
+ 479      =1  #define CAMRONOFF                       0xc4
+ 480      =1  
+ 481      =1  #define IMAGEChoice         0xc5 
+ 482      =1  #define REARChoice          0xc6
+ 483      =1  #define JUMPChoice          0xc7
+ 484      =1  #define CAMOUTChoice        0xc8 
+ 485      =1  #define STIME_STEP                  0xc9
+ 486      =1  #define TriggerVGA                  0xcb
+ 487      =1  #define IMAGE_A_Choice         0xcd
+ 488      =1  #define IMAGE_B_Choice         0xce
+ 489      =1  #define IMAGE_C_Choice         0xcf
+ 490      =1  
+ 491      =1  
+ 492      =1  #define MANUAL_TUNE_CHANNEL     0xab
+ 493      =1  #define FINE_TUNE_CHANNEL       0xac
+ 494      =1  #define STORE_PALCHANNEL        0xad
+ 495      =1  
+ 496      =1  //#define CLEAR_TVCHN                   0xb0
+ 497      =1  //#define STORE_TVCHN                   0xb1
+ 498      =1  
+ 499      =1  #define WIDESCREEN                      0xc0
+ 500      =1  #define WIDESCREEN_NORMAL       0 
+ 501      =1  #define WIDESCREEN_WIDE         1 
+ 502      =1  #define WIDESCREEN_PANO         2
+ 503      =1  #define WIDESCREEN_FULL         3 
+ 504      =1  #define WIDESCREEN_ZOOM         4 
+ 505      =1  
+ 506      =1  #define SYSTEM_CLOCK            0xd1
+ 507      =1  #define SYSTEM_CLOCK_H          0xd2
+ 508      =1  #define WAKEUP_TIME                     0xd3
+ 509      =1  #define WAKEUP_TIME_H           0xd4
+ 510      =1  #define WAKEUP_PR                       0xd5
+ 511      =1  #define OFF_TIME                        0xd6
+ 512      =1  #define OFF_TIME_H                      0xd7
+ 513      =1  #define SLEEP_TIMER                     0xd8
+ 514      =1  
+ 515      =1  #define Resolution                      0xe0
+ 516      =1  #define FPS                                     0xe1
+ 517      =1  #define Quality                         0xe2
+ 518      =1  #define RecordMode                      0xe3
+ 519      =1  #define RecordLength            0xe4
+ 520      =1  #define PreAlarmLength          0xe5
+ 521      =1  #define PostAlarmLength         0xe6
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 27  
+
+ 522      =1  #define Apply                           0xe7
+ 523      =1  #define ManualRecordStart       0xe8
+ 524      =1  #define ManualRecordStop        0xe9
+ 525      =1  #define Snapshot                        0xea
+ 526      =1  #define FormatSD                        0xeb
+ 527      =1  #define AudioRecord                     0xec
+ 528      =1  #define FirmwareUpdate          0xed
+ 529      =1  #define ChangePassword          0xee
+ 530      =1  #define OverWrite                       0xef
+ 531      =1  
+ 532      =1  
+ 533      =1  
+ 534      =1  
+ 535      =1  #define Year                            0x20
+ 536      =1  #define Month                           0x21
+ 537      =1  #define Day                                     0x22
+ 538      =1  #define Hour                            0x23
+ 539      =1  #define Minute                          0x24
+ 540      =1  
+ 541      =1  #define DaylightSaving                          0x25
+ 542      =1  #define TimeBeginesMonth                        0x26
+ 543      =1  #define TimeBeginesWeek                         0x27
+ 544      =1  #define TimeBeginesTime                         0x28
+ 545      =1  #define StandardTimeBeginesMonth        0x29
+ 546      =1  #define StandardTimeBeginesWeek         0x2a
+ 547      =1  #define StandardTimeBeginesTime         0x2b
+ 548      =1  #define TimeZone                                        0x2c
+ 549      =1  #define FirstNumber                                     0x2d
+ 550      =1  #define SecondNumber                            0x2e
+ 551      =1  #define ThridNumber                                     0x2f
+ 552      =1  #define FourthNumber                            0x38
+ 553      =1  
+ 554      =1  
+ 555      =1  
+ 556      =1  #define OSDLANGI                        0xd9
+ 557      =1  #define OSDLANGII                       OSDLANGI+1
+ 558      =1  #define OSDLANGIII                      OSDLANGI+2
+ 559      =1  #define OSDLANGIV                       OSDLANGI+3
+ 560      =1  
+ 561      =1  
+ 562      =1  #define TOHIGHMENU                      0xf1
+ 563      =1  #define MOVECURSOR2FIRST        0xf2
+ 564      =1  #define RESET_ALL                       0xf3
+ 565      =1  #define EXITMENU                        0xf4
+ 566      =1  #define DVRParamApply           0xf5
+ 567      =1  #define DATETIMEApply           0xf6
+ 568      =1  
+ 569      =1  
+ 570      =1  #define CHOICE1_VAL                     0xfc
+ 571      =1  #define CHOICE_VAL                      0xfd
+ 572      =1  #define BAR_VAL                         0xfe
+ 573      =1  #define NUM_VAL                         0xff
+ 574      =1  
+ 575      =1  #define CAMNumberChoice     0xa3 
+ 576      =1  #define PelcoChoice         0xa4
+ 577      =1  #define Baud_rateChoice         0xa5
+ 578      =1  
+ 579      =1  #endif  // __OSDMENU__
+  11          #include        "debug.h"
+   1      =1  #ifndef __DEBUG__
+   2      =1  #define __DEBUG__
+   3      =1  
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 28  
+
+   4      =1  #define DEBUG_ERR       1
+   5      =1  #define DEBUG_WARN      2
+   6      =1  #define DEBUG_INFO      3
+   7      =1  #define DEBUG_BREAK     4
+   8      =1  
+   9      =1  #define Pause(a)        { Printf("\r\n"); Printf(a); while(!RS_ready()); RS_rx(); }
+  10      =1  
+  11      =1  //#define BURSTLOCK     7
+  12      =1  
+  13      =1  void DebugWindowControl (void) ;
+  14      =1  void Draw_Debug_Char(void);
+  15      =1  void DebugWindowCursor( BYTE flag ) ;
+  16      =1  void DebugWindowData( BYTE flag ) ;
+  17      =1  void Debug_Write(void);
+  18      =1  void Debug_Read(void);
+  19      =1  
+  20      =1  
+  21      =1  
+  22      =1  #endif  // __DEBUG__
+  23      =1  
+  24      =1  #ifdef CHIP_MANUAL_TEST
+           =1 BYTE DelaynCheck(void);
+           =1 void ChipManualTest(void);
+           =1 
+           =1 #endif
+  12          #include    "printf.h"
+   1      =1  #ifndef __PRINTF__
+   2      =1  #define __PRINTF__
+   3      =1  
+   4      =1  #define _outchar(c) while(1) { if( !RS_Xbusy ) { SBUF = c; RS_Xbusy=1; break; } }
+   5      =1  #define Putch(c) _outchar(c)
+   6      =1  
+   7      =1  #ifdef SERIAL
+   8      =1  
+   9      =1   void Printf ( const char CODE_P *fmt, ... );
+  10      =1   void Puts ( CODE_P char *ptr );
+  11      =1  
+  12      =1  #define TW2835Cmd(a)   Puts ( a )
+  13      =1  
+  14      =1  #else
+           =1 
+           =1  #undef  DEBUG
+           =1  #define Printf(a,b)    //
+           =1  #define Puts(a)                //
+           =1 
+           =1 #endif
+  21      =1  
+  22      =1  
+  23      =1  #ifndef DEBUG
+  24      =1  
+  25      =1   #define dPuts(a)               //
+  26      =1   #define wPuts(a)               //
+  27      =1   #define ePuts(a)               //
+  28      =1  
+  29      =1  #else
+           =1 
+           =1  void dPrintf( const char CODE_P *fmt, ... );
+           =1  void wPrintf( const char CODE_P *fmt, ... );
+           =1  void ePrintf( const char CODE_P *fmt, ... );
+           =1 
+           =1  void dPuts( CODE_P char *ptr );
+           =1  void wPuts( CODE_P char *ptr );
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 29  
+
+           =1  void ePuts( CODE_P char *ptr );
+           =1 
+           =1 #endif  // DEBUG
+  40      =1  
+  41      =1  BYTE Getch(void);
+  42      =1  BYTE Getche(void);
+  43      =1  
+  44      =1  
+  45      =1  #endif  //__PRINTF__
+  13          #include        "tw88.h"
+   1      =1  #ifndef __TW88__
+   2      =1  #define __TW88__
+   3      =1  
+   4      =1  #include "main.h"
+   1      =2  #ifndef __MAIN__
+           =2 #define __MAIN__
+           =2 
+           =2 #define ON                                      1
+           =2 #define OFF                                     0
+           =2 //#define Hs_debug
+           =2 //#define       DVR
+           =2 
+           =2 //================= DIP SW Definition =========================================
+           =2 ///#define PIXEL_SINGLE         P0_0
+           =2 #define DIP_PANEL_SWITCH        P0_0    // Samsung(0) // Sharp-Noticon(1)
+           =2 #define DIP_AUTO_DETECT         P0_1
+           =2 #define DIP_EDGE_ENHANCE        P0_2
+           =2 #define DIP_BW_STRETCH          P0_3
+           =2 
+           =2 #define Panel_Enable()          P4=P4|0x08 //andy 980908
+           =2 #define Panel_Disable()                 P4=P4&0xf7
+           =2 
+           =2 #define SetBacklight()      P4=P4|0x04
+           =2 #define clrBacklight()      P4=P4&0xfb
+           =2 
+           =2 
+           =2 //InputSelection
+           =2 struct struct_IdName {
+           =2         BYTE    Id;
+           =2         BYTE    Name[16];
+           =2 };
+           =2 
+           =2 #define CH_TW2835              1
+           =2 #define CH_CAMD                2
+           =2 #define CH_AV                  3
+           =2 #define PC                                         7
+           =2 #define ChineseDefaultMenu   8
+           =2 
+           =2 #define SVIDEO                          2
+           =2 #define COMPONENT                       3
+           =2 //#define ANALOGDTV                     4
+           =2 #define DTV                                     4
+           =2 #define TV                                      5
+           =2 #define SCART                           6
+           =2 
+           =2 #define DIGITALVGA                      8
+           =2 
+           =2 #define AIRTV                           0 //9
+           =2 #define CABLETV                         1 //0xa
+           =2 
+           =2 
+           =2 #define TVTUNER                         0xd             //10
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 30  
+
+           =2 #define MUTE                            1       
+           =2 #define MENU                            2       
+           =2 #define TVVOL                           4       
+           =2 #define CC                                      8       
+           =2 #define INPUTINFO                       0x10
+           =2 #define PCINFO                          0x20
+           =2 #define GAUGEINFO           0x40
+           =2 //#define RATINGINFO                    0x40
+           =2 #define TVCHN                           0x80
+           =2 //#define MUTE                          0x40
+           =2 
+           =2 #define YPBPR_480i                      0
+           =2 #define YPBPR_576i                      1
+           =2 #define YPBPR_480p                      2
+           =2 #define YPBPR_576p                      3
+           =2 #define YPBPR_1080i                     4
+           =2 #define YPBPR_720p                      5
+           =2 #define YPBPR_720p50            6
+           =2 
+           =2 
+           =2 //--------------------------- P0 Define -----------------------------
+           =2 #define SEL_MIX                 P0_6    // 
+           =2 //--------------------------- P1 Define -----------------------------
+           =2 #define SEL_DVI                 P3_5    //LJY062001             
+           =2 
+           =2 #define TW88HWReset                     P3_4    //LJY001010 //LJY000721
+           =2 #define PowerUp             P1_4
+           =2 //======================= CDS Control ================================= 
+           =2 #define CDS_CTRL           P1_5
+           =2 extern BYTE     SelectModeType;
+           =2 extern BYTE InputSelection;
+           =2 extern BYTE SEQTime;
+           =2 extern BYTE     Priority;
+           =2 extern BYTE AutoDayNight;
+           =2 extern BYTE PowerFlag;
+           =2 
+           =2 BYTE keyIn(void);
+           =2 void TimerForRemocon(void);
+           =2 void TimerForTick(void);
+           =2 void DisableRemoconInt(void);
+           =2 BYTE SetSupport_remocon(BYTE newd);
+           =2 
+           =2 void delay(BYTE cnt);
+           =2 
+           =2 BYTE RS_ready(void);
+           =2 BYTE RS_rx(void);
+           =2 void RS_tx(BYTE tx_buf);
+           =2 
+           =2 BYTE RS2_rx(void);
+           =2 void RS2_tx(BYTE tx_buf);
+           =2 
+           =2 void NewLine(void);
+           =2 void PutsP(PDATA_P BYTE *ptr);
+           =2 #ifdef Hs_debug
+           =2 void MonWriteI2C(BYTE addr, BYTE index, BYTE val);
+           =2 BYTE MonReadI2C(BYTE addr, BYTE index);
+           =2 #endif
+           =2 BYTE Asc1Bin(BYTE asc);
+           =2 BYTE Asc2Bin(PDATA_P BYTE *s);
+           =2 
+           =2 void I2CDeviceInitialize( CODE_P BYTE *RegSet);
+           =2 
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 31  
+
+           =2 //void RestartSystemClock(WORD clock_hm);
+           =2 WORD GetTime_ms(void);
+           =2 BYTE GetTime_H(void);
+           =2 BYTE GetTime_M(void);
+           =2 void ChangeTime_H( char add );
+           =2 void ChangeTime_M( char add );
+           =2 //WORD GetWakeupTime(void);
+           =2 //void SetWakeupTime(WORD wtime);
+           =2 
+           =2 
+           =2 //WORD GetOffTime(void);
+           =2 //void SetOffTime(WORD wtime);
+           =2 //BYTE GetSleepTimer(void);
+           =2 //void SetSleepTimer(BYTE stime);
+           =2 WORD DiffTime_ms( WORD stime, WORD etime );
+           =2 //void SetLastBlockedTime(void);
+           =2 void SetLastCCTime(void);                               //ljy010904...CC_FIX_CLEAR_ON_TIME
+           =2 
+           =2 void SetOSDLastKeyInTime(void);
+           =2 WORD GetOSDLastKeyInTime(void);
+           =2 WORD GetIVF(void);
+           =2 DWORD GetIHF(void);
+           =2 BYTE ReadVInputSTD(void);
+           =2 void SetVInputStd(BYTE newd);
+           =2 BYTE GetVInputStd(void);
+           =2 BYTE GetInputSelection(void);
+           =2 #ifdef ADD_ANALOGPANEL
+           =2 BYTE IsAnalogOn(void);
+           =2 #endif
+           =2 void InitVideoData(BYTE src);
+           =2 void ChangeVInputStdDetectMode(BYTE val);
+           =2 BYTE GetVInputStdInx(void);
+           =2 
+           =2 void MonWriteI2Cn_(BYTE addr, BYTE *val, BYTE cnt) ;
+           =2 
+           =2 ///void Usage(void);
+           =2 #ifdef Hs_debug
+           =2         void Prompt(void);
+           =2 #endif
+           =2 void DebugKeyIn(BYTE ikey);
+           =2 void DVIPowerDown(bit flag);
+           =2 void PowerDown_XTAL(bit flag);
+           =2 
+           =2 void ChangeInput(BYTE newsel);
+           =2 
+           =2 
+           =2 void WaitPowerOn(void);
+           =2 void PowerOff(void);
+           =2 BYTE GetNextInputSelection(void);
+           =2 
+           =2 BYTE WantToStopTVScan(void);
+           =2 
+           =2 //BYTE IsTW8801(void);
+           =2 //BYTE IsTW8803(void);
+           =2 //BYTE ConvertVideoVSAT(BYTE reg);
+           =2 
+           =2 BYTE IsNoInput(void);
+           =2 void LoadEEPROM (void);
+           =2 void Hs_InitVars(void);
+           =2 void AdjustAutoDayNight(BYTE val);
+           =2 void ACCPowerControl(void);
+           =2 struct RegisterInfo
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 32  
+
+           =2 {
+           =2    int  Min;
+           =2    int  Max;
+           =2    int  Default;
+           =2 };
+           =2 struct LongRegisterInfo
+           =2 {
+           =2    WORD Min;
+           =2    WORD Max;
+           =2    WORD Default;
+           =2 };
+           =2 
+           =2 #endif  // __MAIN__
+   5      =1  
+   6      =1  //Value for register 0x44
+   7      =1  //#define DECODER_YCbCr         0x08            //xxxx bbxx
+   8      =1  //#define RGB_RGB                               0x0C
+   9      =1  
+  10      =1  #define TW88_FPLL0                      0xf9
+  11      =1  #define TW88_FPLL1                      0xfa
+  12      =1  #define TW88_FPLL2                      0xfb
+  13      =1  #define TW88_FSS                        0xfc
+  14      =1  #define TW88_FSS_PD                     0xfd
+  15      =1  #define TW88_PLL_DIV            0xfe
+  16      =1  
+  17      =1  //#define TW88_XSCALE                   0x5d
+  18      =1  //#define TW88_YSCALE                   0x5e
+  19      =1  
+  20      =1  #define TW88_XUSCALELO          0x60
+  21      =1  #define TW88_XDSCALELO          0x61
+  22      =1  #define TW88_YUSCALELO          0x62
+  23      =1  #define TW88_XYSCALEHI          0x63
+  24      =1  #define TW88_XUSCALEFINE        0x69
+  25      =1  #define TW88_YUSCALEFINE        0x6a
+  26      =1  
+  27      =1  //Power Mgt
+  28      =1  #define POWER_OFF                       0
+  29      =1  #define POWER_STANDBY           1
+  30      =1  #define POWER_SUSPEND           2
+  31      =1  #define POWER_ON                        3
+  32      =1  
+  33      =1  //void TWChipsDetect(void);
+  34      =1  void SetAutoDetectStd(void);
+  35      =1  void ClearAutoDetectStd(BYTE);
+  36      =1  void I2CDeviceInitialize( CODE_P BYTE *RegSet);
+  37      =1  
+  38      =1  
+  39      =1  //0x63.. Register Group
+  40      =1  #define GROUP_YCbCr                     0x40
+  41      =1  #define GROUP_RGB                       0
+  42      =1  #define SelectPanelAttrRegGroup(A)                              WriteTW88(0x70, (ReadTW88(0x70) & 0xbf) | A)
+  43      =1  
+  44      =1  //#if defined TW8801 || defined TW8803
+  45      =1  #define FB_MAIN         2
+  46      =1  #define FB_NORMAL       1
+  47      =1  #define FB_RGB          0
+  48      =1  //void SetFBmode( BYTE mode );
+  49      =1  //#endif // TW8801
+  50      =1  
+  51      =1  
+  52      =1  //=============================================================================
+  53      =1  //                                   LCD Functions   
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 33  
+
+  54      =1  //=============================================================================
+  55      =1  BYTE GetLCDPowerState(void);
+  56      =1  void SetLCDPowerState(BYTE dat);
+  57      =1  
+  58      =1  BYTE IsFreeRun(void);
+  59      =1  void PanelFreeRun(BYTE on);
+  60      =1  void PanelBlack(BYTE on);
+  61      =1  
+  62      =1  void PanelMute(BYTE on);
+  63      =1  
+  64      =1  void LCDPowerON(BYTE mute); 
+  65      =1  void LCDPowerOFF(void);
+  66      =1  #ifdef Hs_debug
+           =1 void LCDPower(void);
+           =1 #endif
+  69      =1  void DPMSmodeOFF(void);
+  70      =1  void DPMSmodeON(void);
+  71      =1  //=============================================================================
+  72      =1  //                              Get PC Parameter Functions   
+  73      =1  //=============================================================================
+  74      =1  void GetInitPanelAttribute1(void);
+  75      =1  //void GetInitPanelAttribute2(void);
+  76      =1  void DefaultPanelAttributeForVideo(void);
+  77      =1  void SetPVR(WORD pvr);
+  78      =1  void SetPHR(WORD phr);
+  79      =1  WORD GetPVR(void);
+  80      =1  WORD GetPHR(void);
+  81      =1  WORD GetHPN(void);
+  82      =1  WORD GetVPN(void);
+  83      =1  
+  84      =1  //WORD GetVactive(void);
+  85      =1  
+  86      =1  WORD GetHstart(void);
+  87      =1  WORD GetHend(void);
+  88      =1  WORD GetVstart(void);
+  89      =1  WORD GetVend(void);
+  90      =1  void TuneLineBuffer(BYTE field);
+  91      =1  void TuneLineBuffer4Video(BYTE field);
+  92      =1  
+  93      =1  #if defined (SUPPORT_DTV)
+           =1 void SetCoarstForDTV(BYTE en);
+           =1 #endif
+  96      =1  
+  97      =1  WORD GetHactiveStart(void);
+  98      =1  WORD GetHactiveEnd(void);
+  99      =1  WORD GetVactiveStart(void);
+ 100      =1  //WORD GetVactiveLen(void);
+ 101      =1  BYTE GetVBackPorch(void);
+ 102      =1  void SetVBackPorch(BYTE val);
+ 103      =1  WORD GetPHP(void);
+ 104      =1  void SetPHP(WORD php);
+ 105      =1  void SetPVP(WORD period);
+ 106      =1  WORD GetPVP(void);
+ 107      =1  //void SetPanelRelatedRegisters(void);
+ 108      =1  //BYTE ChangedHPN(void);
+ 109      =1  //WORD GetVSUD(void);
+ 110      =1  
+ 111      =1  void SetDefaultPLL(void);
+ 112      =1  //void SetDefaultFPHSperiod(void);
+ 113      =1  //BYTE CalcPHP(DWORD ppf, BYTE tol);
+ 114      =1  //void ChangeFPHSperiod4DecoderInput(WORD vsud, BYTE tol);
+ 115      =1  
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 34  
+
+ 116      =1  //-------------------------------------------------------------------
+ 117      =1  //                  Set Active Region Functions
+ 118      =1  //-------------------------------------------------------------------
+ 119      =1  void SetHactiveStart(WORD hstart);
+ 120      =1  void SetHactiveEnd(WORD hend);
+ 121      =1  void SetVactiveStart(WORD vstart);
+ 122      =1  //void SetVactiveLen(WORD van, WORD vstart);
+ 123      =1  void SetVactiveLen(WORD van);
+ 124      =1  //=============================================================================
+ 125      =1  //                         Set Measurement Window Functions   
+ 126      =1  //=============================================================================
+ 127      =1  void SetMeasureWindowH(WORD start, WORD stop);
+ 128      =1  void SetMeasureWindowV(WORD start, WORD stop);
+ 129      =1  //=============================================================================
+ 130      =1  //                              Video Input Functions   
+ 131      =1  //=============================================================================
+ 132      =1  BYTE IsVideoInput(void);
+ 133      =1  BYTE DetectDecoderInput(void);
+ 134      =1  //=============================================================================
+ 135      =1  //
+ 136      =1  //=============================================================================
+ 137      =1  void AutoPHPCalEnable(void);
+ 138      =1  void AutoPHPCalDisable(void);
+ 139      =1  
+ 140      =1  void MakeStartInt(void);
+ 141      =1  void AVGAInput(void);
+ 142      =1  void DVIInput(void);
+ 143      =1  //void DVGAInput(void);
+ 144      =1  void DisableDVGA(void);
+ 145      =1  
+ 146      =1  void COMPOSITE1Input(void);
+ 147      =1  void COMPOSITE2Input(void);
+ 148      =1  void COMPOSITE3Input(void);
+ 149      =1  
+ 150      =1  void SVIDEOInput(void);
+ 151      =1  void COMPONENTInput(void);
+ 152      =1  void ANALOGDTVInput(void);
+ 153      =1  void DTVInput(void);
+ 154      =1  void TVInput(void);
+ 155      =1  void SCARTInput(void);
+ 156      =1  
+ 157      =1  //=============================================================================
+ 158      =1  //                          Measurement Functions
+ 159      =1  //=============================================================================
+ 160      =1  ///void SetPanelBitOrder(BYTE swap);
+ 161      =1  //void SetPanelSingleDouble(BYTE single);
+ 162      =1  
+ 163      =1  BYTE MeasureAndWait(BYTE flag);
+ 164      =1  
+ 165      =1  //WORD GetHCounter1(BYTE field);
+ 166      =1  //void SetHInitial(BYTE field, WORD counter);
+ 167      =1  //=============================================================================
+ 168      =1  //                          Invert Polarity Functions
+ 169      =1  //=============================================================================
+ 170      =1  void InvertHSYNCPolarity(void);
+ 171      =1  void InvertVSYNCPolarity(void);
+ 172      =1  //=============================================================================
+ 173      =1  //            Interrupt / SW Reset Control Functions
+ 174      =1  //=============================================================================
+ 175      =1  void SetInt(void);
+ 176      =1  //void ClearInt(void);
+ 177      =1  void SetEnDet(void);
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 35  
+
+ 178      =1  void ClearEnDet(void);
+ 179      =1  void SWReset(void);
+ 180      =1  //void ClearSYNCLossStatus(void);
+ 181      =1  //void ClearSYNCChangeStatus(void);
+ 182      =1  //=============================================================================
+ 183      =1  //
+ 184      =1  //=============================================================================
+ 185      =1  BYTE IsBypassmode(void);
+ 186      =1  //BYTE IsInteraced(void);
+ 187      =1  void Clear_bypass(void);
+ 188      =1  void MaskOnSYNCInt(void);
+ 189      =1  void MaskOffSYNCInt(void);
+ 190      =1  //=============================================================================
+ 191      =1  //                                    ZoomControl
+ 192      =1  //=============================================================================
+ 193      =1  void BypassZoom(void);
+ 194      =1  
+ 195      =1  void XscaleU(DWORD scale);
+ 196      =1  void XscaleD(DWORD scale);
+ 197      =1  void XScale2(DWORD scale);
+ 198      =1  void YScale2(DWORD scale);
+ 199      =1  WORD GetYScale(void);
+ 200      =1  //=============================================================================
+ 201      =1  //
+ 202      =1  //=============================================================================
+ 203      =1  WORD GetHSYNCPulse(void);
+ 204      =1  WORD GetVSYNCPulse(void);
+ 205      =1  //#if defined TW8801 || defined TW8803
+ 206      =1  WORD GetRelativePosition(void);
+ 207      =1  //#endif
+ 208      =1  //=============================================================================
+ 209      =1  //                                                              MISC2 for decoder
+ 210      =1  //=============================================================================
+ 211      =1  #define BLUE_DECODER            2
+ 212      =1  #define BLACK_DECODER           0
+ 213      =1  
+ 214      =1  BYTE ForceDecoderOutput(BYTE color);
+ 215      =1  BYTE ClearForcedDecoderOutput(void);
+ 216      =1  //=============================================================================
+ 217      =1  //                                                              CC and EDS
+ 218      =1  //=============================================================================
+ 219      =1  BYTE GetCCStatus(void);
+ 220      =1  void DisableCC(void);
+ 221      =1  void EnableCC(void);
+ 222      =1  BYTE GetCCData(void);
+ 223      =1  BYTE IsCCEnabled(void);
+ 224      =1  void EnableEDS(void);
+ 225      =1  void DisableEDS(void);
+ 226      =1  void RecoverCCOverflow(void);
+ 227      =1  
+ 228      =1  #define CCFIFOHalfFull()                        (ReadDecoder(CSTATUS) & 0x04)
+ 229      =1  //=============================================================================
+ 230      =1  //                                                              Internal PLL
+ 231      =1  //=============================================================================
+ 232      =1  BYTE GetPOST(void);
+ 233      =1  void SetPLLS(BYTE plls);
+ 234      =1  BYTE GetREFDM(void);
+ 235      =1  void SetREFDM(BYTE refdm);
+ 236      =1  DWORD GetFBDN(void);
+ 237      =1  void SetFBDN(WORD fbdn, BYTE vcsel);
+ 238      =1  DWORD GetPPF(void);
+ 239      =1  void ChangeInternPLL(DWORD _PPF);
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 36  
+
+ 240      =1  
+ 241      =1  //=============================================================================
+ 242      =1  //                                                              Macros for attribute
+ 243      =1  //=============================================================================
+ 244      =1  //#define       GetOSDTransReg()                                                ReadTW88(0xAE)
+ 245      =1  //#define SetOSDTransReg(AlphaV)                                        WriteTW88(0xAE, (BYTE)AlphaV )
+ 246      =1  
+ 247      =1  #define GetPanelContrastReg(gccolor)                    ReadTW88(0x71+gccolor)
+ 248      =1  #define SetPanelContrastReg(sccolor, cval)              WriteTW88(0x71+sccolor,cval)
+ 249      =1  
+ 250      =1  #define GetPanelBrightnessReg(gbcolor)                  ReadTW88(0x74+gbcolor);
+ 251      =1  #define SetPanelBrightnessReg(sbcolor, bval)    WriteTW88(0x74+sbcolor,bval);
+ 252      =1  
+ 253      =1  #define SetDTVBrightnessReg(bval)                               WriteTW88(0x74,bval);
+ 254      =1  
+ 255      =1  #define GetPanelSaturationReg(gbcolor)                  ReadTW88(0x72+gbcolor);
+ 256      =1  #define SetPanelSaturationReg(sbcolor, bval)    WriteTW88(0x72+sbcolor,bval);
+ 257      =1  
+ 258      =1  #define SetPanelSharpnessReg(bval)                              WriteTW88(0x78,((bval&0x07)|0x38) );
+ 259      =1  
+ 260      =1  #define SetPanelHueReg(bval)                                    WriteTW88(0x70, (ReadTW88(0x70) & 0xc0 | (bval)) );
+ 261      =1  
+ 262      =1  #define GetVideoContrastReg()                                   ReadDecoder(CONTRAST)
+ 263      =1  #define SetVideoContrastReg(vcval)                              WriteDecoder(CONTRAST, vcval)
+ 264      =1  
+ 265      =1  #define GetVideoBrightnessReg()                                 ReadDecoder(BRIGHT)
+ 266      =1  #define SetVideoBrightnessReg(vbval)                    WriteDecoder(BRIGHT, vbval )
+ 267      =1  
+ 268      =1  #define GetVideoSaturationReg(gvstype)                  ReadDecoder(SAT_U+gvstype)
+ 269      =1  #define SetVideoSaturationReg(svstype, vsval)   WriteDecoder(SAT_U+svstype,     vsval)
+ 270      =1  
+ 271      =1  #define GetVideoHueReg()                                                ReadDecoder(HUE)
+ 272      =1  #define SetVideoHueReg(vhval)                                   WriteDecoder(HUE,       vhval )
+ 273      =1  
+ 274      =1  #define GetVideoSharpnessRegDef                                 (ReadDecoder(SHARPNESS) & 0x0f) 
+ 275      =1  
+ 276      =1  #define GetVideoSharpnessReg()                                  GetVideoSharpnessRegDef
+ 277      =1  //#define       SetVideoSharpnessReg(vshval)                    WriteDecoder(SHARPNESS, vshval )
+ 278      =1  #define SetVideoSharpnessReg(vshval)                    WriteDecoder(SHARPNESS, ((ReadDecoder(SHARPNESS) & 0xf0) | (vshval 
+             -& 0x0f) ) );
+ 279      =1  
+ 280      =1  #ifdef TW9908
+           =1 #define SetVideoVPeakingReg(vshval)
+           =1 #else
+ 283      =1  #define SetVideoVPeakingReg(vshval)                             WriteDecoder(V_PEAKING, ((ReadDecoder(V_PEAKING) & 0xf8) | (vshval 
+             -& 0x07) ) );
+ 284      =1  #endif
+ 285      =1  
+ 286      =1  #define SetVideoHfilterReg(val)                                 WriteDecoder(HFILTER, ((ReadDecoder(HFILTER) & 0xf8) | (val & 0x07) )|
+             -0x08 );
+ 287      =1  //----------------------------------------------------------------------------------
+ 288      =1  //color type
+ 289      =1  #define RED             0
+ 290      =1  #define GREEN   1
+ 291      =1  #define BLUE    2
+ 292      =1  #define WHITE   3
+ 293      =1  //saturation type
+ 294      =1  #define U_SAT   0
+ 295      =1  #define V_SAT   1
+ 296      =1  
+ 297      =1  //Alpha Blending Level
+ 298      =1  #define _0              0
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 37  
+
+ 299      =1  #define _25             0x12
+ 300      =1  #define _37_5   0x13
+ 301      =1  #define _50             0x14
+ 302      =1  #define _100    0x18
+ 303      =1  
+ 304      =1  
+ 305      =1  /*
+ 306      =1  BYTE Mapping( int fromValue, struct RegisterInfo fromRange,
+ 307      =1                                   int * toValue, struct RegisterInfo toRange );
+ 308      =1  */
+ 309      =1  BYTE Mapping1( int fromValue, CODE_P struct RegisterInfo *fromRange,
+ 310      =1                                   int * toValue, CODE_P struct RegisterInfo *toRange );
+ 311      =1  #ifdef KEILC
+ 312      =1  #define Mapping2( A, B, C, D )                  Mapping1( A, B, C, D )
+ 313      =1  #define Mapping3( A, B, C, D )                  Mapping1( A, B, C, D )
+ 314      =1  #else
+           =1 BYTE Mapping2( int fromValue, IDATA_P struct RegisterInfo *fromRange,
+           =1                                  int * toValue, CODE_P struct RegisterInfo *toRange );
+           =1 BYTE Mapping3( int fromValue, CODE_P struct RegisterInfo *fromRange,
+           =1                                  int * toValue, IDATA_P struct RegisterInfo *toRange );
+           =1 #endif
+ 320      =1  
+ 321      =1  BYTE GetAttributesFromNTSCSettings(BYTE index);
+ 322      =1  
+ 323      =1  #endif  // __TW88__
+ 324      =1  
+  14          #include        "etc_eep.h"
+   1      =1  #ifndef __ETC_EEP__
+   2      =1  #define __ETC_EEP__
+   3      =1  
+   4      =1  
+   5      =1  ////eeprom.h
+   6      =1  
+   7      =1  //=========================================================================
+   8      =1  //      EEPROM structure
+   9      =1  //      0x00    BYTE    4       'TW88'
+  10      =1  #define EEP_FWREV_MAJOR                 0x04    //BYTE  1       F/W Rev.-major(Hex)     
+  11      =1  #define EEP_FWREV_MINOR                 0x05    //BYTE  1       F/W Rev.-minor(Hex)
+  12      =1  #define EEP_DEBUGLEVEL                  0x06    //BYTE  1       DebugLevel
+  13      =1  //
+  14      =1  #define EEP_AUTODETECT                  0x07    //BYTE  1       Flag for Input Auto Detect      -0:Auto, 1:NTSC,....
+  15      =1  #define EEP_AUTODETECTTYTE              0x08    //BYTE  1       Type of Auto-detect(will be value of register 0x1d)
+  16      =1  //                      ---------------------------------------------------------------
+  17      =1  #define EEP_WIDEMODE                    0x09    //BYTE  1   Wide Mode
+  18      =1  
+  19      =1  #define EEP_AUTORECOGNITION             0x0a    //BYTE  1       Auto Recognition
+  20      =1  #define EEP_VIDEOMODE                   0x0b    //BYTE  1   Video Mode
+  21      =1  
+  22      =1  #define EEP_OSDLANG                             0x0c    //BYTE  1   OSDLang                                             // 0
+  23      =1  
+  24      =1  #define EEP_OSDPOSITIONMODE     0x0d    //BYTE  1       OSD Position Mode
+  25      =1  #define EEP_CCD                                 0x0e    //BYTE  1       Closed Caption- 0: off, 1:on
+  26      =1  
+  27      =1  #define EEP_INPUTSELECTION              0x0f    //BYTE  1       InputSelection
+  28      =1  
+  29      =1  //
+  30      =1  #define EEP_PC_CONTRAST                 0x10
+  31      =1  #define EEP_PC_BRIGHT                   0x11
+  32      =1  
+  33      =1  #define EEP_CONTRAST                    0x12    //BYTE  1       Contrast 
+  34      =1  #define EEP_BRIGHTNESS                  0x13    //BYTE  1       Brightness
+  35      =1  #define EEP_SATURATION_U                0x14    //BYTE  1       Saturation :U
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 38  
+
+  36      =1  #define EEP_SATURATION_V                0x15    //BYTE  1       Saturation :V
+  37      =1  #define EEP_SHARPNESS                   0x16    //BYTE  1       Sharpness 
+  38      =1  #define EEP_HUE                                 0x17    //BYTE  1       Hue                    
+  39      =1  
+  40      =1  //====================================HS AWT 981001
+  41      =1  #define  EEP_AutoMode           0xa0
+  42      =1  #define  EEP_IMAGEMode          0xa1
+  43      =1  #define  EEP_RearMode           0xa2
+  44      =1  #define  EEP_COSDMode           0xa3
+  45      =1  #define  EEP_GAUGEMode          0xa4
+  46      =1  #define  EEP_CAMAMode           0xa5 
+  47      =1  #define  EEP_CAMBMode           0xa6
+  48      =1  #define  EEP_CAMCMode           0xa7
+  49      =1  #define  EEP_CAMRMode           0xa8
+  50      =1  #define  EEP_CAMOutMode         0xa9    
+  51      =1  #define  EEP_TimeStep           0xaa
+  52      =1  #define  EEP_Powerflag          0xab   
+  53      =1  #define  EEP_ONOFFChoice        0xac 
+  54      =1  
+  55      =1  #define  EEP_PRIORITY           0xad
+  56      =1  #define  EEP_JUMPMode           0xae
+  57      =1  #define  EEP_NowModeState       0xaf
+  58      =1  #define  EEP_SelectMode         0xb0
+  59      =1  #define  EEP_PriorityOffSelectMode      0xb1
+  60      =1  #define  EEP_AudioRecord                0xb2
+  61      =1  
+  62      =1  #define  EEP_FirstNumber                0xb3
+  63      =1  #define  EEP_SecondNumber               0xb4
+  64      =1  #define  EEP_ThridNumber                0xb5
+  65      =1  #define  EEP_FourthNumber               0xb6
+  66      =1  
+  67      =1  #define  EEP_CAMNUMBER     0xb7
+  68      =1  #define  EEP_PELCO                 0xb8
+  69      =1  #define  EEP_Baud_rate     0xb9
+  70      =1  #define  EEP_TriggerVGA    0xba
+  71      =1  #define  EEP_DVRDisplay    0xbb
+  72      =1  #define  EEP_IMAGE_A_Mode    0xbc//andy A1.4 20100113
+  73      =1  #define  EEP_IMAGE_B_Mode    0xbd//andy A1.4 20100113
+  74      =1  #define  EEP_IMAGE_C_Mode    0xbe//andy A1.4 20100113
+  75      =1  
+  76      =1  //#define  EEP_SelectModeBuf         0xb2
+  77      =1  
+  78      =1  #if 0
+           =1 #define  EEP_Resolution                 0xc0
+           =1 #define  EEP_FPS                                0xc1
+           =1 #define  EEP_Quality                    0xc2
+           =1 #define  EEP_RecordMode                 0xc3
+           =1 #define  EEP_RecordLength               0xc4
+           =1 #define  EEP_PreAlarmLength             0xc5
+           =1 #define  EEP_PostAlarmLength    0xc6
+           =1 #endif
+  87      =1  //====================================HS AWT 981001
+  88      =1  
+  89      =1  //
+  90      =1  //              ---------------------------------------------------------------
+  91      =1  #define EEP_PCAUDIOPVOL         0x37    //BYTE  1   AudioVol
+  92      =1  #define EEP_AUDIOPVOL                   0x38    //BYTE  1   AudioVol
+  93      =1  #define EEP_AUDIOBALANCE                0x39    //BYTE  1   AudioBalance
+  94      =1  //
+  95      =1  //              ---------------------------------------------------------------
+  96      =1  
+  97      =1  #define EEP_BLOCKMOVIE                  0x40    //BYTE  1       BlockedMovie:Blocked rating for Movie   
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 39  
+
+  98      =1  #define EEP_BLOCKTV                             0x41    //BYTE  1       BlockedTV:Blocked rating for TV                 
+  99      =1  #define EEP_FVSLD                               0x42    //BYTE  6
+ 100      =1  //                                                              7    6       4    3    2    1    0
+ 101      =1  //  FVSLD Level                        ALL   FV(V)   S    L    D    
+ 102      =1  //  0x43    BYTE    1   TV-Y            X  
+ 103      =1  //  0x44        BYTE    1   TV-Y7           X    X 
+ 104      =1  //  0x45        BYTE    1   TV-G            X 
+ 105      =1  //  0x46        BYTE    1   TV-PG           X       X    X    X    X
+ 106      =1  //  0x47        BYTE    1   TV-14           X       X    X    X    X 
+ 107      =1  //  0x48        BYTE    1   TV-MA           X       X    X    X
+ 108      =1  //
+ 109      =1  #define EEP_VCHIPPASSWORD               0x49    //BYTE  4   OSDPassword                                 //Defualt:3366
+ 110      =1  //                      ---------------------------------------------------------------
+ 111      =1  //
+ 112      =1  //
+ 113      =1  //      0x61    WORD    2   PanelXRes
+ 114      =1  //      0x63    WORD    2       PanelYRes
+ 115      =1  //      0x65    BYTE    1       PanelHsyncMinPulseWidth
+ 116      =1  //      0x66    BYTE    1       PanelVsyncMinPulseWidth
+ 117      =1  //      0x67    WORD    2       PanelHminBackPorch
+ 118      =1  //      0x69    BYTE    1       PanelHsyncPolarity
+ 119      =1  //      0x6a    BYTE    1       PanelVsyncPolarity
+ 120      =1  //      0x6b    WORD    2       PanelDotClock
+ 121      =1  //      0x6d    BYTE    1       PanelPixsPerClock
+ 122      =1  //      0x6e    BYTE    1       PanelDEonly
+ 123      =1  //                      ---------------------------------------------------------------
+ 124      =1  //
+ 125      =1  //      0x80    PC Data
+ 126      =1  //
+ 127      =1  //                      ---------------------------------------------------------------
+ 128      =1  //
+ 129      =1  //      0x300   TV Data
+ 130      =1  //
+ 131      =1  //      --- NTSC_TV -------------------------------------------------------------
+ 132      =1  //      CNT_SAVEDAIR                    BYTE    1   Total count of saved Air TV Channel.
+ 133      =1  //      IDX_CURAIR                              BYTE    1   Index of Current Air TV Channel
+ 134      =1  //      CHN_CURAIR                              BYTE    1   Current Air TV Channel.
+ 135      =1  //
+ 136      =1  //      FIRSTSAVED_AIRCHN               BYTE    1       First saved Air TV channel no   (maximum 100)
+ 137      =1  //      ....
+ 138      =1  //
+ 139      =1  //      CNT_SAVEDCABLE                  BYTE    1   Total count of saved Cable TV Channel.
+ 140      =1  //      IDX_CURCABLE                    BYTE    1   Index of Current Cable TV Channel
+ 141      =1  //      CHN_CURCABLE                    BYTE    1   Current Cable TV Channel.
+ 142      =1  //
+ 143      =1  //      FIRSTSAVED_CABLECHN             BYTE    1       First saved Cable TV channel no (maximum 100)
+ 144      =1  //
+ 145      =1  //      --- PAL_TV --------------------------------------------------------------
+ 146      =1  //      PR_CUR                                  BYTE    1   Current PR no.
+ 147      =1  //      FIRST_SAVEDPR                   DWORD   4   Freq of PR0.        (TOTAL_PR)
+ 148      =1  //      FIRST_SAVEDPR+4                 DWORD   4   Freq of PR1.
+ 149      =1  //      .....
+ 150      =1  //
+ 151      =1  
+ 152      =1  
+ 153      =1  
+ 154      =1  //
+ 155      =1  // Offset of EEPROM
+ 156      =1  //
+ 157      =1  /*
+ 158      =1  #define VIDEOCONTRAST           0x18            // for NTSC.(PAL:0x20,SECAM:0x28)
+ 159      =1  #define VIDEOBRIGHTNESS         0x19
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 40  
+
+ 160      =1  #define VIDEOSATURATION_U       0x1a
+ 161      =1  #define VIDEOSATURATION_V       0x1b
+ 162      =1  #define VIDEOHUE                        0x1c            // only for NTSC
+ 163      =1  #define VIDEOSHARPNESS          0x1d
+ 164      =1  */
+ 165      =1  #define CCCOLOR         0x52
+ 166      =1  #define VOLZOOM         0x53
+ 167      =1  
+ 168      =1  #define PANELINFO       0x61
+ 169      =1  
+ 170      =1  // PAL_TV
+ 171      =1  #define  PR_CUR                                 0x301   
+ 172      =1  #define  FIRST_SAVEDPR                  0x308   
+ 173      =1   #define TVFREQ_HIGH 0 
+ 174      =1   #define TVFREQ_LOW  1
+ 175      =1  #ifdef PAL_TV
+           =1  #define TVFINETUNE  2
+           =1                 // NOT Finetune: 0 , Range: -32 ~ +32
+           =1  #define TVPRSYSTEM  3  
+           =1                 // bit 7: Add:1 Ereased :0
+           =1                 // 
+           =1  #define TVCHNAME    4
+           =1 
+           =1  #define BYTEPERCHANNEL 9 
+           =1 #endif
+ 185      =1  // NTSC_TV
+ 186      =1  #define  EEP_TVInputSel                 0x302
+ 187      =1  #define  CHN_CURAIR                             0x303   
+ 188      =1  #define  FIRSTSAVED_AIRCHN              0x308   
+ 189      =1  #define  CHN_CURCABLE                   0x403   
+ 190      =1  #define  FIRSTSAVED_CABLECHN    0x408   
+ 191      =1  #ifdef NTSC_TV
+           =1  #define TVFINETUNE  0
+           =1                 // NOT Finetune: 0 , Range: -32 ~ +32
+           =1  #define TVPRSYSTEM  1  
+           =1                 // bit 7: Add:1 Ereased :0
+           =1                 // 
+           =1  #define BYTEPERCHANNEL 2
+           =1 #endif
+ 199      =1  
+ 200      =1  
+ 201      =1  
+ 202      =1  
+ 203      =1  WORD GetFWRevEE(void);
+ 204      =1  void SaveFWRevEE(WORD);
+ 205      =1  
+ 206      =1  BYTE GetDebugLevelEE(void);
+ 207      =1  void SaveDebugLevelEE(BYTE);
+ 208      =1  
+ 209      =1  #ifdef WIDE_SCREEN
+ 210      =1  BYTE GetWideModeEE(void);
+ 211      =1  void SaveWideModeEE(BYTE dl);
+ 212      =1  #endif
+ 213      =1  
+ 214      =1  
+ 215      =1  //BYTE GetRange4CoarseEE(void);
+ 216      =1  //void SaveRange4CoarseEE(BYTE);
+ 217      =1  
+ 218      =1  BYTE GetPossibleAutoDetectStdEE(void);
+ 219      =1  void SetPossibleAutoDetectStdEE(void);
+ 220      =1  
+ 221      =1  //BYTE GetOSDXPositionEE(void);
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 41  
+
+ 222      =1  //BYTE GetOSDYPositionEE(void);
+ 223      =1  BYTE GetClosedCaptionFlagEE(void);
+ 224      =1  
+ 225      =1  BYTE GetVideoDatafromEE(BYTE);
+ 226      =1  void SaveVideoDatatoEE(BYTE offset, BYTE ndata);
+ 227      =1  
+ 228      =1  //BYTE GetVideoBrightnessEE(void);
+ 229      =1  //BYTE GetVideoSaturationEE(BYTE);
+ 230      =1  //BYTE GetVideoHueEE(void);
+ 231      =1  //BYTE GetVideoSharpnessEE(void);
+ 232      =1  
+ 233      =1  //void SaveVideoContrastEE(BYTE ndata);
+ 234      =1  //void SaveVideoBrightnessEE(BYTE ndata);
+ 235      =1  //void SaveVideoSaturationEE(BYTE, BYTE ndata);
+ 236      =1  //void SaveVideoHueEE(BYTE ndata);
+ 237      =1  //void SaveVideoSharpnessEE(BYTE ndata);
+ 238      =1  
+ 239      =1  BYTE GetOSDPositionModeEE(void);
+ 240      =1  void SaveOSDPositionModeEE(BYTE ndata);
+ 241      =1  //void SaveOSDXPositionEE(BYTE);
+ 242      =1  //void SaveOSDYPositionEE(BYTE);
+ 243      =1  
+ 244      =1  void SaveClosedCaptionFlagEE(BYTE);
+ 245      =1  
+ 246      =1  BYTE GetBlockedTVEE(void);                      
+ 247      =1  void SaveBlockedTVEE(BYTE vi);          
+ 248      =1  BYTE GetBlockedTV_FLDSLEE( BYTE level ) ;
+ 249      =1  void SaveBlockedTV_FLDSLEE(BYTE level, BYTE vi) ;
+ 250      =1  
+ 251      =1  BYTE GetBlockedMovieEE(void);           
+ 252      =1  void SaveBlockedMovieEE(BYTE vi);       
+ 253      =1  #if 0
+           =1 BYTE GetInputSelectionEE(void);
+           =1 #endif
+ 256      =1  void SaveInputSelectionEE(BYTE val);
+ 257      =1  
+ 258      =1  //BYTE GetOSDDurationEE(void);
+ 259      =1  //void SaveOSDDurationEE(BYTE val);
+ 260      =1  
+ 261      =1  BYTE GetOSDLangEE(void);
+ 262      =1  void SaveOSDLangEE(BYTE val);
+ 263      =1  
+ 264      =1  //ljy100303...BYTE GetOSDZoomEE(void);
+ 265      =1  //ljy100303...void SaveOSDZoomEE(BYTE val);
+ 266      =1  
+ 267      =1  BYTE GetAudioVolEE(void);
+ 268      =1  void SetAudioVolEE( BYTE vol );
+ 269      =1  BYTE GetPCAudioVolEE(void);
+ 270      =1  void SetPCAudioVolEE( BYTE vol );
+ 271      =1  #if 0
+           =1 BYTE GetAudioBalanceEE(void);
+           =1 void SetAudioBalanceEE( BYTE vol );
+           =1 BYTE GetAudioBassEE(void);
+           =1 void SetAudioBassEE( BYTE vol );
+           =1 BYTE GetAudioTrebleEE(void);
+           =1 void SetAudioTrebleEE( BYTE vol );
+           =1 #endif
+ 279      =1  //BYTE GetAudioEffectEE(void);
+ 280      =1  //void SetAudioEffectEE( BYTE vol );
+ 281      =1  
+ 282      =1  void ClearBasicEE(void);
+ 283      =1  
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 42  
+
+ 284      =1  BYTE ValidPassword(DATA_P BYTE *numstr, BYTE index);
+ 285      =1  BYTE SetNewPassword(DATA_P BYTE *numstr, BYTE index);
+ 286      =1  
+ 287      =1  //WORD GetPanelXRes(void);
+ 288      =1  //WORD GetPanelYRes(void);
+ 289      =1  BYTE GetPanelHsyncMinPulseWidth(void);
+ 290      =1  BYTE GetPanelVsyncMinPulseWidth(void);
+ 291      =1  WORD GetPanelHMinBackPorch(void);
+ 292      =1  BYTE GetPanelHsyncPolarity(void);
+ 293      =1  BYTE GetPanelVsyncPolarity(void);
+ 294      =1  WORD GetPanelDotClock(void);
+ 295      =1  WORD GetPanelMaxClock(void);
+ 296      =1  BYTE GetPanelPixsPerClock(void);
+ 297      =1  // Not used yet *************************  BYTE GetPanelDEonly(void);
+ 298      =1  
+ 299      =1  void AddTVChannelEE( BYTE tvtype, BYTE chn);
+ 300      =1  BYTE GetTVChannelEE( BYTE tvtype, BYTE inx);
+ 301      =1  void ResetTVChannelEE( BYTE tvtype );
+ 302      =1  BYTE GetTVChannelCntEE(BYTE tvtype);
+ 303      =1  BYTE GetTVChnIdxEE(BYTE tvtype);
+ 304      =1  BYTE GetCurTVChannelEE(BYTE tvtype);
+ 305      =1  void SetTVChnIdxEE(BYTE tvtype, BYTE newd);
+ 306      =1  void SetCurTVChannelEE(BYTE tvtype, BYTE newd);
+ 307      =1  BYTE InsertTVChannelEE(BYTE tvtype, BYTE newd);
+ 308      =1  BYTE RemoveTVChannelEE(BYTE tvtype, BYTE newd);
+ 309      =1  
+ 310      =1  void SetTVPrEE(void);
+ 311      =1  BYTE GetTVPrEE(void);
+ 312      =1  void SetTVFreqEE(BYTE, WORD);
+ 313      =1  WORD GetTVFreqEE(BYTE);
+ 314      =1  void SetFineTuneEE(BYTE, BYTE);
+ 315      =1  BYTE GetFineTuneEE(BYTE);
+ 316      =1  BYTE GetTVPrSystem(BYTE);
+ 317      =1  void SetTVPrSystem(BYTE, BYTE);
+ 318      =1  BYTE GetTVInputSelEE(void);
+ 319      =1  void SetTVInputSelEE(BYTE);
+ 320      =1  
+ 321      =1  #define GetVInputStdDetectModeEE()                              ReadEEP(EEP_AUTODETECTTYTE)
+ 322      =1  #define SaveVInputStdDetectModeEE(A)                    WriteEEP(EEP_AUTODETECTTYTE, A)
+ 323      =1  
+ 324      =1  #define GetAutoRecogntionEE()                                   ReadEEP(EEP_AUTORECOGNITION)
+ 325      =1  #define SaveAutoRecogntionEE(A)                                 WriteEEP(EEP_AUTORECOGNITION, A)
+ 326      =1  
+ 327      =1  #define SetVideoModeEE( ctid )                                  WriteEEP( EEP_VIDEOMODE, ctid )
+ 328      =1  #define GetVideoModeEE()                                                ReadEEP( EEP_VIDEOMODE )
+ 329      =1  
+ 330      =1  #define GetPanelContrastEE()                                    ReadEEP(0x10)
+ 331      =1  
+ 332      =1  #if defined( SUPPORT_PC ) || defined( SUPPORT_DTV )
+ 333      =1  //#define GetPanelHueEE()                                                       ReadEEP(0x28)
+ 334      =1  //#define GetPanelSharpnessEE()                                 ReadEEP(0x29)
+ 335      =1  #define GetPanelBrightnessEE()                                  ReadEEP(0x11)
+ 336      =1  //#define GetPanelSaturationEE()                                        ReadEEP(0x2a)
+ 337      =1  
+ 338      =1  //#define SavePanelHueEE(A)                                             WriteEEP(0x28, A)
+ 339      =1  //#define SavePanelSharpnessEE(A)                                       WriteEEP(0x29, A)
+ 340      =1  #define SavePanelContrastEE(A)                                  WriteEEP(0x10, A)
+ 341      =1  #define SavePanelBrightnessEE(A)                                WriteEEP(0x11, A)
+ 342      =1  //#define SavePanelSaturationEE(A)                              WriteEEP(0x2a, A)
+ 343      =1  #endif
+ 344      =1  
+ 345      =1  /*
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 43  
+
+ 346      =1  #define GetDigitalVideoContrastEE()                             ReadEEP(0x2b)
+ 347      =1  #define GetDigitalVideoBrightnessEE()                   ReadEEP(0x2c)
+ 348      =1  #define GetDigitalVideoHueEE()                                  ReadEEP(0x2d)
+ 349      =1  #define GetDigitalVideoSaturationEE(off)                ReadEEP(0x2e+off)
+ 350      =1  
+ 351      =1  #define SaveDigitalVideoContrastEE(A)                   WriteEEP(0x2b, A)
+ 352      =1  #define SaveDigitalVideoBrightnessEE(A)                 WriteEEP(0x2c, A)
+ 353      =1  #define SaveDigitalVideoHueEE(A)                                WriteEEP(0x2d, A)
+ 354      =1  #define SaveDigitalVideoSaturationEE(off,A)             WriteEEP(0x2e+off, A)
+ 355      =1  */
+ 356      =1  
+ 357      =1  #endif  // __ETC_EEP__
+  15          #include        "audio.h"
+   1      =1  
+   2      =1  
+   3      =1  extern  BYTE    AudioVol;
+   4      =1  extern  BYTE    PCAudioVol;
+   5      =1  
+   6      =1  //BYTE ResetMSP(void);
+   7      =1  //void SetMSPSCARTPrescale(void);
+   8      =1  //void SetMSPSourceSel(void);
+   9      =1  //void SetMSPVol(void);
+  10      =1  
+  11      =1  //BYTE AudioAutoStdDetection(void);
+  12      =1  //BYTE SteroMonoDetection(void);
+  13      =1  
+  14      =1  //BYTE TunerAudio(void);
+  15      =1  //void ExtAudio(void);
+  16      =1  //id PCAudio(void);
+  17      =1  //id MuteOn(void);
+  18      =1  //BYTE GetAudioVol(void);
+  19      =1  BYTE ChangeVol(char);
+  20      =1  //BYTE GetAudioBalance(void);
+  21      =1  //BYTE ChangeBalance(char);
+  22      =1  //BYTE GetAudioBass(void);
+  23      =1  //BYTE ChangeBass(char);
+  24      =1  //BYTE GetAudioTreble(void);
+  25      =1  //BYTE ChangeTreble(char);
+  26      =1  //BYTE GetAudioEffect(void);
+  27      =1  //BYTE ChangeAudioEffect(char amount);
+  28      =1  //void ToggleAudioMute(void);
+  29      =1  //void CheckAndClearMuteOn(void);
+  30      =1  
+  31      =1  //BYTE IsAudioMuteOn(void);
+  32      =1  //void SetAudioMute(BYTE on );
+  33      =1  //void ChangeMTS(BYTE type);
+  34      =1  //void AudioOff(void);
+  35      =1  void AudioMute(bit mute);
+  36      =1  
+  37      =1  //#define AudioOn()                     SetMSPVol()
+  38      =1  //void ResetAudioValue();
+  16          #include        "HS_IOdef.h"
+   1      =1  #ifndef _HS_IOdef_
+   2      =1  #define _HS_IOdef_
+   3      =1  
+   4      =1  
+   5      =1  
+   6      =1  #include "Reg.h"
+   1      =2  //
+   2      =2  //Registers.h   : Register declaration
+   3      =2  //
+   4      =2  
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 44  
+
+   5      =2  #ifndef __REGISTERS__
+           =2 #define __REGISTERS__
+           =2 
+           =2 #ifdef INTERNAL_MCU
+           =2 /*  BYTE Registers  */
+           =2 sfr P0    = 0x80;
+           =2 sfr P1    = 0x90;
+           =2 sfr P2    = 0xA0;
+           =2 sfr P3    = 0xB0;
+           =2 sfr PSW   = 0xD0;
+           =2 sfr ACC   = 0xE0;
+           =2 sfr B     = 0xF0;
+           =2 sfr SP    = 0x81;
+           =2 sfr DPL   = 0x82;
+           =2 sfr DPH   = 0x83;
+           =2 sfr PCON  = 0x87;
+           =2 sfr TCON  = 0x88;
+           =2 sfr TMOD  = 0x89;
+           =2 sfr TL0   = 0x8A;
+           =2 sfr TL1   = 0x8B;
+           =2 sfr TH0   = 0x8C;
+           =2 sfr TH1   = 0x8D;
+           =2 sfr IE    = 0xA8;
+           =2 sfr IP    = 0xB8;
+           =2 sfr SCON  = 0x98;
+           =2 sfr SBUF  = 0x99;
+           =2 
+           =2 //sfr P4    = 0xd8;
+           =2 
+           =2 /*  8052 Extensions  */
+           =2 sfr EXIF  = 0x91;               // external interrupt 2,3,4,5 flags should be cleared by software
+           =2 sfr T2CON = 0xC8;
+           =2 sfr RCAP2L = 0xCA;
+           =2 sfr RCAP2H = 0xCB;
+           =2 sfr TL2   = 0xCC;
+           =2 sfr TH2   = 0xCD;
+           =2 sfr EICON = 0xD8;
+           =2 sfr EIE   = 0xE8;
+           =2 sfr EIP   = 0xF8;
+           =2 
+           =2 /*      TW88 Core Extension */
+           =2 sfr     BANKREG         = 0x9A;
+           =2 sfr     SPICONTROL      = 0x9B;
+           =2 sfr     T0HIGH          = 0x9C;
+           =2 sfr     T0LOW           = 0x9D;
+           =2 sfr     T1HIGH          = 0x9E;
+           =2 sfr     T1LOW           = 0x9F;
+           =2 sfr     T2HIGH          = 0x93;
+           =2 sfr     T2LOW           = 0x94;
+           =2 
+           =2 /*  BIT Registers  */
+           =2 /*  PSW  */
+           =2 sbit CY    = 0xD7;
+           =2 sbit AC    = 0xD6;
+           =2 sbit F0    = 0xD5;
+           =2 sbit RS1   = 0xD4;
+           =2 sbit RS0   = 0xD3;
+           =2 sbit OV    = 0xD2;
+           =2 sbit P     = 0xD0;
+           =2 
+           =2 /*  TCON  */
+           =2 sbit TF1   = 0x8F;
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 45  
+
+           =2 sbit TR1   = 0x8E;
+           =2 sbit TF0   = 0x8D;
+           =2 sbit TR0   = 0x8C;
+           =2 sbit IE1   = 0x8B;
+           =2 sbit IT1   = 0x8A;
+           =2 sbit IE0   = 0x89;
+           =2 sbit IT0   = 0x88;
+           =2 
+           =2 /*  IE  */
+           =2 sbit EA    = 0xAF;
+           =2 sbit ES    = 0xAC;
+           =2 sbit ET1   = 0xAB;
+           =2 sbit EX1   = 0xAA;
+           =2 sbit ET0   = 0xA9;
+           =2 sbit EX0   = 0xA8;
+           =2 
+           =2 /*  EIE  */
+           =2 sbit EWDI  = 0xEC;              // Watch dog timer interrupt enable
+           =2 sbit EX5   = 0xEB;              // external interrupt 5 enable
+           =2 sbit EX4   = 0xEA;              // external interrupt 4 enable
+           =2 sbit EX3   = 0xE9;              // external interrupt 3 enable
+           =2 sbit EX2   = 0xE8;              // external interrupt 2 enable
+           =2 
+           =2 /*  IP  */
+           =2 sbit PS    = 0xBC;
+           =2 sbit PT1   = 0xBB;
+           =2 sbit PX1   = 0xBA;
+           =2 sbit PT0   = 0xB9;
+           =2 sbit PX0   = 0xB8;
+           =2 
+           =2 /*  EIP  */
+           =2 sbit PWDI  = 0xFC;              // Watch dog timer interrupt priority
+           =2 sbit PX5   = 0xFB;              // external interrupt5 priority
+           =2 sbit PX4   = 0xFA;              // external interrupt4 priority
+           =2 sbit PX3   = 0xF9;              // external interrupt3 priority
+           =2 sbit PX2   = 0xF8;              // external interrupt2 priority
+           =2 
+           =2 /*  P3  */
+           =2 sbit RD    = 0xB7;
+           =2 sbit WR    = 0xB6;
+           =2 sbit T1    = 0xB5;
+           =2 sbit T0    = 0xB4;
+           =2 sbit INT1  = 0xB3;
+           =2 sbit INT0  = 0xB2;
+           =2 sbit TXD   = 0xB1;
+           =2 sbit RXD   = 0xB0;
+           =2 
+           =2 /*  SCON  */
+           =2 sbit SM0   = 0x9F;
+           =2 sbit SM1   = 0x9E;
+           =2 sbit SM2   = 0x9D;
+           =2 sbit REN   = 0x9C;
+           =2 sbit TB8   = 0x9B;
+           =2 sbit RB8   = 0x9A;
+           =2 sbit TI    = 0x99;
+           =2 sbit RI    = 0x98;
+           =2 
+           =2 /*  8052 Extensions  */
+           =2 /*  IE  */
+           =2 sbit ET2   = 0xAD;
+           =2 
+           =2 /*  IP  */
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 46  
+
+           =2 sbit PT2   = 0xBD;
+           =2 
+           =2 /*  P1  */
+           =2 sbit T2EX  = 0x91;
+           =2 sbit T2    = 0x90;
+           =2              
+           =2 /*  T2CON  */
+           =2 sbit TF2   = 0xCF;
+           =2 sbit EXF2  = 0xCE;
+           =2 sbit RCLK  = 0xCD;
+           =2 sbit TCLK  = 0xCC;
+           =2 sbit EXEN2 = 0xCB;
+           =2 sbit TR2   = 0xCA;
+           =2 sbit C_T2  = 0xC9;
+           =2 sbit CP_RL2= 0xC8;
+           =2 
+           =2 sfr     CHPENR = 0xF6;
+           =2 sfr     CHPCON = 0xBF;
+           =2 sfr     SFRAL  = 0xC4;
+           =2 sfr     SFRAH  = 0xC5;
+           =2 sfr     SFRFD  = 0xC6;
+           =2 sfr     SFRCN  = 0xC7;
+           =2 
+           =2 sbit P0_0  = 0x80;
+           =2 sbit P0_1  = 0x81;
+           =2 sbit P0_2  = 0x82;
+           =2 sbit P0_3  = 0x83;
+           =2 sbit P0_4  = 0x84;
+           =2 sbit P0_5  = 0x85;
+           =2 sbit P0_6  = 0x86;
+           =2 sbit P0_7  = 0x87;
+           =2 
+           =2 sbit P1_0  = 0x90;
+           =2 sbit P1_1  = 0x91;
+           =2 sbit P1_2  = 0x92;
+           =2 sbit P1_3  = 0x93;
+           =2 sbit P1_4  = 0x94;
+           =2 sbit P1_5  = 0x95;
+           =2 sbit P1_6  = 0x96;
+           =2 sbit P1_7  = 0x97;
+           =2 
+           =2 sbit P2_0  = 0xa0;
+           =2 sbit P2_1  = 0xa1;
+           =2 sbit P2_2  = 0xa2;
+           =2 sbit P2_3  = 0xa3;
+           =2 sbit P2_4  = 0xa4;
+           =2 sbit P2_5  = 0xa5;
+           =2 sbit P2_6  = 0xa6;
+           =2 sbit P2_7  = 0xa7;
+           =2 
+           =2 sbit P3_0  = 0xb0;
+           =2 sbit P3_1  = 0xb1;
+           =2 sbit P3_2  = 0xb2;
+           =2 sbit P3_3  = 0xb3;
+           =2 sbit P3_4  = 0xb4;
+           =2 sbit P3_5  = 0xb5;
+           =2 sbit P3_6  = 0xb6;
+           =2 sbit P3_7  = 0xb7;
+           =2 
+           =2 #else   // external MCU=WINBOND
+           =2 /*  BYTE Registers  */
+           =2 sfr P0    = 0x80;
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 47  
+
+           =2 sfr P1    = 0x90;
+           =2 sfr P2    = 0xA0;
+           =2 sfr P3    = 0xB0;
+           =2 sfr PSW   = 0xD0;
+           =2 sfr ACC   = 0xE0;
+           =2 sfr B     = 0xF0;
+           =2 sfr SP    = 0x81;
+           =2 sfr DPL   = 0x82;
+           =2 sfr DPH   = 0x83;
+           =2 sfr PCON  = 0x87;
+           =2 sfr TCON  = 0x88;
+           =2 sfr TMOD  = 0x89;
+           =2 sfr TL0   = 0x8A;
+           =2 sfr TL1   = 0x8B;
+           =2 sfr TH0   = 0x8C;
+           =2 sfr TH1   = 0x8D;
+           =2 sfr CKCON = 0x8E;               //clock control register, default =0x01
+           =2 sfr IE    = 0xA8;
+           =2 sfr IP    = 0xB8;
+           =2 sfr SCON  = 0x98;
+           =2 sfr SBUF  = 0x99;
+           =2 sfr P4 = 0xE8; //Megawin Ryan@970716
+           =2 //sfr P4    = 0xa5;      //SST MCU
+           =2 //sfr P4    = 0xd8;             //winbond<960820>
+           =2 
+           =2 
+           =2 /*  8052 Extensions  */
+           =2 sfr T2CON = 0xC8;
+           =2 sfr RCAP2L = 0xCA;
+           =2 sfr RCAP2H = 0xCB;
+           =2 sfr TL2   = 0xCC;
+           =2 sfr TH2   = 0xCD;
+           =2 
+           =2 // for UART2
+           =2 sfr S2CON  = 0xAA;
+           =2 sfr S2BRT  = 0xBA;
+           =2 sfr S2BUF  = 0x9A;
+           =2 sfr AUXR2  = 0xA6;
+           =2 sfr AUXIE  = 0xAD;
+           =2 
+           =2 
+           =2 sfr P1M0  = 0x91;
+           =2 sfr P1M1  = 0x92;
+           =2 sfr P0M0  = 0x93;
+           =2 sfr P0M1  = 0x94;
+           =2 
+           =2 
+           =2 
+           =2 // for PCA
+           =2 sfr CCON   = 0xD8;
+           =2 sfr CMOD   = 0xD9;
+           =2 sfr CCAPM0 = 0xDA;
+           =2 sfr CCAPM1 = 0xDB;
+           =2 sfr CCAPM2 = 0xDC;
+           =2 sfr CCAPM3 = 0xDD;
+           =2 sfr CCAPM4 = 0xDE;
+           =2 sfr CCAPM5 = 0xDF;
+           =2 sfr CL     = 0xE9;
+           =2 sfr CH     = 0xF9;
+           =2 sfr CCAP0L = 0xEA;
+           =2 sfr CCAP0H = 0xFA;
+           =2 sfr CCAP1L = 0xEB;
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 48  
+
+           =2 sfr CCAP1H = 0xFB;
+           =2 sfr CCAP2L = 0xEC;
+           =2 sfr CCAP2H = 0xFC;
+           =2 sfr CCAP3L = 0xED;
+           =2 sfr CCAP3H = 0xFD;
+           =2 sfr CCAP4L = 0xEE;
+           =2 sfr CCAP4H = 0xFE;
+           =2 sfr CCAP5L = 0xEF;
+           =2 sfr CCAP5H = 0xFF;
+           =2 sfr PCAPWM0= 0xF2;
+           =2 sfr PCAPWM1= 0xF3;
+           =2 sfr PCAPWM2= 0xF4;
+           =2 sfr PCAPWM3= 0xF5;
+           =2 sfr PCAPWM4= 0xF6;
+           =2 sfr PCAPWM5= 0xF7;
+           =2 
+           =2 /*  BIT Registers  */
+           =2 /*  PSW  */
+           =2 sbit CY    = 0xD7;
+           =2 sbit AC    = 0xD6;
+           =2 sbit F0    = 0xD5;
+           =2 sbit RS1   = 0xD4;
+           =2 sbit RS0   = 0xD3;
+           =2 sbit OV    = 0xD2;
+           =2 sbit P     = 0xD0;
+           =2 
+           =2 /*  TCON  */
+           =2 sbit TF1   = 0x8F;
+           =2 sbit TR1   = 0x8E;
+           =2 sbit TF0   = 0x8D;
+           =2 sbit TR0   = 0x8C;
+           =2 sbit IE1   = 0x8B;
+           =2 sbit IT1   = 0x8A;
+           =2 sbit IE0   = 0x89;
+           =2 sbit IT0   = 0x88;
+           =2 
+           =2 /*  IE  */
+           =2 sbit EA    = 0xAF;
+           =2 sbit ES    = 0xAC;
+           =2 sbit ET1   = 0xAB;
+           =2 sbit EX1   = 0xAA;
+           =2 sbit ET0   = 0xA9;
+           =2 sbit EX0   = 0xA8;
+           =2 
+           =2 /*  IP  */
+           =2 sbit PS    = 0xBC;
+           =2 sbit PT1   = 0xBB;
+           =2 sbit PX1   = 0xBA;
+           =2 sbit PT0   = 0xB9;
+           =2 sbit PX0   = 0xB8;
+           =2 
+           =2 /*  P3  */
+           =2 sbit RD    = 0xB7;
+           =2 sbit WR    = 0xB6;
+           =2 sbit T1    = 0xB5;
+           =2 sbit T0    = 0xB4;
+           =2 sbit INT1  = 0xB3;
+           =2 sbit INT0  = 0xB2;
+           =2 sbit TXD   = 0xB1;
+           =2 sbit RXD   = 0xB0;
+           =2 
+           =2 /*  SCON  */
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 49  
+
+           =2 sbit SM0   = 0x9F;
+           =2 sbit SM1   = 0x9E;
+           =2 sbit SM2   = 0x9D;
+           =2 sbit REN   = 0x9C;
+           =2 sbit TB8   = 0x9B;
+           =2 sbit RB8   = 0x9A;
+           =2 sbit TI    = 0x99;
+           =2 sbit RI    = 0x98;
+           =2 
+           =2 /*  8052 Extensions  */
+           =2 /*  IE  */
+           =2 sbit ET2   = 0xAD;
+           =2 
+           =2 /*  IP  */
+           =2 sbit PT2   = 0xBD;
+           =2 
+           =2 /*  P1  */
+           =2 sbit T2EX  = 0x91;
+           =2 sbit T2    = 0x90;
+           =2              
+           =2 /*  T2CON  */
+           =2 sbit TF2   = 0xCF;
+           =2 sbit EXF2  = 0xCE;
+           =2 sbit RCLK  = 0xCD;
+           =2 sbit TCLK  = 0xCC;
+           =2 sbit EXEN2 = 0xCB;
+           =2 sbit TR2   = 0xCA;
+           =2 sbit C_T2  = 0xC9;
+           =2 sbit CP_RL2= 0xC8;
+           =2 
+           =2 sfr     CHPENR = 0xF6;
+           =2 sfr     CHPCON = 0xBF;
+           =2 sfr     SFRAL  = 0xC4;
+           =2 sfr     SFRAH  = 0xC5;
+           =2 sfr     SFRFD  = 0xC6;
+           =2 sfr     SFRCN  = 0xC7;
+           =2 
+           =2 sbit P0_0  = 0x80;
+           =2 sbit P0_1  = 0x81;
+           =2 sbit P0_2  = 0x82;
+           =2 sbit P0_3  = 0x83;
+           =2 sbit P0_4  = 0x84;
+           =2 sbit P0_5  = 0x85;
+           =2 sbit P0_6  = 0x86;
+           =2 sbit P0_7  = 0x87;
+           =2 
+           =2 sbit P1_0  = 0x90;
+           =2 sbit P1_1  = 0x91;
+           =2 sbit P1_2  = 0x92;
+           =2 sbit P1_3  = 0x93;
+           =2 sbit P1_4  = 0x94;
+           =2 sbit P1_5  = 0x95;
+           =2 sbit P1_6  = 0x96;
+           =2 sbit P1_7  = 0x97;
+           =2 
+           =2 sbit P2_0  = 0xa0;
+           =2 sbit P2_1  = 0xa1;
+           =2 sbit P2_2  = 0xa2;
+           =2 sbit P2_3  = 0xa3;
+           =2 sbit P2_4  = 0xa4;
+           =2 sbit P2_5  = 0xa5;
+           =2 sbit P2_6  = 0xa6;
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 50  
+
+           =2 sbit P2_7  = 0xa7;
+           =2 
+           =2 sbit P3_0  = 0xb0;
+           =2 sbit P3_1  = 0xb1;
+           =2 sbit P3_2  = 0xb2;
+           =2 sbit P3_3  = 0xb3;
+           =2 sbit P3_4  = 0xb4;
+           =2 sbit P3_5  = 0xb5;
+           =2 sbit P3_6  = 0xb6;
+           =2 sbit P3_7  = 0xb7;
+           =2 
+           =2 sbit P4_0  = P4^0;
+           =2 sbit P4_1  = P4^1;
+           =2 sbit INT3  = P4^2;
+           =2 sbit INT2  = P4^3;
+           =2 #endif  // INTERNAL_MCU
+           =2 
+           =2 #endif  //__REGISTERS__
+   7      =1  
+   8      =1  #define LEFT_T     P0_0
+   9      =1  #define Right_T    P0_1
+  10      =1  #define REVERSE_T  P0_2
+  11      =1  #define PARK_T     P0_3
+  12      =1  #define VGA_T      P0_4
+  13      =1  #define CAMC_T     P0_5
+  14      =1  #define CAMD_T     P0_6
+  15      =1  //#define Audio_Select1     P2_0
+  16      =1  //#define Audio_Select2     P2_1
+  17      =1  //#define Audio_Mute        P0_7
+  18      =1  //#define AVOutPutSelect    P1_7
+  19      =1  #define RS232Select     P4_0
+  20      =1  #define ACC_B           P1_6
+  21      =1  
+  22      =1  #define PPWR            P3_6
+  23      =1  
+  24      =1  
+  25      =1  #endif
+  17          #include "HS_keyremo.h"
+   1      =1  #ifndef _HS_keyremo_
+   2      =1  #define _HS_keyremo_
+   3      =1  
+   4      =1  //
+   5      =1  // KeyRemo.h
+   6      =1  // Default function for Key Input and Remocon Input
+   7      =1  //
+   8      =1  //=============================================================================
+   9      =1  //                                  Operation Key Mapping
+  10      =1  //=============================================================================
+  11      =1  
+  12      =1  
+  13      =1  
+  14      =1  #define  SelectMode 0
+  15      =1  #define  JumpMode       1
+  16      =1  
+  17      =1  
+  18      =1  
+  19      =1  
+  20      =1  extern BYTE NowModeState;
+  21      =1  extern BYTE TriggerFlag;
+  22      =1  extern bit      ParkFlag;
+  23      =1  extern BYTE  Attr_A,Attr_B,Attr_C,Attr_R; 
+  24      =1  extern BYTE TimeStep;
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 51  
+
+  25      =1  extern BYTE SEQFlag;
+  26      =1  extern BYTE SEQIndex;
+  27      =1  extern BYTE TriggerMode;
+  28      =1  extern bit AVFlag;
+  29      =1  extern bit VGAAudio;
+  30      =1  
+  31      =1  
+  32      =1  
+  33      =1  //BYTE TW2835Command(char,char,char,char,char);
+  34      =1  void SetSourceMode(BYTE Index,char ,char ,char ,char );
+  35      =1  void SetSelectMode(void);
+  36      =1  //void PriorityOffSelectMode(void);
+  37      =1  void SetJumpMode(void);
+  38      =1  void SetNowMode(void);
+  39      =1  void SetRearSource(void);
+  40      =1  void SetLeftSource(void);
+  41      =1  void SetRightSource(void);
+  42      =1  
+  43      =1  
+  44      =1  BYTE CheckTrigger(void);
+  45      =1  void TriggerHandler(BYTE T_Flag);
+  46      =1  void SEQMode(void);
+  47      =1  
+  48      =1  
+  49      =1  
+  50      =1  
+  51      =1  #endif
+  18          BYTE    AudioVol = 50;
+  19          BYTE    PCAudioVol = 50;
+  20          extern CODE struct RegisterInfo UserRange;
+  21          
+  22          #if 0
+                                                      AudioBalance = 50, 
+                                                      AudioBass = 50,
+                                                      AudioTreble = 46;
+                                                      //AudioEffect = 0;
+                              bit   TVTunerAudioActive=0;
+              static  bit   AudioMuteOn=0;
+              
+              
+              
+              CODE struct RegisterInfo MSPVolRange=     {0x50, 0x7d,0x66};                            
+              CODE struct RegisterInfo MSPBalanceRange= {-127,  127,   0};                            
+              CODE struct RegisterInfo MSPBassRange=    { -12,   12,   0};                            
+              CODE struct RegisterInfo MSPTrebleRange=  { -12,   15,   2};                            
+              
+              BYTE ResetMSP(void)
+              {
+                      BYTE mspdata[3];
+              
+                      #ifdef DEBUG_AUDIO
+                      dPrintf("\r\n++(ResetMSP)\r\nTVVol:%d", (WORD)AudioVol);
+                      #endif
+              
+                      AudioVol     = GetAudioVolEE();
+                      AudioBalance = GetAudioBalanceEE();
+                      AudioBass    = GetAudioBassEE();
+                      AudioTreble  = GetAudioTrebleEE();
+                      //AudioEffect  = GetAudioEffectEE();
+              
+                      mspdata[0] = 0;
+                      mspdata[1] = 0x80;
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 52  
+
+                      mspdata[2] = 0;
+                      WriteI2Cn_(MSPI2CAddress, mspdata, 3);
+              
+                      mspdata[0] = 0;
+                      mspdata[1] = 0;
+                      mspdata[2] = 0;
+                      WriteI2Cn_(MSPI2CAddress, mspdata, 3);
+              
+                      #ifdef DEBUG_AUDIO
+                      dPuts("\r\n__(ResetMSP)");
+                      #endif
+                      return 0;
+              }
+              
+              void SetMSPVol(void)
+              {
+                      BYTE voldata[5];
+                      int vol;
+              
+                      Mapping1( AudioVol, &UserRange, &vol, &MSPVolRange );
+              
+                      voldata[0] = 0x12;
+                      voldata[1] = 0;
+                      voldata[2] = 0;
+                      voldata[3] = (BYTE)vol;
+                      voldata[4] = 0;
+                      WriteI2Cn_(MSPI2CAddress, voldata, 5);  //LJY010202
+                      
+                      #ifdef DEBUG_AUDIO
+                      dPrintf("\r\n++(SetMSPVol)MSPVol:0x%x, AudioVol:%d__", (WORD)vol, (WORD)AudioVol);
+                      #endif
+              }
+              
+              void SetMSPBalance(void)
+              {
+                      BYTE valdata[5];
+                      int val;
+              
+                      Mapping1( AudioBalance, &UserRange, &val, &MSPBalanceRange );
+                      
+                      valdata[0] = 0x12;
+                      valdata[1] = 0;         
+                      valdata[2] = 1;
+                      valdata[3] = (BYTE)val;
+                      valdata[4] = 0;
+                      WriteI2Cn_(MSPI2CAddress, valdata, 5);
+              
+                      #ifdef DEBUG_AUDIO
+                      dPrintf("\r\n++(SetMSPBalance)MSPBal:0x%x, AudioBalance:%d__", (WORD)val, (WORD)AudioBalance);
+                      #endif
+              }
+              
+              void SetMSPBass(void)
+              {
+                      BYTE valdata[5];
+                      int val;
+              
+                      Mapping1( AudioBass, &UserRange, &val, &MSPBassRange );
+                      
+                      valdata[0] = 0x12;
+                      valdata[1] = 0;
+                      valdata[2] = 2;
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 53  
+
+                      valdata[3] = (BYTE)val;
+                      valdata[4] = 0;
+                      WriteI2Cn_(MSPI2CAddress, valdata, 5);
+              
+                      #ifdef DEBUG_AUDIO
+                      dPrintf("\r\n++(SetMSPBass)MSPBass:0x%x, AudioBass:%d__", (WORD)val, (WORD)AudioBass);
+                      #endif
+              }
+              
+              void SetMSPTreble(void)
+              {
+                      BYTE valdata[5];
+                      int val;
+              
+                      Mapping1( AudioTreble, &UserRange, &val, &MSPTrebleRange );
+                      
+                      valdata[0] = 0x12;
+                      valdata[1] = 0;
+                      valdata[2] = 3;
+                      valdata[3] = (BYTE)val;
+                      valdata[4] = 0;
+                      WriteI2Cn_(MSPI2CAddress, valdata, 5);
+              
+                      #ifdef DEBUG_AUDIO
+                      dPrintf("\r\n++(SetMSPTreble)MSPTreble:0x%x, AudioTreble:%d__", (WORD)val, (WORD)AudioTreble);
+                      #endif
+              }
+              
+              void AudioOff(void)
+              {
+                      BYTE mspdata[5];
+              
+                      #ifdef DEBUG_AUDIO
+                      dPuts("\r\n++(AudioOff)--");
+                      #endif
+              
+                      mspdata[0] = 0x12;
+                      mspdata[1] = 0x00;
+                      mspdata[2] = 0x00;
+                      mspdata[3] = 0xff;
+                      mspdata[4] = 0x00;
+                      WriteI2Cn_(MSPI2CAddress, mspdata, 5);
+              }
+              
+              #define END_OF_LOOP     0xff
+              
+              BYTE AudioAutoStdDetection(void)
+              {
+                      BYTE mspdata[5], loop=0;
+                      WORD ret;
+              
+                      mspdata[0] = 0x10;
+                      mspdata[1] = 0x00;
+                      mspdata[2] = 0x20;                              // Standard selection
+                      mspdata[3] = 0x00;
+                      mspdata[4] = 0x01;                              // Auto Std Detection
+                      WriteI2Cn_(MSPI2CAddress, mspdata, 5);
+                      do {
+                              mspdata[0] = 0x00;
+                              mspdata[1] = 0x7E;
+                              I2CReadByteMSP(MSPI2CAddress, 0x11, mspdata, 2);
+                              if( loop==END_OF_LOOP )
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 54  
+
+                                      break;
+                              loop++;
+                              ret = mspdata[0];
+                              ret = ( ret << 8 ) | mspdata[1];
+                      } while( ret > 0x7ff );
+                      #ifdef DEBUG_AUDIO
+                      dPrintf("\r\n(AudioAutoStdDetection)Auto Detection:0x%x", (WORD)ret );
+                      #endif
+              
+                      if( loop==END_OF_LOOP )         ret = 0;
+              
+                      return ret;
+              }
+              
+              
+              
+              void ExtAudio(void)
+              {
+                      BYTE mspdata[5], loop=0;
+                      WORD ret;
+              
+                      AudioOff();
+              
+                      mspdata[0] = 0x10;
+                      mspdata[1] = 0x00;
+                      mspdata[2] = 0x30;                              // MODUS register: Automatic-on
+                      mspdata[3] = 0x20;
+                      mspdata[4] = 0x03;
+                      WriteI2Cn_(MSPI2CAddress, mspdata, 5);
+              
+                      mspdata[0] = 0x12;
+                      mspdata[1] = 0x00;
+                      mspdata[2] = 0x13;                              // SCART switch
+                      mspdata[3] = 0x00;                              
+                      mspdata[4] = 0x00;                              
+                      WriteI2Cn_(MSPI2CAddress, mspdata, 5);
+              
+                      mspdata[0] = 0x12;
+                      mspdata[1] = 0x00;
+                      mspdata[2] = 0x08;                              // source select
+                      mspdata[3] = 0x02;                              // SCART input
+                      mspdata[4] = 0x20;                              // stereo(transparent)
+                      WriteI2Cn_(MSPI2CAddress, mspdata, 5);
+              
+                      mspdata[0] = 0x12;
+                      mspdata[1] = 0x00;
+                      mspdata[2] = 0x0d;                              // SCART input prescale
+                      mspdata[3] = 0x50;
+                      mspdata[4] = 0x00;
+                      WriteI2Cn_(MSPI2CAddress, mspdata, 5);
+                      ret = AudioAutoStdDetection();
+              
+                      #ifdef DEBUG_AUDIO
+                      if( !ret ) {
+                              dPuts("\r\n--Fail to Audio AutoDetect");
+                      }
+                      #endif
+                      AudioOn();                      //SetMSPVol();
+              }
+              
+              #ifdef SUPPORT_PC
+              /*
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 55  
+
+              void PCAudio(void)
+              {
+                      BYTE mspdata[5], loop=0;
+                      WORD ret;
+              
+                      AudioOff();
+              
+                      mspdata[0] = 0x10;
+                      mspdata[1] = 0x00;
+                      mspdata[2] = 0x30;                              // MODUS register: Automatic-on
+                      mspdata[3] = 0x20;
+                      mspdata[4] = 0x03;
+                      WriteI2Cn_(MSPI2CAddress, mspdata, 5);
+              
+                      mspdata[0] = 0x12;
+                      mspdata[1] = 0x00;
+                      mspdata[2] = 0x13;                              // SCART switch
+                      mspdata[3] = 0x02;                              // SCART2->DSP
+                      mspdata[4] = 0x00;                              
+                      WriteI2Cn_(MSPI2CAddress, mspdata, 5);
+              
+                      mspdata[0] = 0x12;
+                      mspdata[1] = 0x00;
+                      mspdata[2] = 0x08;                              // source select
+                      mspdata[3] = 0x02;                              // SCART input
+                      mspdata[4] = 0x20;                              // stereo(transparent)
+                      WriteI2Cn_(MSPI2CAddress, mspdata, 5);
+              
+                      mspdata[0] = 0x12;
+                      mspdata[1] = 0x00;
+                      mspdata[2] = 0x0d;                              // SCART input prescale
+                      mspdata[3] = 0x50;
+                      mspdata[4] = 0x00;
+                      WriteI2Cn_(MSPI2CAddress, mspdata, 5);
+              
+                      ret = AudioAutoStdDetection();
+              
+                      #ifdef DEBUG_AUDIO
+                      if( !ret ) {
+                              Puts("\r\n--Fail to Audio AutoDetect");
+                      }
+                      #endif
+                      AudioOn();                      //SetMSPVol();
+              }
+              */
+              #endif
+              
+              BYTE GetAudioVol(void)
+              {
+                      return AudioVol;
+              }
+              #endif
+ 291          void AudioMute(bit mute)
+ 292          {
+ 293   1      //mute  0 Audio OFF             mute 1 Audio ON 
+ 294   1      #if 0           //william-990729
+              if(mute==0)
+                      Audio_Mute=0;           //Audio ON
+              else
+                      Audio_Mute=1;           //Audio OFF
+              #endif
+ 300   1      
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 56  
+
+ 301   1      if(mute==0)
+ 302   1              TW2835Cmd("\n\rmute 0\n\r");
+ 303   1      else
+ 304   1              TW2835Cmd("\n\rmute 1\n\r");    
+ 305   1      }
+ 306          
+ 307          BYTE ChangeVol(char amount)
+ 308          {
+ 309   1      #if 1
+ 310   1              BYTE chg=0;
+ 311   1              BYTE AudioTemp;
+ 312   1      
+ 313   1      //if((NowModeState==SelectMode&&SelectModeType==VGAMode)||(NowModeState==JumpMode&&((ReadEEP(EEP_JUMPMode)
+             -==14)||SelectModeType==VGAMode)))             //william-v1.1-20110114
+ 314   1      if(VGAAudio)
+ 315   1      {
+ 316   2              AudioTemp=PCAudioVol;
+ 317   2      }       
+ 318   1      else
+ 319   1      {
+ 320   2              AudioTemp=AudioVol;
+ 321   2      }       
+ 322   1      
+ 323   1              if(AudioTemp==0 || PowerFlag==0)
+ 324   1                      AudioMute(0);   // Audio_Mute = 0;                                      //開啟靜音...... Abel 960122            
+ 325   1              else            
+ 326   1                      AudioMute(1);           //Audio_Mute = 1;                                       //關閉靜音...... Abel 9601222
+ 327   1      
+ 328   1              if( amount>0 ) 
+ 329   1              {
+ 330   2                      if( ((AudioTemp+amount) <= UserRange.Max) ) 
+ 331   2                              chg=1;
+ 332   2              }
+ 333   1              else 
+ 334   1              {
+ 335   2                      if( AudioTemp>UserRange.Min     ) 
+ 336   2                              chg=1;
+ 337   2              }
+ 338   1      
+ 339   1              if( chg ) 
+ 340   1              {
+ 341   2                      AudioTemp += amount;
+ 342   2              }
+ 343   1      
+ 344   1      
+ 345   1                      CCAP2H=120-AudioTemp;
+ 346   1                      
+ 347   1      
+ 348   1      //if((NowModeState==SelectMode&&SelectModeType==VGAMode)||(NowModeState==JumpMode&&((ReadEEP(EEP_JUMPMode)
+             -==14)||SelectModeType==VGAMode)))             //william-v1.1-20110114
+ 349   1      if(VGAAudio)
+ 350   1                      {
+ 351   2                      PCAudioVol=AudioTemp;
+ 352   2                      SetPCAudioVolEE( AudioTemp );   
+ 353   2                      }
+ 354   1                      else
+ 355   1                      {
+ 356   2                      AudioVol=AudioTemp;
+ 357   2                      SetAudioVolEE( AudioTemp );     
+ 358   2                      }
+ 359   1                      
+ 360   1                      //SetMSPVol();
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 57  
+
+ 361   1      
+ 362   1      
+ 363   1      //if((NowModeState==SelectMode&&SelectModeType==VGAMode)||(NowModeState==JumpMode&&((ReadEEP(EEP_JUMPMode)
+             -==14)||SelectModeType==VGAMode)))             //william-v1.1-20110114
+ 364   1      if(VGAAudio)
+ 365   1              return PCAudioVol;
+ 366   1      else
+ 367   1              return AudioVol;
+ 368   1      #endif
+ 369   1      }
+ 370          #if 0
+              BYTE GetAudioBalance(void)
+              {
+                      return AudioBalance;
+              }
+              
+              BYTE ChangeBalance(char amount)
+              {
+                      BYTE chg=0;
+              
+                      if( amount>0 ) {
+                              if( ((AudioBalance+amount) <= UserRange.Max) ) {
+                                      chg=1;
+                              }
+                      }
+                      else {
+                              if( AudioBalance>UserRange.Min  ) {
+                                      chg=1;
+                              }
+                      }
+              
+                      if( chg ) {
+                              AudioBalance += amount;
+                              SetAudioBalanceEE( AudioBalance );
+                              SetMSPBalance();
+                      }
+              
+                      return AudioBalance;
+              }
+              
+              BYTE GetAudioBass(void)
+              {
+                      return AudioBass;
+              }
+              
+              BYTE ChangeBass(char amount)
+              {
+                      BYTE chg=0;
+              
+                      if( amount>0 ) {
+                              if( ((AudioBass+amount) <= UserRange.Max) ) {
+                                      chg = 1;
+                              }
+                      }
+                      else {
+                              if( AudioBass>UserRange.Min  ) {
+                                      chg = 1;
+                              }
+                      }
+              
+                      if( chg ) {
+                              AudioBass += amount;
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 58  
+
+                              SetAudioBassEE( AudioBass );
+                              SetMSPBass();
+                      }
+              
+                      return AudioBass;
+              }
+              
+              BYTE GetAudioTreble(void)
+              {
+                      return AudioTreble;
+              }
+              
+              BYTE ChangeTreble(char amount)
+              {
+                      BYTE chg=0;
+              
+                      if( amount>0 ) {
+                              if( ((AudioTreble+amount) <= UserRange.Max) ) {
+                                      chg = 1;
+                              }
+                      }
+                      else {
+                              if( AudioTreble>UserRange.Min  ) {
+                                      chg = 1;
+                              }
+                      }
+              
+                      if( chg ) {
+                              AudioTreble += amount;
+                              SetAudioTrebleEE( AudioTreble );
+                              SetMSPTreble();
+                      }
+              
+                      return AudioTreble;
+              }
+              
+              /*
+              
+              BYTE GetAudioEffect(void)
+              {
+                      return AudioEffect;
+              }
+              
+              BYTE ChangeAudioEffect(char amount)
+              {
+                      BYTE valdata[5];
+              
+                      amount = 0;                     //ignore
+                      AudioEffect = 0xff - AudioEffect;
+              
+                      valdata[0] = 0x12;
+                      valdata[1] = 0;
+                      valdata[2] = 5;
+                      valdata[3] = AudioEffect;
+                      valdata[4] = 0;
+                      WriteI2Cn_(MSPI2CAddress, valdata, 5);
+              
+                      SetAudioEffectEE( AudioEffect );
+                      return AudioEffect;
+              }
+              */
+              void ToggleAudioMute(void)
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 59  
+
+              {
+                      if( AudioMuteOn ) {
+                              AudioOn();                      //SetMSPVol();
+                              AudioMuteOn = 0;
+                      }
+                      else {
+                              AudioOff();
+                              AudioMuteOn = 1;
+                      }
+              }
+              
+              void CheckAndClearMuteOn(void)
+              {
+                      if( AudioMuteOn ) {
+                              AudioOn();                      //SetMSPVol();
+                              AudioMuteOn = 0;
+                              ClearMuteInfo();
+                      }
+              }
+              
+              /*void SetAudioMute(BYTE on )
+              {
+                              AudioMuteOn = on;
+              }
+              */
+              BYTE IsAudioMuteOn(void)
+              {
+                      return (BYTE)AudioMuteOn;
+              }
+              
+              void ResetAudioValue()
+              {
+                      SetAudioVolEE( 50 );
+                      SetAudioBalanceEE( 50 );
+                      SetAudioBassEE( 50 );
+                      SetAudioTrebleEE( 50 );
+              //      SetAudioEffectEE( 0 );
+              
+              }
+              #endif
+ 524          
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 60  
+
+ASSEMBLY LISTING OF GENERATED OBJECT CODE
+
+
+             ; FUNCTION AudioMute (BEGIN)
+                                           ; SOURCE LINE # 291
+                                           ; SOURCE LINE # 292
+                                           ; SOURCE LINE # 301
+0000 7BFF              MOV     R3,#0FFH
+0002 200006      R     JB      mute,?C0001
+                                           ; SOURCE LINE # 302
+0005 7A00        R     MOV     R2,#HIGH ?SC_0
+0007 7900        R     MOV     R1,#LOW ?SC_0
+0009 8004              SJMP    ?C0019
+000B         ?C0001:
+                                           ; SOURCE LINE # 304
+000B 7A00        R     MOV     R2,#HIGH ?SC_11
+000D 7900        R     MOV     R1,#LOW ?SC_11
+000F         ?C0019:
+000F 120000      E     LCALL   _Puts
+                                           ; SOURCE LINE # 305
+0012         ?C0003:
+0012 22                RET     
+             ; FUNCTION AudioMute (END)
+
+             ; FUNCTION _ChangeVol (BEGIN)
+                                           ; SOURCE LINE # 307
+0000 7800        R     MOV     R0,#LOW amount
+0002 EF                MOV     A,R7
+0003 F2                MOVX    @R0,A
+                                           ; SOURCE LINE # 308
+                                           ; SOURCE LINE # 310
+0004 E4                CLR     A
+0005 08                INC     R0
+0006 F2                MOVX    @R0,A
+                                           ; SOURCE LINE # 314
+0007 300004      E     JNB     VGAAudio,?C0004
+                                           ; SOURCE LINE # 315
+                                           ; SOURCE LINE # 316
+000A 7800        R     MOV     R0,#LOW PCAudioVol
+                                           ; SOURCE LINE # 317
+000C 8002              SJMP    ?C0020
+000E         ?C0004:
+                                           ; SOURCE LINE # 319
+                                           ; SOURCE LINE # 320
+000E 7800        R     MOV     R0,#LOW AudioVol
+0010         ?C0020:
+0010 E2                MOVX    A,@R0
+0011 7800        R     MOV     R0,#LOW AudioTemp
+0013 F2                MOVX    @R0,A
+                                           ; SOURCE LINE # 321
+0014         ?C0005:
+                                           ; SOURCE LINE # 323
+0014 7800        R     MOV     R0,#LOW AudioTemp
+0016 E2                MOVX    A,@R0
+0017 6005              JZ      ?C0007
+0019 7800        E     MOV     R0,#LOW PowerFlag
+001B E2                MOVX    A,@R0
+001C 7004              JNZ     ?C0006
+001E         ?C0007:
+                                           ; SOURCE LINE # 324
+001E C200        R     CLR     ?AudioMute?BIT
+0020 8002              SJMP    ?C0021
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 61  
+
+0022         ?C0006:
+                                           ; SOURCE LINE # 326
+0022 D200        R     SETB    ?AudioMute?BIT
+0024         ?C0021:
+0024 120000      R     LCALL   AudioMute
+0027         ?C0008:
+                                           ; SOURCE LINE # 328
+0027 7800        R     MOV     R0,#LOW amount
+0029 E2                MOVX    A,@R0
+002A FF                MOV     R7,A
+002B D3                SETB    C
+002C 6480              XRL     A,#080H
+002E 9480              SUBB    A,#080H
+0030 4022              JC      ?C0009
+                                           ; SOURCE LINE # 329
+                                           ; SOURCE LINE # 330
+0032 EF                MOV     A,R7
+0033 33                RLC     A
+0034 95E0              SUBB    A,ACC
+0036 FE                MOV     R6,A
+0037 7800        R     MOV     R0,#LOW AudioTemp
+0039 E2                MOVX    A,@R0
+003A 2F                ADD     A,R7
+003B FF                MOV     R7,A
+003C E4                CLR     A
+003D 3E                ADDC    A,R6
+003E FE                MOV     R6,A
+003F C3                CLR     C
+0040 900000      E     MOV     DPTR,#UserRange+02H
+0043 7401              MOV     A,#01H
+0045 93                MOVC    A,@A+DPTR
+0046 9F                SUBB    A,R7
+0047 EE                MOV     A,R6
+0048 6480              XRL     A,#080H
+004A F8                MOV     R0,A
+004B E4                CLR     A
+004C 93                MOVC    A,@A+DPTR
+004D 6480              XRL     A,#080H
+004F 98                SUBB    A,R0
+0050 401D              JC      ?C0011
+                                           ; SOURCE LINE # 331
+                                           ; SOURCE LINE # 332
+0052 8016              SJMP    ?C0022
+0054         ?C0009:
+                                           ; SOURCE LINE # 334
+                                           ; SOURCE LINE # 335
+0054 7800        R     MOV     R0,#LOW AudioTemp
+0056 E2                MOVX    A,@R0
+0057 FF                MOV     R7,A
+0058 C3                CLR     C
+0059 900000      E     MOV     DPTR,#UserRange
+005C 7401              MOV     A,#01H
+005E 93                MOVC    A,@A+DPTR
+005F 9F                SUBB    A,R7
+0060 7480              MOV     A,#080H
+0062 F8                MOV     R0,A
+0063 E4                CLR     A
+0064 93                MOVC    A,@A+DPTR
+0065 6480              XRL     A,#080H
+0067 98                SUBB    A,R0
+0068 5005              JNC     ?C0011
+                                           ; SOURCE LINE # 336
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 62  
+
+006A         ?C0022:
+006A 7800        R     MOV     R0,#LOW chg
+006C 7401              MOV     A,#01H
+006E F2                MOVX    @R0,A
+                                           ; SOURCE LINE # 337
+006F         ?C0011:
+                                           ; SOURCE LINE # 339
+006F 7800        R     MOV     R0,#LOW chg
+0071 E2                MOVX    A,@R0
+0072 6008              JZ      ?C0013
+                                           ; SOURCE LINE # 340
+                                           ; SOURCE LINE # 341
+0074 18                DEC     R0
+0075 E2                MOVX    A,@R0
+0076 FF                MOV     R7,A
+0077 7800        R     MOV     R0,#LOW AudioTemp
+0079 E2                MOVX    A,@R0
+007A 2F                ADD     A,R7
+007B F2                MOVX    @R0,A
+                                           ; SOURCE LINE # 342
+007C         ?C0013:
+                                           ; SOURCE LINE # 345
+007C 7800        R     MOV     R0,#LOW AudioTemp
+007E E2                MOVX    A,@R0
+007F FF                MOV     R7,A
+0080 C3                CLR     C
+0081 7478              MOV     A,#078H
+0083 9F                SUBB    A,R7
+0084 F5FC              MOV     CCAP2H,A
+                                           ; SOURCE LINE # 349
+0086 300009      E     JNB     VGAAudio,?C0014
+                                           ; SOURCE LINE # 350
+                                           ; SOURCE LINE # 351
+0089 7800        R     MOV     R0,#LOW PCAudioVol
+008B EF                MOV     A,R7
+008C F2                MOVX    @R0,A
+                                           ; SOURCE LINE # 352
+008D 120000      E     LCALL   _SetPCAudioVolEE
+                                           ; SOURCE LINE # 353
+0090 800A              SJMP    ?C0015
+0092         ?C0014:
+                                           ; SOURCE LINE # 355
+                                           ; SOURCE LINE # 356
+0092 7800        R     MOV     R0,#LOW AudioTemp
+0094 E2                MOVX    A,@R0
+0095 FF                MOV     R7,A
+0096 7800        R     MOV     R0,#LOW AudioVol
+0098 F2                MOVX    @R0,A
+                                           ; SOURCE LINE # 357
+0099 120000      E     LCALL   _SetAudioVolEE
+                                           ; SOURCE LINE # 358
+009C         ?C0015:
+                                           ; SOURCE LINE # 364
+009C 300005      E     JNB     VGAAudio,?C0016
+                                           ; SOURCE LINE # 365
+009F 7800        R     MOV     R0,#LOW PCAudioVol
+00A1 E2                MOVX    A,@R0
+00A2 FF                MOV     R7,A
+00A3 22                RET     
+00A4         ?C0016:
+                                           ; SOURCE LINE # 367
+00A4 7800        R     MOV     R0,#LOW AudioVol
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 63  
+
+00A6 E2                MOVX    A,@R0
+00A7 FF                MOV     R7,A
+                                           ; SOURCE LINE # 369
+00A8         ?C0017:
+00A8 22                RET     
+             ; FUNCTION _ChangeVol (END)
+
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 64  
+
+NAME                                    CLASS   MSPACE  TYPE    OFFSET  SIZE
+====                                    =====   ======  ====    ======  ====
+
+
+DWORD. . . . . . . . . . . . . . . . .  TYPEDEF  -----  U_LONG   -----  4
+CAM_R. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+P4 . . . . . . . . . . . . . . . . . .  SFR      DATA   U_CHAR   00E8H  1
+CAM_BAR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CAR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ACR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CBR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BCR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+PowerFlag. . . . . . . . . . . . . . .  EXTERN   PDATA  U_CHAR   -----  1
+NumberStringType . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  11
+  x. . . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  y. . . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0001H  1
+  width. . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0002H  1
+  BackColor. . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0003H  1
+  Radix. . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0004H  1
+  NumColor . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0005H  1
+  MaxLen . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0006H  1
+  PrePostCharLen . . . . . . . . . . .  MEMBER   -----  U_CHAR   0007H  1
+  PrePostChar. . . . . . . . . . . . .  MEMBER   -----  ARRAY    0008H  3
+UserRange. . . . . . . . . . . . . . .  EXTERN   CODE   STRUCT   -----  6
+AudioMute. . . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  mute . . . . . . . . . . . . . . . .  AUTO     DATA   BIT      0000H  1
+CCAP2H . . . . . . . . . . . . . . . .  SFR      DATA   U_CHAR   00FCH  1
+AVMode . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+SourceModeType . . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+CAM_NUM. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+AudioVol . . . . . . . . . . . . . . .  PUBLIC   PDATA  U_CHAR   0000H  1
+_Puts. . . . . . . . . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+CAM_RAB_H. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BA . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_AB . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+BYTE . . . . . . . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+TimeType . . . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  7
+  x. . . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  y. . . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0001H  1
+  width. . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0002H  1
+  BackColor. . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0003H  1
+  Format . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0004H  1
+  TimeColor. . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0005H  1
+  CursorColor. . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0006H  1
+CAM_CA . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_AC . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BC . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CB . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+SourceModeTypeEnum . . . . . . . . . .  * TAG *  -----  ENUM     -----  -----
+struct_IdName. . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  17
+  Id . . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  Name . . . . . . . . . . . . . . . .  MEMBER   -----  ARRAY    0001H  16
+PCAudioVol . . . . . . . . . . . . . .  PUBLIC   PDATA  U_CHAR   0001H  1
+EnumType . . . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  17
+  Sz . . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  ByLang . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0001H  1
+  Str. . . . . . . . . . . . . . . . .  MEMBER   -----  ARRAY    0002H  15
+MenuType . . . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  4
+  width. . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  height . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0001H  1
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 65  
+
+NAME                                    CLASS   MSPACE  TYPE    OFFSET  SIZE
+====                                    =====   ======  ====    ======  ====
+
+
+  TitleColor . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0002H  1
+  CursorColor. . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0003H  1
+CAM_RAB_T. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+WORD . . . . . . . . . . . . . . . . .  TYPEDEF  -----  U_INT    -----  2
+CAM_AR . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BR . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_RB . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CR . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+Register . . . . . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+VGAAudio . . . . . . . . . . . . . . .  EXTERN   DATA   BIT      -----  1
+NumType. . . . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  5
+  PrePostCharLen . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  PrePostChar. . . . . . . . . . . . .  MEMBER   -----  ARRAY    0001H  4
+RegisterInfo . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  6
+  Min. . . . . . . . . . . . . . . . .  MEMBER   -----  INT      0000H  2
+  Max. . . . . . . . . . . . . . . . .  MEMBER   -----  INT      0002H  2
+  Default. . . . . . . . . . . . . . .  MEMBER   -----  INT      0004H  2
+CAM_QUAD . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+_SetAudioVolEE . . . . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+DefineMenu . . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  16
+  Icon . . . . . . . . . . . . . . . .  MEMBER   -----  PTR      0000H  2
+  Desc . . . . . . . . . . . . . . . .  MEMBER   -----  PTR      0002H  3
+  PreFnId. . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0005H  1
+  PostFnId . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0006H  1
+  IconColor. . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0007H  1
+  DescColor. . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0008H  1
+  Child. . . . . . . . . . . . . . . .  MEMBER   -----  PTR      0009H  2
+  Type . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   000BH  1
+  ActiveWithCursor . . . . . . . . . .  MEMBER   -----  U_CHAR   000CH  1
+  Id . . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   000DH  1
+  TypeData . . . . . . . . . . . . . .  MEMBER   -----  PTR      000EH  2
+VGAMode. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+SEQ. . . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+LongRegisterInfo . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  6
+  Min. . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0000H  2
+  Max. . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0002H  2
+  Default. . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0004H  2
+PictureInfo. . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  4
+  Register_Addr. . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  EEPROM_Addr. . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0001H  1
+  Control_Range. . . . . . . . . . . .  MEMBER   -----  PTR      0002H  2
+CAM_ABR_T3 . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABR_T4 . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_A. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_B. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_C. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+_SetPCAudioVolEE . . . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+CAM_D. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CAB. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BAC. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABC. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+_ChangeVol . . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  amount . . . . . . . . . . . . . . .  AUTO     PDATA  CHAR     0000H  1
+  chg. . . . . . . . . . . . . . . . .  AUTO     PDATA  U_CHAR   0001H  1
+  AudioTemp. . . . . . . . . . . . . .  AUTO     PDATA  U_CHAR   0002H  1
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+C51 COMPILER V8.16   AUDIO                                                                 03/04/2011 15:51:19 PAGE 66  
+
+   CODE SIZE        =    188    ----
+   CONSTANT SIZE    =     22    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =      2       3
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

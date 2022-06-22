@@ -1,0 +1,25 @@
+#ifndef	_HS_IOdef_
+#define	_HS_IOdef_
+
+
+
+#include "Reg.h"
+
+#define LEFT_T     P0_0
+#define Right_T    P0_1
+#define REVERSE_T  P0_2
+#define PARK_T     P0_3
+#define VGA_T      P0_4
+#define CAMC_T     P0_5
+#define CAMD_T     P0_6
+//#define Audio_Select1     P2_0
+//#define Audio_Select2     P2_1
+//#define Audio_Mute        P0_7
+//#define AVOutPutSelect    P1_7
+#define RS232Select     P4_0
+#define ACC_B		P1_6
+
+#define PPWR		P3_6
+
+
+#endif

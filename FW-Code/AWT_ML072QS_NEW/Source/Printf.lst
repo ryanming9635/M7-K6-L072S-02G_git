@@ -1,0 +1,2412 @@
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE PRINTF
+OBJECT MODULE PLACED IN .\Output\Printf.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE Printf.c LARGE OPTIMIZE(9,SIZE) BROWSE INCDIR(.\Include\) DEBUG OBJECTEX
+                    -TEND CODE LISTINCLUDE SYMBOLS PRINT(.\Source\Printf.lst) TABS(2) OBJECT(.\Output\Printf.obj)
+
+line level    source
+
+   1          #include "Config.h"
+   1      =1  /*****************************************************************************/
+   2      =1  /*                           System Configurations                           */
+   3      =1  /*              rev 0.10 include auto test             */
+   4      =1  // 0.11 change DTV, PC input initial download data correct for Charge Pump
+   5      =1  // 0.12 correct phase measurement routine '>>3'
+   6      =1  // 0.13 enable function for SPI control... only EXT MCU case
+   7      =1  // 0.14 corrected PC measurement......
+   8      =1  // 0.0a test function only for CVBS, SVIDEO
+   9      =1  // 0.15 corrected DTV scaler setting for panel resolutions
+  10      =1  // 0.0b panel for AND 640x480 TICON panel
+  11      =1  // 0.16 corrected COMPONENT scaler setting for panel resolutions  11/21/2007
+  12      =1  // 0.0c automatic chip test
+  13      =1  // 0.17 add monitor function, osd grid for writing grid
+  14      =1  // 0.18 add component, dtv pc for analogpanel, 12/06/2007
+  15      =1  // 0.19 correct pal input for CES, 12/20/2007
+  16      =1  // 0.1a CCFL control, 12/28/2007
+  17      =1  // 0.19 Multi Grid for Banking on Internal MCU  01/17/2008
+  18      =1  // 0.20 CCFL contol for backlight brightness  01/21/2008
+  19      =1  // 0.21 CCFL contol for backlight brightness  01/25/2008
+  20      =1  // 0.22 phase setting 02/07/2008
+  21      =1  // 0.221 display input correction 04/03/2008
+  22      =1  // 0.23 PC, DTV mode, no signal display
+  23      =1  // 0.24 PC Auto Color adjustment
+  24      =1  // 0.25 revised PC Auto Clock adjustment - find divide number and phase
+  25      =1  // 0.26 Digital RGB for TW8826
+  26      =1  // 0.27 Correct LVDS control          08/22/2008
+  27      =1  // 0.28 Add WSVGA resolution          10/23/2008
+  28      =1  // 0.29 Add NEW GRID              11/14/2008
+  29      =1  // 0.30 Fix DTV input             12/10/2008
+  30      =1  // 0.31 Add 1080i23, 24, 25A, 25B       01/20/2009
+  31      =1  // 0.32 TCON setting FIX all mode       01/22/2009
+  32      =1  // 0.33 autodetect is auto on/off by dip sw1  02/02/2009
+  33      =1  // 0.34 Fix autocolor function and clamp position 02/08/2009
+  34      =1  /*****************************************************************************/
+  35      =1  #ifndef __CONFIG_H__
+  36      =1  #define __CONFIG_H__
+  37      =1  
+  38      =1  //#define INTERNAL_MCU -- defined by Project Compiler session
+  39      =1  #define   HS        
+  40      =1  //#define   E_Wintek  
+  41      =1  //#define   AWT 
+  42      =1  //#define Holtz
+  43      =1  
+  44      =1  //#define QUAD
+  45      =1  
+  46      =1  #ifdef QUAD
+           =1   #define AWT_ML072Q  //Pinchi 20150827 disable for HTRV
+           =1 //  #define HTRV  //Pinchi 20140902 disable for AWT ML072Q
+           =1 #else
+  50      =1    #define AWT_ML072S
+  51      =1  #endif
+  52      =1  
+  53      =1  //--------------------------------------------------
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 2   
+
+  54      =1  //              Common Feature Define
+  55      =1  //--------------------------------------------------
+  56      =1  //#define FIRST_RUN_FROM_AC  //Pinchi 20150831 disable for Screen re-setting by Set4WideScreen()  //Pinchi
+             - 20141029 add
+  57      =1  #define SUPPORT_ML072Q_AUTO_DAY_NIGHT  //Pinchi 20150825 add for function define
+  58      =1  #define SUPPORT_TRIGGER_EXIT_MENU  //Pinchi 20150827 add for exit OSD Menu by CAM trigger
+  59      =1  #define SUPPORT_AC_ON_NORMAL_SCREEN  //Pinchi 20150901 add to set 4:3 screen when AC on
+  60      =1  
+  61      =1  #define FIX_DISPLAY_OFF_TRIGGER_ISSUE  //Pinchi 20150908 add to fix [Display] set OFF and trigger release 
+             -then trigger again during display info the CAM will change from trigger CH to original CH
+  62      =1  #define FIX_EXIT_STANDBY_NO_AUDIO  //Pinchi 20150908 add to fix no audio output when exit Standby mode
+  63      =1  #ifdef AWT_ML072Q
+           =1 #define FIX_2835_SCREEN_NOISE  //Pinchi 20160929 add to fix the screen noise of TW2835 by change DDR to ma
+             -ke clock shift
+           =1 #endif
+  66      =1  
+  67      =1  #define SUPPORT_NEW_TRIGGER_FUNCTION  /////修改新的Trigger方式減少trigger polling 時間 add by ryan@2018012
+             -4
+  68      =1  
+  69      =1  //#define AWT_ML072QS_MSG  //Pinchi 20140925 add
+  70      =1  //#define REDUCE_DELAY_TIME  //Pinchi 20141029 add
+  71      =1  //#define DISPLAY_TECHWELL_LOGO  //Pinchi 2050903 add to disable the Techwell logo
+  72      =1  
+  73      =1  //#define SUPPORT_SVIDEO                     //andy Awt 20090914
+  74      =1  //#define SUPPORT_COMPONENT     // support component analog to decoder//andy Awt 20090914
+  75      =1  //#define SUPPORT_DTV           // support DTV input through component( to ADC ).//andy Awt 20090914
+  76      =1  //#define SUPPORT_PC        // support PC function
+  77      =1  //#define SUPPORT_DVI       // support DVI input
+  78      =1  //#define SUPPORT_SDCARD
+  79      =1  
+  80      =1  #define SUPPORT_2835_CLK_TUNE_BACK_DOOR  //Pinchi 20160913 add to fine tune TW2835 clock by hot key
+  81      =1  //#define SUPPORT_DISPLAY_TEST_VERSION  //Pinchi 20150929 add to display test software version on OSD
+  82      =1  
+  83      =1  //--------------------------------------------------
+  84      =1  //              Model Feature Define
+  85      =1  //--------------------------------------------------
+  86      =1  #if (defined AWT_ML072Q) || (defined AWT_ML072S)
+  87      =1  #define AWT_ML072QS_FW_RULE  //Pinchi 20140902 add
+  88      =1  //#define AWT_NEW_SLIM_MODEL  //Pinchi 20150203 add for AWT new slim model
+  89      =1  #define AWT_NO_SIGNAL_MSG  //Pinchi 20150319 add for display "NO VIDEO SIGNAL" by AWT request of 20150302
+  90      =1  #define AWT_TW2835_DRAW_T_ICON  //Pinchi 20150415 add to draw T icon by TW2835 when CAM C trigger
+  91      =1  #define SUPPORT_AC_ON_REDUCE_TIME  //Pinchi 20150903 add to reduce Power time when AC on
+  92      =1  
+  93      =1  //#define SUPPORT_TRIGGER_RELEASE_DELAY  //Pinchi 20150908 add to support delay time when CAM trigger rele
+             -ase
+  94      =1  
+  95      =1  typedef enum  //Pinchi 20150326 add
+  96      =1  {
+  97      =1       LAST_TRIG_NON =  0x00,
+  98      =1       LAST_TRIG_LEFT =   0x01,
+  99      =1       LAST_TRIG_RIGHT =  0x02,
+ 100      =1       LAST_TRIG_REVERSE =0x03,
+ 101      =1       LAST_TRIG_CAMC =   0x04,
+ 102      =1  
+ 103      =1  } AWT_LAST_TRIGGER;
+ 104      =1  
+ 105      =1  #endif
+ 106      =1  
+ 107      =1  
+ 108      =1  #ifdef HTRV  //Pinchi 20150825 add
+           =1 #define HTRV_ML072Q_FW_RULE  //Pinchi 20150827 add
+           =1 #define HTRV_REDUCE_SCREEN_CHANGE  //Pinchi 20150828 add to reduce screen double change
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 3   
+
+           =1 
+           =1 #if 0  //Pinchi 20151209 add to remove 4:3 screen by HTRV request of 20151209
+           =1 #define HTRV_SUPPORT_4_3_SCREEN
+           =1 #else
+           =1 #undef SUPPORT_AC_ON_NORMAL_SCREEN  //Pinchi 20151210 add
+           =1 #endif
+           =1 
+           =1 #endif
+ 119      =1  
+ 120      =1  //#define SUPPORT_RS485
+ 121      =1  //-----------------------------------------------------------------------------
+ 122      =1  //    Firmware Version
+ 123      =1  //-----------------------------------------------------------------------------
+ 124      =1  #ifdef HTRV  //Pinchi 20150907 add
+           =1 //#define FWVER     0x200 // Rev 2.00
+           =1 //#define FWVER     0x210   // Rev 2.1  //Pinchi 20151209 update version for HTRV request to remove 4:3 scree
+             -n
+           =1 //#define FWVER     0x220   // Rev 2.2  //Pinchi 20160929 change for V2.2
+           =1 #define FWVER     0x230     //Rev 2.3    ryan@20170727 update version by Encoder switches零件 EOL更換
+           =1 #else
+ 130      =1  #define FWVER     0x210   // Rev 0.14
+ 131      =1  #endif
+ 132      =1  
+ 133      =1  //-----------------------------------------------------------------------------
+ 134      =1  //    Compiler
+ 135      =1  //-----------------------------------------------------------------------------
+ 136      =1  #define KEILC           // Keil C 5.0
+ 137      =1  //-----------------------------------------------------------------------------
+ 138      =1  //    MPU Clock
+ 139      =1  //-----------------------------------------------------------------------------
+ 140      =1  #ifndef INTERNAL_MCU
+ 141      =1  //#define CLOCK_11M         // 11.0592MHz
+ 142      =1  #define CLOCK_22M         // 22.1184MHz
+ 143      =1  #else                 // INTERNAL_MCU
+           =1 #define CLOCK_27M         // 27MHz
+           =1 #define REG_START_ADDRESS 0xc000    // register start 0xc000, for page0, 0xc100-page1 
+           =1 #endif
+ 147      =1  //-----------------------------------------------------------------------------
+ 148      =1  //    TW88 Version
+ 149      =1  //-----------------------------------------------------------------------------
+ 150      =1  #define TW8816   ///AWT TW8806 change to TW8816 platform //ryan@20170921
+ 151      =1  //-----------------------------------------------------------------------------
+ 152      =1  //-----------------------------------------------------------------------------
+ 153      =1  //    Options for Backlight control
+ 154      =1  //-----------------------------------------------------------------------------
+ 155      =1  //#define BACKLIGHT_CCFL
+ 156      =1  //#define BACKLIGHT_LED
+ 157      =1  #define BACKLIGHT_PWM
+ 158      =1  
+ 159      =1  //-----------------------------------------------------------------------------
+ 160      =1  //    Panel Resolution
+ 161      =1  //-----------------------------------------------------------------------------
+ 162      =1  // ---- Select Default Panel
+ 163      =1  //
+ 164      =1  //#define UXGA            // 1600 x 1200
+ 165      =1  //#define SXGA              // 1280 x 1024
+ 166      =1  //#define XGA  // 1024 x 768
+ 167      =1  #ifdef XGA
+           =1   #define LVDS          
+           =1   #define PWIDTH  1024
+           =1   #define PHEIGHT 768
+           =1 #endif
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 4   
+
+ 172      =1  //#define SVGA            //  800 x 600
+ 173      =1  //#define VGA             //  640 x 480
+ 174      =1  #ifdef VGA
+           =1   #define PWIDTH  640
+           =1   #define PHEIGHT 480
+           =1   //#define HITACHI_640_B_160   //--> 640 x 160
+           =1   #define AND_640_480
+           =1 #endif
+ 180      =1  //#define WXGA            // 1280 x 768 (15:9) // 1366 x 768 (16:9)
+ 181      =1  #ifdef WXGA
+           =1     //#define WX_SHARP_LQ106K1LA
+           =1   #define PWIDTH  1280
+           =1   #define PHEIGHT 768
+           =1 #endif
+ 186      =1  //#define WSVGA           // 1024 x 600 *** only video mode
+ 187      =1  #ifdef WSVGA
+           =1   #define PWIDTH  1024
+           =1   #define PHEIGHT 600
+           =1   #define UNIDEN_1024_600
+           =1 #endif
+ 192      =1  #define WVGA            //  800 x 480
+ 193      =1  #ifdef WVGA
+ 194      =1    #define PWIDTH  800
+ 195      =1    #define PHEIGHT 480//600
+ 196      =1    // If WVGA, you have to select panel.
+ 197      =1    //#define AU_10INCH
+ 198      =1    //#define WVGA_TPO
+ 199      =1    //#define SAMSUNG_10INCH
+ 200      =1    //#define SAMSUNG_TICONLESS_10INCH
+ 201      =1    //#define SHARP_TICONLESS_7INCH
+ 202      =1    //#define AU_TICONLESS_7INCH
+ 203      =1    //#define AU_G084SN05V8_8_4INCH 
+ 204      =1    #define HSD070IDW1_7INCH
+ 205      =1    //#define INNOLUX_AT080TN03
+ 206      =1    //#define AU_TICONLESS_7INCH_CCFL
+ 207      =1    //#define CMO     // CHIMEI panel
+ 208      =1    //#define AU_TICONLESS_10INCH
+ 209      =1    //#define HITACHI_T01
+ 210      =1    //#define HITACHI_TX23D12
+ 211      =1    //#define HITACHI_TX18D24
+ 212      =1    //#define HITACHI_TX18D16
+ 213      =1    //#define TMD_LTA070A320F
+ 214      =1    //#define TMD_LTA080B
+ 215      =1  #endif  //WVGA
+ 216      =1  //#define HVGA            //  480 x 320
+ 217      =1  //#define QVGA            //  320 x 240 *** only video mode
+ 218      =1  #ifdef QVGA
+           =1   #define PWIDTH  320
+           =1   #define PHEIGHT 240
+           =1   //#define HITACHI_TX09D73
+           =1   //#define AU_DELTARGB
+           =1   //#define SHARP_LQ050Q5DR01
+           =1   //#define SHARP_LQ035
+           =1   //#define TMD
+           =1 #endif
+ 227      =1  
+ 228      =1  //#define WQVGA           //  480 x 234 *** only video mode
+ 229      =1  #ifdef WQVGA
+           =1   #define PWIDTH  480
+           =1   #define PHEIGHT 240
+           =1   // If WQVGA, you have to select panel 
+           =1     #define ANALOG_7INCH
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 5   
+
+           =1   //#define PWIDTH  400
+           =1   //#define PHEIGHT 240
+           =1   //#define SHARP_LQ043T3DX02   //  400 x 237
+           =1   //#define LG_ANALOG
+           =1   //#define TMD_ANALOG        //TMD_LTA05B352A
+           =1   //#define T_51945GD       // Optorex Panel
+           =1 #endif  // WQVGA
+ 241      =1  
+ 242      =1  //if LVDS pannel disable TICONLESS
+ 243      =1  
+ 244      =1  //-----------------------------------------------------------------------------
+ 245      =1  //---- Add Support One more panel with DIPSW#1
+ 246      =1  //---- Ex. Add Analog AU 7" Panel with Default Panel for evalution
+ 247      =1  //#define ADD_ANALOGPANEL   // Added Analog panel(AU7") from default set panel(expect WQVGA) with DIP #1 sw
+             -itch.(DIP#1=L:ANALOG, H:DEFAULT)
+ 248      =1                // It can't support WQVGA and ADD_ANALOGPANEL same time!!
+ 249      =1    //#define ADD_ANALOG_7INCH
+ 250      =1    //#define ADD_TMD_LTA05B352A
+ 251      =1                    
+ 252      =1  //---- Support Wide panel function
+ 253      =1  #if (defined WXGA) || (defined WSVGA) || (defined WVGA) || (defined WQVGA)
+ 254      =1  #if 0///ryan@20180115//mask for NTSC sharpness issue
+           =1 #define WIDE_SCREEN         // Can support 4 display mode, i.e. Normal, Wide, Full, Zoom
+           =1 #endif
+ 257      =1  #endif                // Tested panasonic WVGA panel.
+ 258      =1  
+ 259      =1  //-----------------------------------------------------------------------------
+ 260      =1  //    Panel Vendor Specific
+ 261      =1  //-----------------------------------------------------------------------------
+ 262      =1  
+ 263      =1  //-----------------------------------------------------------------------------
+ 264      =1  //    TV Tuner
+ 265      =1  //-----------------------------------------------------------------------------
+ 266      =1  #define PHILIPS       0
+ 267      =1  #define ALPS        1   // ALPS, LG
+ 268      =1  #define TEMIC       2
+ 269      =1  #define TVAVA       3
+ 270      =1  #define LGTUNER       4
+ 271      =1  #define SAMSUNGMUTITUNER  5
+ 272      =1  
+ 273      =1  #define TVTunerDevice   4
+ 274      =1  //-----------------------------------------------------------------------------
+ 275      =1  //    IR Remote Controller Type
+ 276      =1  //-----------------------------------------------------------------------------
+ 277      =1  //#define REMO_RC5          // RC5 style
+ 278      =1  #define TECHWELL_REMOCON
+ 279      =1  //#define REMO_NEC          // NEC style
+ 280      =1  //#define PHILIPS_REMOCON // New remocon 
+ 281      =1  
+ 282      =1  //-----------------------------------------------------------------------------
+ 283      =1  //    I2C Device Access Address Mapping
+ 284      =1  //-----------------------------------------------------------------------------
+ 285      =1  
+ 286      =1  #define EEPROMI2CAddress  0xa0  // EEPROM (24C16)
+ 287      =1  #define TW88I2CAddress    0x8a  // TW880x
+ 288      =1  
+ 289      =1  #define MSPI2CAddress   0x80  // MSP
+ 290      =1  #define ALC106I2CAddress  0x4A  // MSP
+ 291      =1  //-----------------------------------------------------------------------------
+ 292      =1  //    Options for Possible Inputs
+ 293      =1  //-----------------------------------------------------------------------------
+ 294      =1  
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 6   
+
+ 295      =1  
+ 296      =1  //-----------------------------------------------------------------------------
+ 297      =1  //    Options for Possible Standards
+ 298      =1  //    Default:NTSC
+ 299      =1  //-----------------------------------------------------------------------------
+ 300      =1  #define SUPPORT_PAL     
+ 301      =1  #define SUPPORT_SECAM
+ 302      =1  #define SUPPORT_NTSC4   
+ 303      =1  #define SUPPORT_PALM  
+ 304      =1  #define SUPPORT_PALN    
+ 305      =1  #define SUPPORT_PAL60   
+ 306      =1  
+ 307      =1  //#define ID_CHECK_BY_FW        // in Video mode, check input system ID by firmware
+ 308      =1  
+ 309      =1  //-----------------------------------------------------------------------------
+ 310      =1  //    Options for Debugging/Release
+ 311      =1  //-----------------------------------------------------------------------------
+ 312      =1  //#define SUPPORT_PATTERN       // support LCD test pattern
+ 313      =1  
+ 314      =1  #ifndef WQVGA
+ 315      =1    #ifndef QVGA
+ 316      =1  #define SUPPORT_OSDPOSITIONMOVE
+ 317      =1    #endif
+ 318      =1  #endif
+ 319      =1  
+ 320      =1  #define SERIAL              // include serial communication routines
+ 321      =1  
+ 322      =1  //#define SUPPORT_DEBUG       // Support to use Read & Write in debug OSD Window by remocon.
+ 323      =1  
+ 324      =1  //#define DEBUG           // include debug information
+ 325      =1  #ifdef DEBUG
+           =1   //#define DEBUG_MAIN
+           =1   //#define DEBUG_TIME
+           =1   //#define DEBUG_KEYREMO
+           =1   //#define DEBUG_TW88
+           =1   //#define DEBUG_DECODER
+           =1   //#define DEBUG_I2C
+           =1   //#define DEBUG_EEP
+           =1   //#define DEBUG_OSD
+           =1   //#define DEBUG_AUDIO
+           =1   //#define DEBUG_SETPANEL
+           =1   //#define DEBUG_DTV
+           =1 //  #define DEBUG_PC
+           =1   //#define DEBUG_PC_MEAS
+           =1   //#define DEBUG_PC_COLOR
+           =1   //#define DEBUG_COMPONENT
+           =1   //#define DEBUG_BANK
+           =1   //#define DEBUG_PAUSE
+           =1   //#define DEBUG_MCU
+           =1 #endif
+ 345      =1  
+ 346      =1  #define AUTOCALC_PC         // in PC mode, Enable Auto Calcuration
+ 347      =1  //#define SUPPORT_USERCOLORFROMTXT  // Use color setting of text file in Color mode=USER MODE which is as B
+             -rightness(Reg10), Contast(Reg11),
+ 348      =1                    //    Sat_U(Reg13),Sat_V(Reg14),Sharpness(Reg12,Reg78)                  
+ 349      =1  //#define SUPPORT_GAMMA
+ 350      =1  
+ 351      =1  //#define CHIP_MANUAL_TEST      // DIPSW#1
+ 352      =1  
+ 353      =1  #ifndef INTERNAL_MCU
+ 354      =1  //#define NO_INITIALIZE       // After Power switch turn on with DIP SW4 Enable(Low), or pressed MENU button 
+             -for internal MCU
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 7   
+
+ 355      =1                                      //     micom works to access only I2C bus by serial command.
+ 356      =1  #endif
+ 357      =1  
+ 358      =1  //#define SUPPORT_KRS_OSDDEMO   // For KRS Company Demo 
+ 359      =1  //#define SUPPORT_LINE_OSDDEMO
+ 360      =1  
+ 361      =1  //-----------------------------------------------------------------------------
+ 362      =1  //    Special Features
+ 363      =1  //-----------------------------------------------------------------------------
+ 364      =1  
+ 365      =1  #ifndef INTERNAL_MCU
+ 366      =1  //#define SUPPORT_DELTA_RGB
+ 367      =1  #endif
+ 368      =1  #define SUPPORT_SELECTKEY     // choose the keymap of using select key or left,right key.
+ 369      =1  //-----------------------------------------------------------------------------
+ 370      =1  
+ 371      =1  //#define HS_NEWOSDMENU     //Weylis -@121008 for Hor. Style OSD
+ 372      =1  //#define HS_NEWOSDMENU_2     //Weylis -@121008 for Hor. Style OSD(2 line)
+ 373      =1  
+ 374      =1  #endif  //__CONFIG_H__
+ 375      =1  
+   2          
+   3          #ifdef SERIAL
+   4          
+   5          #include "reg.h"
+   1      =1  //
+   2      =1  //Registers.h : Register declaration
+   3      =1  //
+   4      =1  
+   5      =1  #ifndef __REGISTERS__
+   6      =1  #define __REGISTERS__
+   7      =1  
+   8      =1  #ifdef INTERNAL_MCU
+           =1 /*  BYTE Registers  */
+           =1 sfr P0    = 0x80;
+           =1 sfr P1    = 0x90;
+           =1 sfr P2    = 0xA0;
+           =1 sfr P3    = 0xB0;
+           =1 sfr PSW   = 0xD0;
+           =1 sfr ACC   = 0xE0;
+           =1 sfr B     = 0xF0;
+           =1 sfr SP    = 0x81;
+           =1 sfr DPL   = 0x82;
+           =1 sfr DPH   = 0x83;
+           =1 sfr PCON  = 0x87;
+           =1 sfr TCON  = 0x88;
+           =1 sfr TMOD  = 0x89;
+           =1 sfr TL0   = 0x8A;
+           =1 sfr TL1   = 0x8B;
+           =1 sfr TH0   = 0x8C;
+           =1 sfr TH1   = 0x8D;
+           =1 sfr IE    = 0xA8;
+           =1 sfr IP    = 0xB8;
+           =1 sfr SCON  = 0x98;
+           =1 sfr SBUF  = 0x99;
+           =1 
+           =1 //sfr P4    = 0xd8;
+           =1 
+           =1 /*  8052 Extensions  */
+           =1 sfr EXIF  = 0x91;   // external interrupt 2,3,4,5 flags should be cleared by software
+           =1 sfr T2CON = 0xC8;
+           =1 sfr RCAP2L = 0xCA;
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 8   
+
+           =1 sfr RCAP2H = 0xCB;
+           =1 sfr TL2   = 0xCC;
+           =1 sfr TH2   = 0xCD;
+           =1 sfr EICON = 0xD8;
+           =1 sfr EIE   = 0xE8;
+           =1 sfr EIP   = 0xF8;
+           =1 
+           =1 /*  TW88 Core Extension */
+           =1 sfr BANKREG   = 0x9A;
+           =1 sfr SPICONTROL  = 0x9B;
+           =1 sfr T0HIGH    = 0x9C;
+           =1 sfr T0LOW     = 0x9D;
+           =1 sfr T1HIGH    = 0x9E;
+           =1 sfr T1LOW     = 0x9F;
+           =1 sfr T2HIGH    = 0x93;
+           =1 sfr T2LOW     = 0x94;
+           =1 
+           =1 /*  BIT Registers  */
+           =1 /*  PSW  */
+           =1 sbit CY    = 0xD7;
+           =1 sbit AC    = 0xD6;
+           =1 sbit F0    = 0xD5;
+           =1 sbit RS1   = 0xD4;
+           =1 sbit RS0   = 0xD3;
+           =1 sbit OV    = 0xD2;
+           =1 sbit P     = 0xD0;
+           =1 
+           =1 /*  TCON  */
+           =1 sbit TF1   = 0x8F;
+           =1 sbit TR1   = 0x8E;
+           =1 sbit TF0   = 0x8D;
+           =1 sbit TR0   = 0x8C;
+           =1 sbit IE1   = 0x8B;
+           =1 sbit IT1   = 0x8A;
+           =1 sbit IE0   = 0x89;
+           =1 sbit IT0   = 0x88;
+           =1 
+           =1 /*  IE  */
+           =1 sbit EA    = 0xAF;
+           =1 sbit ES    = 0xAC;
+           =1 sbit ET1   = 0xAB;
+           =1 sbit EX1   = 0xAA;
+           =1 sbit ET0   = 0xA9;
+           =1 sbit EX0   = 0xA8;
+           =1 
+           =1 /*  EIE  */
+           =1 sbit EWDI  = 0xEC;    // Watch dog timer interrupt enable
+           =1 sbit EX5   = 0xEB;    // external interrupt 5 enable
+           =1 sbit EX4   = 0xEA;    // external interrupt 4 enable
+           =1 sbit EX3   = 0xE9;    // external interrupt 3 enable
+           =1 sbit EX2   = 0xE8;    // external interrupt 2 enable
+           =1 
+           =1 /*  IP  */
+           =1 sbit PS    = 0xBC;
+           =1 sbit PT1   = 0xBB;
+           =1 sbit PX1   = 0xBA;
+           =1 sbit PT0   = 0xB9;
+           =1 sbit PX0   = 0xB8;
+           =1 
+           =1 /*  EIP  */
+           =1 sbit PWDI  = 0xFC;    // Watch dog timer interrupt priority
+           =1 sbit PX5   = 0xFB;    // external interrupt5 priority
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 9   
+
+           =1 sbit PX4   = 0xFA;    // external interrupt4 priority
+           =1 sbit PX3   = 0xF9;    // external interrupt3 priority
+           =1 sbit PX2   = 0xF8;    // external interrupt2 priority
+           =1 
+           =1 /*  P3  */
+           =1 sbit RD    = 0xB7;
+           =1 sbit WR    = 0xB6;
+           =1 sbit T1    = 0xB5;
+           =1 sbit T0    = 0xB4;
+           =1 sbit INT1  = 0xB3;
+           =1 sbit INT0  = 0xB2;
+           =1 sbit TXD   = 0xB1;
+           =1 sbit RXD   = 0xB0;
+           =1 
+           =1 /*  SCON  */
+           =1 sbit SM0   = 0x9F;
+           =1 sbit SM1   = 0x9E;
+           =1 sbit SM2   = 0x9D;
+           =1 sbit REN   = 0x9C;
+           =1 sbit TB8   = 0x9B;
+           =1 sbit RB8   = 0x9A;
+           =1 sbit TI    = 0x99;
+           =1 sbit RI    = 0x98;
+           =1 
+           =1 /*  8052 Extensions  */
+           =1 /*  IE  */
+           =1 sbit ET2   = 0xAD;
+           =1 
+           =1 /*  IP  */
+           =1 sbit PT2   = 0xBD;
+           =1 
+           =1 /*  P1  */
+           =1 sbit T2EX  = 0x91;
+           =1 sbit T2    = 0x90;
+           =1              
+           =1 /*  T2CON  */
+           =1 sbit TF2   = 0xCF;
+           =1 sbit EXF2  = 0xCE;
+           =1 sbit RCLK  = 0xCD;
+           =1 sbit TCLK  = 0xCC;
+           =1 sbit EXEN2 = 0xCB;
+           =1 sbit TR2   = 0xCA;
+           =1 sbit C_T2  = 0xC9;
+           =1 sbit CP_RL2= 0xC8;
+           =1 
+           =1 sfr CHPENR = 0xF6;
+           =1 sfr CHPCON = 0xBF;
+           =1 sfr SFRAL  = 0xC4;
+           =1 sfr SFRAH  = 0xC5;
+           =1 sfr SFRFD  = 0xC6;
+           =1 sfr SFRCN  = 0xC7;
+           =1 
+           =1 sbit P0_0  = 0x80;
+           =1 sbit P0_1  = 0x81;
+           =1 sbit P0_2  = 0x82;
+           =1 sbit P0_3  = 0x83;
+           =1 sbit P0_4  = 0x84;
+           =1 sbit P0_5  = 0x85;
+           =1 sbit P0_6  = 0x86;
+           =1 sbit P0_7  = 0x87;
+           =1 
+           =1 sbit P1_0  = 0x90;
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 10  
+
+           =1 sbit P1_1  = 0x91;
+           =1 sbit P1_2  = 0x92;
+           =1 sbit P1_3  = 0x93;
+           =1 sbit P1_4  = 0x94;
+           =1 sbit P1_5  = 0x95;
+           =1 sbit P1_6  = 0x96;
+           =1 sbit P1_7  = 0x97;
+           =1 
+           =1 sbit P2_0  = 0xa0;
+           =1 sbit P2_1  = 0xa1;
+           =1 sbit P2_2  = 0xa2;
+           =1 sbit P2_3  = 0xa3;
+           =1 sbit P2_4  = 0xa4;
+           =1 sbit P2_5  = 0xa5;
+           =1 sbit P2_6  = 0xa6;
+           =1 sbit P2_7  = 0xa7;
+           =1 
+           =1 sbit P3_0  = 0xb0;
+           =1 sbit P3_1  = 0xb1;
+           =1 sbit P3_2  = 0xb2;
+           =1 sbit P3_3  = 0xb3;
+           =1 sbit P3_4  = 0xb4;
+           =1 sbit P3_5  = 0xb5;
+           =1 sbit P3_6  = 0xb6;
+           =1 sbit P3_7  = 0xb7;
+           =1 
+           =1 #else // external MCU=WINBOND
+ 189      =1  /*  BYTE Registers  */
+ 190      =1  sfr P0    = 0x80;
+ 191      =1  sfr P1    = 0x90;
+ 192      =1  sfr P2    = 0xA0;
+ 193      =1  sfr P3    = 0xB0;
+ 194      =1  sfr PSW   = 0xD0;
+ 195      =1  sfr ACC   = 0xE0;
+ 196      =1  sfr B     = 0xF0;
+ 197      =1  sfr SP    = 0x81;
+ 198      =1  sfr DPL   = 0x82;
+ 199      =1  sfr DPH   = 0x83;
+ 200      =1  sfr PCON  = 0x87;
+ 201      =1  sfr TCON  = 0x88;
+ 202      =1  sfr TMOD  = 0x89;
+ 203      =1  sfr TL0   = 0x8A;
+ 204      =1  sfr TL1   = 0x8B;
+ 205      =1  sfr TH0   = 0x8C;
+ 206      =1  sfr TH1   = 0x8D;
+ 207      =1  sfr CKCON = 0x8E;   //clock control register, default =0x01
+ 208      =1  sfr IE    = 0xA8;
+ 209      =1  sfr IP    = 0xB8;
+ 210      =1  sfr SCON  = 0x98;
+ 211      =1  sfr SBUF  = 0x99;
+ 212      =1  sfr P4 = 0xE8; //Megawin Ryan@970716
+ 213      =1  //sfr P4    = 0xa5;      //SST MCU
+ 214      =1  //sfr P4    = 0xd8;   //winbond<960820>
+ 215      =1  
+ 216      =1  /*  8052 Extensions  */
+ 217      =1  sfr ADCTL = 0xC5;   //william-20111017
+ 218      =1  sfr ADCV = 0xC6;    //william-20111017
+ 219      =1  sfr ADCVL = 0xE8;   //william-20111017
+ 220      =1  sfr T2CON = 0xC8;
+ 221      =1  sfr RCAP2L = 0xCA;
+ 222      =1  sfr RCAP2H = 0xCB;
+ 223      =1  sfr TL2   = 0xCC;
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 11  
+
+ 224      =1  sfr TH2   = 0xCD;
+ 225      =1  
+ 226      =1  // for UART2
+ 227      =1  sfr S2CON  = 0xAA;
+ 228      =1  sfr S2BRT  = 0xBA;
+ 229      =1  sfr S2BUF  = 0x9A;
+ 230      =1  sfr AUXR2  = 0xA6;
+ 231      =1  sfr AUXIE  = 0xAD;
+ 232      =1  
+ 233      =1  sfr P1M0  = 0x91;
+ 234      =1  sfr P1M1  = 0x92;
+ 235      =1  sfr P0M0  = 0x93;
+ 236      =1  sfr P0M1  = 0x94;
+ 237      =1  sfr P2M0  = 0x95;
+ 238      =1  sfr P2M1  = 0x96;
+ 239      =1  sfr P3M0  = 0xB1;
+ 240      =1  sfr P3M1  = 0xB2;
+ 241      =1  
+ 242      =1  // for PCA
+ 243      =1  sfr CCON   = 0xD8;
+ 244      =1  sfr CMOD   = 0xD9;
+ 245      =1  sfr CCAPM0 = 0xDA;
+ 246      =1  sfr CCAPM1 = 0xDB;
+ 247      =1  sfr CCAPM2 = 0xDC;
+ 248      =1  sfr CCAPM3 = 0xDD;
+ 249      =1  sfr CCAPM4 = 0xDE;
+ 250      =1  sfr CCAPM5 = 0xDF;
+ 251      =1  sfr CL     = 0xE9;
+ 252      =1  sfr CH     = 0xF9;
+ 253      =1  sfr CCAP0L = 0xEA;
+ 254      =1  sfr CCAP0H = 0xFA;
+ 255      =1  sfr CCAP1L = 0xEB;
+ 256      =1  sfr CCAP1H = 0xFB;
+ 257      =1  sfr CCAP2L = 0xEC;
+ 258      =1  sfr CCAP2H = 0xFC;
+ 259      =1  sfr CCAP3L = 0xED;
+ 260      =1  sfr CCAP3H = 0xFD;
+ 261      =1  sfr CCAP4L = 0xEE;
+ 262      =1  sfr CCAP4H = 0xFE;
+ 263      =1  sfr CCAP5L = 0xEF;
+ 264      =1  sfr CCAP5H = 0xFF;
+ 265      =1  sfr PCAPWM0= 0xF2;
+ 266      =1  sfr PCAPWM1= 0xF3;
+ 267      =1  sfr PCAPWM2= 0xF4;
+ 268      =1  sfr PCAPWM3= 0xF5;
+ 269      =1  sfr PCAPWM4= 0xF6;
+ 270      =1  sfr PCAPWM5= 0xF7;
+ 271      =1  
+ 272      =1  /*  BIT Registers  */
+ 273      =1  /*  PSW  */
+ 274      =1  sbit CY    = 0xD7;
+ 275      =1  sbit AC    = 0xD6;
+ 276      =1  sbit F0    = 0xD5;
+ 277      =1  sbit RS1   = 0xD4;
+ 278      =1  sbit RS0   = 0xD3;
+ 279      =1  sbit OV    = 0xD2;
+ 280      =1  sbit P     = 0xD0;
+ 281      =1  
+ 282      =1  /*  TCON  */
+ 283      =1  sbit TF1   = 0x8F;
+ 284      =1  sbit TR1   = 0x8E;
+ 285      =1  sbit TF0   = 0x8D;
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 12  
+
+ 286      =1  sbit TR0   = 0x8C;
+ 287      =1  sbit IE1   = 0x8B;
+ 288      =1  sbit IT1   = 0x8A;
+ 289      =1  sbit IE0   = 0x89;
+ 290      =1  sbit IT0   = 0x88;
+ 291      =1  
+ 292      =1  /*  IE  */
+ 293      =1  sbit EA    = 0xAF;
+ 294      =1  sbit ES    = 0xAC;
+ 295      =1  sbit ET1   = 0xAB;
+ 296      =1  sbit EX1   = 0xAA;
+ 297      =1  sbit ET0   = 0xA9;
+ 298      =1  sbit EX0   = 0xA8;
+ 299      =1  
+ 300      =1  /*  IP  */
+ 301      =1  sbit PS    = 0xBC;
+ 302      =1  sbit PT1   = 0xBB;
+ 303      =1  sbit PX1   = 0xBA;
+ 304      =1  sbit PT0   = 0xB9;
+ 305      =1  sbit PX0   = 0xB8;
+ 306      =1  
+ 307      =1  /*  P3  */
+ 308      =1  sbit RD    = 0xB7;
+ 309      =1  sbit WR    = 0xB6;
+ 310      =1  sbit T1    = 0xB5;
+ 311      =1  sbit T0    = 0xB4;
+ 312      =1  sbit INT1  = 0xB3;
+ 313      =1  sbit INT0  = 0xB2;
+ 314      =1  sbit TXD   = 0xB1;
+ 315      =1  sbit RXD   = 0xB0;
+ 316      =1  
+ 317      =1  /*  SCON  */
+ 318      =1  sbit SM0   = 0x9F;
+ 319      =1  sbit SM1   = 0x9E;
+ 320      =1  sbit SM2   = 0x9D;
+ 321      =1  sbit REN   = 0x9C;
+ 322      =1  sbit TB8   = 0x9B;
+ 323      =1  sbit RB8   = 0x9A;
+ 324      =1  sbit TI    = 0x99;
+ 325      =1  sbit RI    = 0x98;
+ 326      =1  
+ 327      =1  /*  8052 Extensions  */
+ 328      =1  /*  IE  */
+ 329      =1  sbit ET2   = 0xAD;
+ 330      =1  
+ 331      =1  /*  IP  */
+ 332      =1  sbit PT2   = 0xBD;
+ 333      =1  
+ 334      =1  /*  P1  */
+ 335      =1  sbit T2EX  = 0x91;
+ 336      =1  sbit T2    = 0x90;
+ 337      =1               
+ 338      =1  /*  T2CON  */
+ 339      =1  sbit TF2   = 0xCF;
+ 340      =1  sbit EXF2  = 0xCE;
+ 341      =1  sbit RCLK  = 0xCD;
+ 342      =1  sbit TCLK  = 0xCC;
+ 343      =1  sbit EXEN2 = 0xCB;
+ 344      =1  sbit TR2   = 0xCA;
+ 345      =1  sbit C_T2  = 0xC9;
+ 346      =1  sbit CP_RL2= 0xC8;
+ 347      =1  
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 13  
+
+ 348      =1  sfr CHPENR = 0xF6;
+ 349      =1  sfr CHPCON = 0xBF;
+ 350      =1  sfr SFRAL  = 0xC4;
+ 351      =1  sfr SFRAH  = 0xC5;
+ 352      =1  sfr SFRFD  = 0xC6;
+ 353      =1  sfr SFRCN  = 0xC7;
+ 354      =1  
+ 355      =1  sbit P0_0  = 0x80;
+ 356      =1  sbit P0_1  = 0x81;
+ 357      =1  sbit P0_2  = 0x82;
+ 358      =1  sbit P0_3  = 0x83;
+ 359      =1  sbit P0_4  = 0x84;
+ 360      =1  sbit P0_5  = 0x85;
+ 361      =1  sbit P0_6  = 0x86;
+ 362      =1  sbit P0_7  = 0x87;
+ 363      =1  
+ 364      =1  sbit P1_0  = 0x90;
+ 365      =1  sbit P1_1  = 0x91;
+ 366      =1  sbit P1_2  = 0x92;
+ 367      =1  sbit P1_3  = 0x93;
+ 368      =1  sbit P1_4  = 0x94;
+ 369      =1  sbit P1_5  = 0x95;
+ 370      =1  sbit P1_6  = 0x96;
+ 371      =1  sbit P1_7  = 0x97;
+ 372      =1  
+ 373      =1  sbit P2_0  = 0xa0;
+ 374      =1  sbit P2_1  = 0xa1;
+ 375      =1  sbit P2_2  = 0xa2;
+ 376      =1  sbit P2_3  = 0xa3;
+ 377      =1  sbit P2_4  = 0xa4;
+ 378      =1  sbit P2_5  = 0xa5;
+ 379      =1  sbit P2_6  = 0xa6;
+ 380      =1  sbit P2_7  = 0xa7;
+ 381      =1  
+ 382      =1  sbit P3_0  = 0xb0;
+ 383      =1  sbit P3_1  = 0xb1;
+ 384      =1  sbit P3_2  = 0xb2;
+ 385      =1  sbit P3_3  = 0xb3;
+ 386      =1  sbit P3_4  = 0xb4;
+ 387      =1  sbit P3_5  = 0xb5;
+ 388      =1  sbit P3_6  = 0xb6;
+ 389      =1  sbit P3_7  = 0xb7;
+ 390      =1  
+ 391      =1  sbit P4_0  = P4^0;
+ 392      =1  sbit P4_1  = P4^1;
+ 393      =1  sbit INT3  = P4^2;
+ 394      =1  sbit INT2  = P4^3;
+ 395      =1  
+ 396      =1  sfr P4M0  = 0xB3;
+ 397      =1  sfr P4M1  = 0xB4;
+ 398      =1  #endif  // INTERNAL_MCU
+ 399      =1  
+ 400      =1  #endif  //__REGISTERS__
+ 401      =1  
+   6          #include "Typedefs.h"
+   1      =1  #ifndef __TYPEDEFS__
+   2      =1  #define __TYPEDEFS__
+   3      =1  
+   4      =1  
+   5      =1  #define DATA    data
+   6      =1  #define PDATA   pdata
+   7      =1  #define IDATA   data
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 14  
+
+   8      =1  #define CODE    code
+   9      =1  #define CODE_P
+  10      =1  #define PDATA_P
+  11      =1  #define IDATA_P
+  12      =1  #define DATA_P
+  13      =1  
+  14      =1  #define INTERRUPT( num, name ) name() interrupt num
+  15      =1  
+  16      =1  #define _between(x, a, b) (a<=x && x<=b)
+  17      =1  #define _swap(a, b)     { a^=b; b^=a; a^=b; }
+  18      =1  
+  19      =1  typedef unsigned char Register;
+  20      =1  typedef unsigned char BYTE;
+  21      =1  typedef unsigned short  WORD;
+  22      =1  typedef unsigned long DWORD;
+  23      =1  
+  24      =1  #define TRUE  1
+  25      =1  #define FALSE 0
+  26      =1  
+  27      =1  //VInputStdDetectMode
+  28      =1  #define AUTO  0
+  29      =1  
+  30      =1  //VInputStd
+  31      =1  #define NTSC  1     
+  32      =1  #define PAL   2
+  33      =1  #define SECAM 3
+  34      =1  #define NTSC4 4
+  35      =1  #define PALM  5
+  36      =1  #define PALN  6
+  37      =1  #define PAL60 7
+  38      =1  
+  39      =1  #define MAXINPUTSTD PAL60+1 // 
+  40      =1  
+  41      =1  #define UNKNOWN 0xfe
+  42      =1  #define NOINPUT 0 //0xff
+  43      =1  
+  44      =1  #define NIL     0xff
+  45      =1  
+  46      =1  enum SourceModeTypeEnum
+  47      =1  { 
+  48      =1    AVMode,      // 0   0X00
+  49      =1    //VGAMode,       // 1
+  50      =1  #ifdef USE_CAMD 
+           =1   CAM_D,         // 2
+           =1 #endif
+  53      =1    CAM_A,         // 3   0x01
+  54      =1    CAM_B,         // 4   0x02
+  55      =1    CAM_C,         // 5   0x03
+  56      =1    CAM_R,         // 6   0x04
+  57      =1    CAM_AB,        // 7   0x05
+  58      =1    CAM_CR,        // 8   0x06
+  59      =1    CAM_AR,        // 9   0x07
+  60      =1    CAM_RB,        // 10    0x08
+  61      =1    CAM_AC,        // 11    0x09
+  62      =1    CAM_CB,        // 12    0x0a
+  63      =1    CAM_RAB_T,     // 13    0x0b
+  64      =1    CAM_RAB_H,     // 14    0x0c
+  65      =1  
+  66      =1    #ifdef HTRV
+           =1   CAM_RC,
+           =1   #endif
+  69      =1    
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 15  
+
+  70      =1    CAM_QUAD,      // 15    0x0d
+  71      =1    CAM_ABR_T3,    // 16    0x0e
+  72      =1    CAM_ABR_T4,    // 17    0x0f
+  73      =1    CAM_RAC_T,      //  0x10
+  74      =1    CAM_RBC_T,      //  0x11
+  75      =1    CAM_RAC_T2,     //  0x12
+  76      =1    CAM_RBC_T2,     //  0x13
+  77      =1    CAM_BA,       //  0x14
+  78      =1    CAM_BC,       //  0x15
+  79      =1    CAM_BR,       //  0x16
+  80      =1    CAM_CA,       //  0x17
+  81      =1    CAM_ABC,      //  0x18
+  82      =1    CAM_ABR,      //  0x19
+  83      =1    CAM_ACR,      //  0x1a
+  84      =1    CAM_BAC,      //  0x1b
+  85      =1    CAM_BAR,      //  0x1c
+  86      =1    CAM_BCR,      //  0x1d
+  87      =1    CAM_CAB,      //  0x1e
+  88      =1    CAM_CAR,      //  0x1f
+  89      =1    CAM_CBR,      //  0x20
+  90      =1    SEQ,           // 18      0x10
+  91      =1    CAM_NUM
+  92      =1  };
+  93      =1  
+  94      =1  typedef unsigned char SourceModeType;
+  95      =1  
+  96      =1  #endif  /* __TYPEDEFS__ */
+  97      =1  
+   7          #include "debug.h"
+   1      =1  #ifndef __DEBUG__
+   2      =1  #define __DEBUG__
+   3      =1  
+   4      =1  #define DEBUG_ERR 1
+   5      =1  #define DEBUG_WARN  2
+   6      =1  #define DEBUG_INFO  3
+   7      =1  #define DEBUG_BREAK 4
+   8      =1  
+   9      =1  #ifdef DEBUG_PAUSE
+           =1 #define Pause(a)  { Printf("\r\n"); Printf(a); while(!RS_ready()); RS_rx(); }
+           =1 #endif
+  12      =1  //#define BURSTLOCK 7
+  13      =1  
+  14      =1  void DebugWindowControl (void) ;
+  15      =1  void Draw_Debug_Char(void);
+  16      =1  void DebugWindowCursor( BYTE flag ) ;
+  17      =1  void DebugWindowData( BYTE flag ) ;
+  18      =1  void Debug_Write(void);
+  19      =1  void Debug_Read(void);
+  20      =1  
+  21      =1  
+  22      =1  
+  23      =1  #endif  // __DEBUG__
+  24      =1  
+  25      =1  #ifdef CHIP_MANUAL_TEST
+           =1 BYTE DelaynCheck(void);
+           =1 void ChipManualTest(void);
+           =1 
+           =1 #endif
+   8          #include "main.h"
+   1      =1  #ifndef __MAIN__
+   2      =1  #define __MAIN__
+   3      =1  
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 16  
+
+   4      =1  #define ON          1
+   5      =1  #define OFF         0
+   6      =1  #if 1//ryan@20171214
+   7      =1  #define Hs_debug
+   8      =1  #define Monitor_debug  
+   9      =1  //#define Trigger_debug 
+  10      =1  #endif
+  11      =1  
+  12      =1  
+  13      =1  //#define DVR
+  14      =1  #define Format_SDCard
+  15      =1  #define BJTSwitch
+  16      =1  
+  17      =1  #define Panel_Enable()    P4=P4|0x08 //andy 980908
+  18      =1  #define Panel_Disable()   P4=P4&0xf7
+  19      =1  
+  20      =1  #if 0
+           =1 #define SetBacklight()      P4=P4|0x04
+           =1 #define clrBacklight()      P4=P4&0xfb
+           =1 #else
+  24      =1  #define SetBacklight()    P4=P4&0xfb
+  25      =1  #define clrBacklight()    P4=P4|0x04
+  26      =1  #endif
+  27      =1  
+  28      =1  //InputSelection
+  29      =1  struct struct_IdName {
+  30      =1    BYTE  Id;
+  31      =1    BYTE  Name[16];
+  32      =1  };
+  33      =1  
+  34      =1  #define CH_TW2835       1
+  35      =1  #define CH_CAMD       2
+  36      =1  #define CH_AV         3
+  37      =1  #define PC          7
+  38      =1  #define ChineseDefaultMenu  8
+  39      =1  
+  40      =1  #define SVIDEO        2
+  41      =1  #define COMPONENT     3
+  42      =1  //#define ANALOGDTV     4
+  43      =1  #define DTV         4
+  44      =1  #define TV          5
+  45      =1  #define SCART       6
+  46      =1  
+  47      =1  #ifdef HS
+  48      =1  #define CH_CAMB         4
+  49      =1  #endif
+  50      =1  
+  51      =1  #define DIGITALVGA      8
+  52      =1  
+  53      =1  #define AIRTV       0 //9
+  54      =1  #define CABLETV       1 //0xa
+  55      =1  
+  56      =1  #define TVTUNER       0xd   //10
+  57      =1  #define MUTE        1 
+  58      =1  #define MENU        2 
+  59      =1  #define TVVOL       4 
+  60      =1  #ifdef AWT_ML072S
+  61      =1  #define VLOSSINFO     8 
+  62      =1  #else
+           =1 #define CC          8 
+           =1 #endif
+  65      =1  #define INPUTINFO     0x10
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 17  
+
+  66      =1  #define PCINFO        0x20
+  67      =1  #define GAUGEINFO       0x40
+  68      =1  //#define RATINGINFO      0x40
+  69      =1  #define TVCHN       0x80
+  70      =1  //#define MUTE        0x40
+  71      =1  
+  72      =1  #define YPBPR_480i      0
+  73      =1  #define YPBPR_576i      1
+  74      =1  #define YPBPR_480p      2
+  75      =1  #define YPBPR_576p      3
+  76      =1  #define YPBPR_1080i     4
+  77      =1  #define YPBPR_720p      5
+  78      =1  #define YPBPR_720p50    6
+  79      =1  
+  80      =1  //---------------------- Feature Define ----------------------------
+  81      =1  #ifdef AWT_ML072Q
+           =1 
+           =1 //mask by ryan@20171018   #define AWT_ML720Q_NEW_TRIGGER_FUN    //Pinchi 20141031 add for AWT request each t
+             -rigger can work by PRIORITY OFF
+           =1 #define AWT_ADD_TRIGGER_DELAY_FUN 
+           =1 #define AWT_SUPPORT_4_3_SCREEN    //ryan@20170907 
+           =1 #endif
+  87      =1  
+  88      =1  #ifdef AWT_ML072S
+  89      =1  #define AWT_ADD_TRIGGER_DELAY_FUN 
+  90      =1  #endif
+  91      =1  
+  92      =1  //--------------------------- P0 Define -----------------------------
+  93      =1  //#define SEL_MIX     P0_6  // 
+  94      =1  //--------------------------- P1 Define -----------------------------
+  95      =1  //#define SEL_DVI     P3_5  //LJY062001   
+  96      =1  
+  97      =1  #define TW88HWReset     P3_4  //LJY001010 //LJY000721
+  98      =1  #define PowerUp       P3_7
+  99      =1  //======================= CDS Control ================================= 
+ 100      =1  //#define CDS_CTRL           P1_5
+ 101      =1  extern BYTE SelectModeType;
+ 102      =1  extern BYTE InputSelection;
+ 103      =1  extern BYTE SEQTime;
+ 104      =1  extern BYTE Priority;
+ 105      =1  extern BYTE PowerFlag;
+ 106      =1  //extern bit AutoDayNight;
+ 107      =1  extern bit SDCardCoverDetect;
+ 108      =1  
+ 109      =1  BYTE keyIn(void);
+ 110      =1  void TimerForRemocon(void);
+ 111      =1  void TimerForTick(void);
+ 112      =1  void DisableRemoconInt(void);
+ 113      =1  BYTE SetSupport_remocon(BYTE newd);
+ 114      =1  
+ 115      =1  void delay(BYTE cnt);
+ 116      =1  
+ 117      =1  BYTE RS_ready(void);
+ 118      =1  #ifdef Monitor_debug
+ 119      =1  BYTE RS_rx(void);
+ 120      =1  #endif
+ 121      =1  void RS_tx(BYTE tx_buf);
+ 122      =1  
+ 123      =1  BYTE RS2_rx(void);
+ 124      =1  void RS2_tx(BYTE tx_buf);
+ 125      =1  
+ 126      =1  void NewLine(void);
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 18  
+
+ 127      =1  void PutsP(PDATA_P BYTE *ptr);
+ 128      =1  #ifdef Hs_debug
+ 129      =1  //void MonWriteI2C(BYTE addr, BYTE index, BYTE val);
+ 130      =1  //BYTE MonReadI2C(BYTE addr, BYTE index);
+ 131      =1  #endif
+ 132      =1  BYTE Asc1Bin(BYTE asc);
+ 133      =1  BYTE Asc2Bin(PDATA_P BYTE *s);
+ 134      =1  
+ 135      =1  void I2CDeviceInitialize( CODE_P BYTE *RegSet);
+ 136      =1  
+ 137      =1  //void RestartSystemClock(WORD clock_hm);
+ 138      =1  WORD GetTime_ms(void);
+ 139      =1  #if 0
+           =1 BYTE GetTime_H(void);
+           =1 BYTE GetTime_M(void);
+           =1 #endif
+ 143      =1  void ChangeTime_H( char add );
+ 144      =1  void ChangeTime_M( char add );
+ 145      =1  //WORD GetWakeupTime(void);
+ 146      =1  //void SetWakeupTime(WORD wtime);
+ 147      =1  
+ 148      =1  
+ 149      =1  //WORD GetOffTime(void);
+ 150      =1  //void SetOffTime(WORD wtime);
+ 151      =1  //BYTE GetSleepTimer(void);
+ 152      =1  //void SetSleepTimer(BYTE stime);
+ 153      =1  WORD DiffTime_ms( WORD stime, WORD etime );
+ 154      =1  //void SetLastBlockedTime(void);
+ 155      =1  void SetLastCCTime(void);       //ljy010904...CC_FIX_CLEAR_ON_TIME
+ 156      =1  
+ 157      =1  void SetOSDLastKeyInTime(void);
+ 158      =1  WORD GetOSDLastKeyInTime(void);
+ 159      =1  WORD GetIVF(void);
+ 160      =1  DWORD GetIHF(void);
+ 161      =1  BYTE ReadVInputSTD(void);
+ 162      =1  void SetVInputStd(BYTE newd);
+ 163      =1  BYTE GetVInputStd(void);
+ 164      =1  BYTE GetInputSelection(void);
+ 165      =1  #ifdef ADD_ANALOGPANEL
+           =1 BYTE IsAnalogOn(void);
+           =1 #endif
+ 168      =1  void InitVideoData(BYTE src);
+ 169      =1  void ChangeVInputStdDetectMode(BYTE val);
+ 170      =1  BYTE GetVInputStdInx(void);
+ 171      =1  
+ 172      =1  void MonWriteI2Cn_(BYTE addr, BYTE *val, BYTE cnt) ;
+ 173      =1  
+ 174      =1  void CheckNewTriggerFunc(void);
+ 175      =1  ///void Usage(void);
+ 176      =1  #ifdef Monitor_debug
+ 177      =1    void Prompt(void);
+ 178      =1  #endif
+ 179      =1  void DebugKeyIn(BYTE ikey);
+ 180      =1  void DVIPowerDown(bit flag);
+ 181      =1  void PowerDown_XTAL(bit flag);
+ 182      =1  
+ 183      =1  void ChangeInput(BYTE newsel);
+ 184      =1  
+ 185      =1  
+ 186      =1  void WaitPowerOn(void);
+ 187      =1  void PowerOff(void);
+ 188      =1  BYTE GetNextInputSelection(void);
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 19  
+
+ 189      =1  
+ 190      =1  BYTE WantToStopTVScan(void);
+ 191      =1  
+ 192      =1  //BYTE IsTW8801(void);
+ 193      =1  //BYTE IsTW8803(void);
+ 194      =1  //BYTE ConvertVideoVSAT(BYTE reg);
+ 195      =1  
+ 196      =1  BYTE IsNoInput(void);
+ 197      =1  void LoadEEPROM (void);
+ 198      =1  void Hs_InitVars(void);
+ 199      =1  void AdjustAutoDayNight(BYTE val);
+ 200      =1  void ACCPowerControl(void);
+ 201      =1  void ON_LVDS(void);
+ 202      =1  void OFF_LVDS(void);
+ 203      =1  void main_loop(void);
+ 204      =1  struct RegisterInfo
+ 205      =1  {
+ 206      =1     int  Min;
+ 207      =1     int  Max;
+ 208      =1     int  Default;
+ 209      =1  };
+ 210      =1  struct LongRegisterInfo
+ 211      =1  {
+ 212      =1     WORD Min;
+ 213      =1     WORD Max;
+ 214      =1     WORD Default;
+ 215      =1  };
+ 216      =1  
+ 217      =1  
+ 218      =1  typedef enum   ///add enum  by ryan@20170907
+ 219      =1  {
+ 220      =1    NORMALL_MODE,
+ 221      =1    REVERSE_TRIG,
+ 222      =1    LEFT_TRIG,
+ 223      =1    RIGHT_TRIG,
+ 224      =1  #ifdef USE_CAMD 
+           =1   CAMD_TRIG,
+           =1 #endif  
+ 227      =1    CAMC_TRIG,
+ 228      =1    VGA_TRIG,
+ 229      =1    PARK_TRIG,
+ 230      =1    No_TRIG,
+ 231      =1    TRIGGER_NUM
+ 232      =1  }TriggerModeType;
+ 233      =1  
+ 234      =1  
+ 235      =1  #endif  // __MAIN__
+ 236      =1  
+   9          #include "printf.h"
+   1      =1  #ifndef __PRINTF__
+   2      =1  #define __PRINTF__
+   3      =1  
+   4      =1  #define _outchar(c) while(1) { if( !RS_Xbusy ) { SBUF = c; RS_Xbusy=1; break; } }
+   5      =1  #define Putch(c) _outchar(c)
+   6      =1  
+   7      =1  #ifdef SERIAL
+   8      =1  
+   9      =1   void Printf ( const char CODE_P *fmt, ... );
+  10      =1   void Puts ( CODE_P char *ptr );
+  11      =1  
+  12      =1  #define TW2835Cmd(a)   Puts ( a )
+  13      =1  
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 20  
+
+  14      =1  #else
+           =1 
+           =1  #undef  DEBUG
+           =1  #define Printf(a,b)  //
+           =1  #define Puts(a)      //
+           =1 
+           =1 #endif
+  21      =1  
+  22      =1  
+  23      =1  #ifndef DEBUG
+  24      =1  
+  25      =1   #define dPuts(a)   //
+  26      =1   #define wPuts(a)   //
+  27      =1   #define ePuts(a)   //
+  28      =1  
+  29      =1  #else
+           =1 
+           =1  void dPrintf( const char CODE_P *fmt, ... );
+           =1  void wPrintf( const char CODE_P *fmt, ... );
+           =1  void ePrintf( const char CODE_P *fmt, ... );
+           =1 
+           =1  void dPuts( CODE_P char *ptr );
+           =1  void wPuts( CODE_P char *ptr );
+           =1  void ePuts( CODE_P char *ptr );
+           =1 
+           =1 #endif  // DEBUG
+  40      =1  
+  41      =1  BYTE Getch(void);
+  42      =1  BYTE Getche(void);
+  43      =1  
+  44      =1  
+  45      =1  #endif  //__PRINTF__
+  10          #include <stdarg.h>
+   1      =1  /*--------------------------------------------------------------------------
+   2      =1  STDARG.H
+   3      =1  
+   4      =1  Prototypes for variable argument lists.
+   5      =1  Copyright (c) 1988-2008 Keil Elektronik GmbH and Keil Software, Inc.
+   6      =1  Copyright (c) 2008-2016 ARM Germany GmbH
+   7      =1  All rights reserved.
+   8      =1  --------------------------------------------------------------------------*/
+   9      =1  
+  10      =1  #ifndef __STDARG_H__
+  11      =1  #define __STDARG_H__
+  12      =1  
+  13      =1  #ifndef __CX2__
+  14      =1  #ifndef NULL
+  15      =1   #define NULL ((void *)0)
+  16      =1  #endif
+  17      =1  #endif
+  18      =1  
+  19      =1  #ifndef _VA_LIST_DEFINED
+  20      =1  typedef char *va_list;
+  21      =1  #define _VA_LIST_DEFINED
+  22      =1  #endif
+  23      =1  
+  24      =1  #if defined __CX2__ && __CX2__ >= 558
+           =1   #define va_start(ap,v) ap = _va_start_ (&v, sizeof(v))
+           =1   extern void *_va_start_ (void *ap, int sz);   // intrinsic
+           =1 #else
+  28      =1    #define va_start(ap,v) ap = (va_list)&v + sizeof(v)
+  29      =1  #endif
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 21  
+
+  30      =1  
+  31      =1  #define va_arg(ap,t) (((t *)ap)++[0])
+  32      =1  #define va_end(ap)   (ap = (va_list)0)
+  33      =1  
+  34      =1  #endif
+  11          
+  12          CODE BYTE Hex[] = "0123456789ABCDEF";
+  13          extern  bit     RS_Xbusy;     // bit RS_Xbusy=0;
+  14          extern  BYTE  DebugLevel;
+  15          
+  16          
+  17          void DoPrint( const char CODE_P *fmt, va_list ap )
+  18          {
+  19   1        char  ch;
+  20   1        char  i;
+  21   1        long  value;
+  22   1        bit   fl_zero;
+  23   1        bit   fl_num;
+  24   1        BYTE  fl_len;
+  25   1        BYTE  cnt;
+  26   1        DWORD mask=1;
+  27   1      
+  28   1        #ifdef KEILC
+  29   1        char *ptr;
+  30   1        #endif
+  31   1      
+  32   1        while(1) {
+  33   2          
+  34   2          //----- Find Formatter % -----
+  35   2      
+  36   2          switch( ch = *fmt++ ) {
+  37   3            case 0:   return;
+  38   3            case '%': if( *fmt != '%' ) break;
+  39   3                  fmt++;
+  40   3            default:  _outchar( ch );
+  41   3                  continue;
+  42   3          }
+  43   2      
+  44   2          //----- Get Count -------------
+  45   2          
+  46   2          fl_zero = 0;
+  47   2          fl_num = 0;
+  48   2          cnt = 0;
+  49   2      
+  50   2          ch = *fmt++;
+  51   2      
+  52   2          if( ch=='0' ) {
+  53   3            fl_zero = 1;
+  54   3            ch = *fmt++;
+  55   3            cnt = ch - '0';
+  56   3            ch = *fmt++;
+  57   3          }
+  58   2          else if( ch>='0' && ch<='9' ) {
+  59   3            cnt = ch - '0';
+  60   3            ch = *fmt++;
+  61   3          }
+  62   2      
+  63   2          //----- Get char(B) / int / long(L) ----------------
+  64   2      
+  65   2          fl_len = 2;
+  66   2      
+  67   2          switch(ch) {
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 22  
+
+  68   3          case 'l':
+  69   3          case 'L': ch = *fmt++;  fl_len = 4;   break;
+  70   3          case 'b':
+  71   3          case 'B': ch = *fmt++;  fl_len = 1;   break;
+  72   3          }   
+  73   2      
+  74   2          //----- Get Type Discriptor -----
+  75   2          
+  76   2          switch( ch ) {
+  77   3      
+  78   3            case 'd':
+  79   3            case 'u':
+  80   3      
+  81   3              switch (fl_len) {
+  82   4              case 1:
+  83   4                if( ch=='d' ) value = (char)va_arg( ap, char );
+  84   4                else          value = (BYTE)va_arg( ap, BYTE );
+  85   4                break;
+  86   4      
+  87   4              case 2:
+  88   4                if( ch=='d' ) value = (int)va_arg( ap,  int );
+  89   4                else          value = (WORD)va_arg( ap, WORD );
+  90   4                break;
+  91   4      
+  92   4              case 4:
+  93   4                if( ch=='d' ) value = (long)va_arg( ap, long );
+  94   4                else          value = (DWORD)va_arg( ap, DWORD );
+  95   4                break;
+  96   4              }
+  97   3      
+  98   3              if( value<0 ) {
+  99   4                _outchar('-');
+ 100   4                value = value*(-1);
+ 101   4              }
+ 102   3      
+ 103   3              if(cnt==0) {
+ 104   4                if( value==0 ) { _outchar('0'); continue; }
+ 105   4      
+ 106   4                for(cnt=0, mask=1; cnt<10; cnt++) {
+ 107   5                  if( (value/mask)==0 ) break;
+ 108   5                  mask = mask*10;
+ 109   5                }
+ 110   4              }
+ 111   3      
+ 112   3              for(i=0, mask=1; i<cnt-1; i++) mask = mask*10;
+ 113   3      
+ 114   3              while(1) {
+ 115   4                ch = (value / mask) + '0';
+ 116   4                if( ch=='0' && fl_zero==0 && mask!=1 ) ch=' ';
+ 117   4                else fl_zero = 1;
+ 118   4                _outchar(ch);
+ 119   4      
+ 120   4                value = value % (mask);
+ 121   4                mask = mask / 10;
+ 122   4                
+ 123   4                if( mask==0 )
+ 124   4                  break;
+ 125   4              }
+ 126   3              continue;
+ 127   3      
+ 128   3            case 'x':
+ 129   3            case 'X':
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 23  
+
+ 130   3      
+ 131   3              switch (fl_len) {
+ 132   4              case 1: value = (BYTE)va_arg( ap, BYTE );   break;
+ 133   4              case 2: value = (WORD)va_arg( ap, WORD );   break;
+ 134   4              case 4: value = (DWORD)va_arg( ap, DWORD );   break;
+ 135   4              }
+ 136   3      
+ 137   3              if(cnt==0) cnt = fl_len*2;
+ 138   3      
+ 139   3              for(i=0; i<cnt; i++) {
+ 140   4                _outchar( Hex[(value >> (cnt-i-1)*4) & 0x000f] );
+ 141   4              }
+ 142   3              continue;
+ 143   3      
+ 144   3            case 's':
+ 145   3      
+ 146   3              #ifdef TASKINGC
+                      
+                      value = (WORD)va_arg( ap, WORD );
+                      while(*(char CODE_P *)value!='\0')
+                        _outchar(*(char CODE_P *)value++);
+                      continue;
+              
+                      #elif defined KEILC
+ 154   3              
+ 155   3              ptr = (char *)va_arg( ap, char* );
+ 156   3              while(*ptr!='\0')
+ 157   3                _outchar(*ptr++);
+ 158   3              continue;
+ 159   3      
+ 160   3              #endif
+ 161   3      
+ 162   3      
+ 163   3            case 'c':
+ 164   3              value = va_arg( ap, int );
+ 165   3                _outchar((BYTE)value);
+ 166   3              continue;
+ 167   3      
+ 168   3            default:
+ 169   3              value = (WORD)va_arg( ap, int );
+ 170   3              continue;
+ 171   3          }
+ 172   2        }
+ 173   1      }
+ 174          
+ 175          //===========================================================================//
+ 176          //                                                                           //
+ 177          //===========================================================================//
+ 178          //va_list ap;
+ 179          
+ 180          void Printf( const char CODE_P *fmt, ... )
+ 181          {
+ 182   1        va_list ap;
+ 183   1      
+ 184   1        va_start(ap, fmt);
+ 185   1        DoPrint( fmt, ap );
+ 186   1        va_end( ap );
+ 187   1      }
+ 188          
+ 189          void Puts( CODE_P char *ptr )
+ 190          {
+ 191   1        while(*ptr!='\0')
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 24  
+
+ 192   1          RS_tx(*ptr++);
+ 193   1      }
+ 194          
+ 195          //===========================================================================//
+ 196          //                                                                           //
+ 197          //===========================================================================//
+ 198          #ifdef DEBUG
+              
+              void dPrintf( const char CODE_P *fmt, ... )
+              {
+                va_list ap;
+              
+                if( DebugLevel >= DEBUG_INFO ) {
+                  va_start(ap, fmt);
+                  DoPrint( fmt, ap );
+                  va_end( ap );
+                }
+              }
+              /*
+              void wPrintf( const char CODE_P *fmt, ... )
+              {
+                va_list ap;
+              
+                if( DebugLevel >= DEBUG_WARN ) {
+                  va_start(ap, fmt);
+                  DoPrint( fmt, ap );
+                  va_end( ap );
+                }
+              }
+              */
+              
+              /*
+              
+              void ePrintf( const char CODE_P *fmt, ... )
+              {
+                va_list ap;
+              
+                if( DebugLevel >= DEBUG_ERR ) {
+                  va_start(ap, fmt);
+                  DoPrint( fmt, ap );
+                  va_end( ap );
+                }
+              }
+              */
+              //===========================================================================//
+              //                                                                           //
+              //===========================================================================//
+              void dPuts( CODE_P char *ptr )
+              {
+                if( DebugLevel >= DEBUG_INFO ) {
+                  while(*ptr!='\0')
+                    RS_tx(*ptr++);
+                }
+              }
+              
+              #if defined( SUPPORT_PC ) || defined( SUPPORT_DTV ) || defined( DEBUG_SETPANEL)
+              void wPuts( CODE_P char *ptr )
+              {
+                if( DebugLevel >= DEBUG_WARN ) {
+                  while(*ptr!='\0')
+                    RS_tx(*ptr++);
+                }
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 25  
+
+              }
+              
+              void ePuts( CODE_P char *ptr )
+              {
+                if( DebugLevel >= DEBUG_ERR ) {
+                  while(*ptr!='\0')
+                    RS_tx(*ptr++);
+                }
+              }
+              #endif
+              
+              #endif // DEBUG
+ 266          
+ 267          //===========================================================================//
+ 268          //                                                                           //
+ 269          //===========================================================================//
+ 270          /*
+ 271          #ifdef DEBUG
+ 272          BYTE Getch(void)
+ 273          {
+ 274            while(!RS_ready());
+ 275            return RS_rx();
+ 276          }
+ 277          #endif
+ 278          */
+ 279          #if 0
+              BYTE Getche(void)
+              {
+                BYTE ch;
+              
+                while(!RS_ready());
+                ch = RS_rx();
+                RS_tx(ch);
+              
+                return ch;
+              }
+              #endif
+ 291          #endif  // SERIAL
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 26  
+
+ASSEMBLY LISTING OF GENERATED OBJECT CODE
+
+
+             ; FUNCTION Com005C (BEGIN)
+0000         L?0093:
+0000         L?0094:
+0000 900000      R     MOV     DPTR,#fmt
+0003         L?0095:
+0003 E4                CLR     A
+0004         L?0096:
+0004 75F001            MOV     B,#01H
+0007 120000      E     LCALL   ?C?PLDIXDATA
+000A 020000      E     LJMP    ?C?CLDPTR
+000D         L?0097:
+000D         L?0098:
+000D 900000      R     MOV     DPTR,#ap
+0010         L?0099:
+0010 E4                CLR     A
+0011 75F002            MOV     B,#02H
+0014 120000      E     LCALL   ?C?PLDIXDATA
+0017 120000      E     LCALL   ?C?ILDPTR
+001A FF                MOV     R7,A
+001B AEF0              MOV     R6,B
+001D 22                RET     
+001E         L?0100:
+001E         L?0101:
+001E 900000      R     MOV     DPTR,#value
+0021 120000      E     LCALL   ?C?LLDXDATA
+0024         L?0102:
+0024 900000      R     MOV     DPTR,#mask
+0027 020000      E     LJMP    ?C?LLDXDATA0
+002A         L?0103:
+002A         L?0104:
+002A 900000      R     MOV     DPTR,#value
+002D 020000      E     LJMP    ?C?LSTXDATA
+0030         L?0105:
+0030         L?0106:
+0030 900000      R     MOV     DPTR,#value
+0033 020000      E     LJMP    ?C?LLDXDATA
+0036         L?0107:
+0036         L?0108:
+0036 900000      R     MOV     DPTR,#mask
+0039 120000      E     LCALL   ?C?LLDXDATA
+003C E4                CLR     A
+003D 7B0A              MOV     R3,#0AH
+003F 22                RET     
+0040         L?0109:
+0040 75F004            MOV     B,#04H
+0043         L?0110:
+0043 900000      R     MOV     DPTR,#ap
+0046 E4                CLR     A
+0047 020000      E     LJMP    ?C?PLDIXDATA
+004A         L?0111:
+004A F8                MOV     R0,A
+004B 120000      E     LCALL   ?C?LMUL
+004E         L?0112:
+004E 900000      R     MOV     DPTR,#mask
+0051 020000      E     LJMP    ?C?LSTXDATA
+0054         L?0113:
+0054 900000      R     MOV     DPTR,#i
+0057 E0                MOVX    A,@DPTR
+0058 FD                MOV     R5,A
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 27  
+
+0059 33                RLC     A
+005A 95E0              SUBB    A,ACC
+005C FC                MOV     R4,A
+005D C3                CLR     C
+005E ED                MOV     A,R5
+005F 9F                SUBB    A,R7
+0060 22                RET     
+0061         L?0114:
+0061         L?0115:
+0061 120000      E     LCALL   ?C?PLDXDATA
+0064 020000      E     LJMP    ?C?CLDPTR
+             ; FUNCTION Com005C (END)
+
+             ; FUNCTION _DoPrint (BEGIN)
+                                           ; SOURCE LINE # 17
+0000 900000      R     MOV     DPTR,#fmt
+0003 120000      E     LCALL   ?C?PSTXDATA
+                                           ; SOURCE LINE # 18
+                                           ; SOURCE LINE # 26
+0006 900000      R     MOV     DPTR,#mask
+0009 120000      E     LCALL   ?C?LSTKXDATA
+000C 00                DB      00H
+000D 00                DB      00H
+000E 00                DB      00H
+000F 01                DB      01H
+0010         ?C0001:
+                                           ; SOURCE LINE # 32
+                                           ; SOURCE LINE # 36
+0010 120000      R     LCALL   L?0093
+0013 900000      R     MOV     DPTR,#ch
+0016 F0                MOVX    @DPTR,A
+0017 7003              JNZ     $ + 5H
+0019 020000      R     LJMP    ?C0005
+001C 24DB              ADD     A,#0DBH
+001E 7013              JNZ     ?C0009
+                                           ; SOURCE LINE # 37
+                                           ; SOURCE LINE # 38
+0020         ?C0006:
+0020 900000      R     MOV     DPTR,#fmt
+0023 120000      R     LCALL   L?0114
+0026 B42517            CJNE    A,#025H,?C0003
+                                           ; SOURCE LINE # 39
+0029 900000      R     MOV     DPTR,#fmt+01H
+002C E4                CLR     A
+002D 75F001            MOV     B,#01H
+0030 120000      E     LCALL   ?C?IILDX
+                                           ; SOURCE LINE # 40
+0033         ?C0009:
+0033 2000FD      E     JB      RS_Xbusy,?C0009
+0036 900000      R     MOV     DPTR,#ch
+0039 E0                MOVX    A,@DPTR
+003A F599              MOV     SBUF,A
+003C D200        E     SETB    RS_Xbusy
+003E 80D0              SJMP    ?C0001
+                                           ; SOURCE LINE # 41
+                                           ; SOURCE LINE # 42
+0040         ?C0003:
+                                           ; SOURCE LINE # 46
+0040 C200        R     CLR     fl_zero
+                                           ; SOURCE LINE # 47
+0042 C200        R     CLR     fl_num
+                                           ; SOURCE LINE # 48
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 28  
+
+0044 E4                CLR     A
+0045 900000      R     MOV     DPTR,#cnt
+0048 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 50
+0049 900000      R     MOV     DPTR,#fmt
+004C 120000      R     LCALL   L?0096
+004F 900000      R     MOV     DPTR,#ch
+0052 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 52
+0053 E0                MOVX    A,@DPTR
+0054 FD                MOV     R5,A
+0055 B4300B            CJNE    A,#030H,?C0012
+                                           ; SOURCE LINE # 53
+0058 D200        R     SETB    fl_zero
+                                           ; SOURCE LINE # 54
+005A 120000      R     LCALL   L?0093
+005D 900000      R     MOV     DPTR,#ch
+0060 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 55
+                                           ; SOURCE LINE # 56
+                                           ; SOURCE LINE # 57
+0061 801F              SJMP    ?C0087
+0063         ?C0012:
+                                           ; SOURCE LINE # 58
+0063 ED                MOV     A,R5
+0064 FF                MOV     R7,A
+0065 33                RLC     A
+0066 95E0              SUBB    A,ACC
+0068 FE                MOV     R6,A
+0069 C3                CLR     C
+006A EF                MOV     A,R7
+006B 9430              SUBB    A,#030H
+006D EE                MOV     A,R6
+006E 6480              XRL     A,#080H
+0070 9480              SUBB    A,#080H
+0072 401C              JC      ?C0013
+0074 D3                SETB    C
+0075 EF                MOV     A,R7
+0076 9439              SUBB    A,#039H
+0078 EE                MOV     A,R6
+0079 6480              XRL     A,#080H
+007B 9480              SUBB    A,#080H
+007D 5011              JNC     ?C0013
+                                           ; SOURCE LINE # 59
+007F 900000      R     MOV     DPTR,#ch
+0082         ?C0087:
+0082 E0                MOVX    A,@DPTR
+0083 24D0              ADD     A,#0D0H
+0085 900000      R     MOV     DPTR,#cnt
+0088 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 60
+0089 120000      R     LCALL   L?0094
+008C 900000      R     MOV     DPTR,#ch
+008F F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 61
+0090         ?C0013:
+                                           ; SOURCE LINE # 65
+0090 900000      R     MOV     DPTR,#fl_len
+0093 7402              MOV     A,#02H
+0095 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 67
+0096 900000      R     MOV     DPTR,#ch
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 29  
+
+0099 E0                MOVX    A,@DPTR
+009A 24BE              ADD     A,#0BEH
+009C 601B              JZ      ?C0019
+009E 24E0              ADD     A,#0E0H
+00A0 6017              JZ      ?C0019
+00A2 24F6              ADD     A,#0F6H
+00A4 6004              JZ      ?C0017
+00A6 2420              ADD     A,#020H
+00A8 701C              JNZ     ?C0015
+                                           ; SOURCE LINE # 68
+                                           ; SOURCE LINE # 69
+00AA         ?C0017:
+00AA 120000      R     LCALL   L?0094
+00AD 900000      R     MOV     DPTR,#ch
+00B0 F0                MOVX    @DPTR,A
+00B1 900000      R     MOV     DPTR,#fl_len
+00B4 7404              MOV     A,#04H
+00B6 F0                MOVX    @DPTR,A
+00B7 800D              SJMP    ?C0015
+                                           ; SOURCE LINE # 70
+                                           ; SOURCE LINE # 71
+00B9         ?C0019:
+00B9 120000      R     LCALL   L?0094
+00BC 900000      R     MOV     DPTR,#ch
+00BF F0                MOVX    @DPTR,A
+00C0 900000      R     MOV     DPTR,#fl_len
+00C3 7401              MOV     A,#01H
+00C5 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 72
+00C6         ?C0015:
+                                           ; SOURCE LINE # 76
+00C6 900000      R     MOV     DPTR,#ch
+00C9 E0                MOVX    A,@DPTR
+00CA FF                MOV     R7,A
+00CB 24A8              ADD     A,#0A8H
+00CD 7003              JNZ     $ + 5H
+00CF 020000      R     LJMP    ?C0058
+00D2 24F5              ADD     A,#0F5H
+00D4 7003              JNZ     $ + 5H
+00D6 020000      R     LJMP    ?C0076
+00D9 24F0              ADD     A,#0F0H
+00DB 7003              JNZ     $ + 5H
+00DD 020000      R     LJMP    ?C0070
+00E0 24FE              ADD     A,#0FEH
+00E2 600E              JZ      ?C0022
+00E4 24FD              ADD     A,#0FDH
+00E6 7003              JNZ     $ + 5H
+00E8 020000      R     LJMP    ?C0058
+00EB 2414              ADD     A,#014H
+00ED 6003              JZ      $ + 5H
+00EF 020000      R     LJMP    ?C0080
+                                           ; SOURCE LINE # 78
+                                           ; SOURCE LINE # 79
+00F2         ?C0022:
+                                           ; SOURCE LINE # 81
+00F2 900000      R     MOV     DPTR,#fl_len
+00F5 E0                MOVX    A,@DPTR
+00F6 24FE              ADD     A,#0FEH
+00F8 6025              JZ      ?C0027
+00FA 24FE              ADD     A,#0FEH
+00FC 603E              JZ      ?C0030
+00FE 2403              ADD     A,#03H
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 30  
+
+0100 7047              JNZ     ?C0023
+                                           ; SOURCE LINE # 82
+0102         ?C0024:
+                                           ; SOURCE LINE # 83
+0102 EF                MOV     A,R7
+0103 900000      R     MOV     DPTR,#ap
+0106 B4640C            CJNE    A,#064H,?C0025
+0109 120000      R     LCALL   L?0095
+010C FF                MOV     R7,A
+010D 33                RLC     A
+010E 95E0              SUBB    A,ACC
+0110 FE                MOV     R6,A
+0111 FD                MOV     R5,A
+0112 FC                MOV     R4,A
+0113 8031              SJMP    ?C0089
+0115         ?C0025:
+                                           ; SOURCE LINE # 84
+0115 120000      R     LCALL   L?0095
+0118 FF                MOV     R7,A
+0119 E4                CLR     A
+011A FC                MOV     R4,A
+011B FD                MOV     R5,A
+011C FE                MOV     R6,A
+011D         ?C0085:
+                                           ; SOURCE LINE # 85
+011D 8027              SJMP    ?C0089
+                                           ; SOURCE LINE # 87
+011F         ?C0027:
+                                           ; SOURCE LINE # 88
+011F 900000      R     MOV     DPTR,#ch
+0122 E0                MOVX    A,@DPTR
+0123 900000      R     MOV     DPTR,#ap
+0126 B4640B            CJNE    A,#064H,?C0028
+0129 120000      R     LCALL   L?0099
+012C EE                MOV     A,R6
+012D 33                RLC     A
+012E 95E0              SUBB    A,ACC
+0130 FD                MOV     R5,A
+0131 FC                MOV     R4,A
+0132 8006              SJMP    ?C0086
+0134         ?C0028:
+                                           ; SOURCE LINE # 89
+0134 120000      R     LCALL   L?0099
+0137 E4                CLR     A
+0138 FC                MOV     R4,A
+0139 FD                MOV     R5,A
+013A         ?C0086:
+013A         ?C0088:
+                                           ; SOURCE LINE # 90
+013A 800A              SJMP    ?C0089
+                                           ; SOURCE LINE # 92
+013C         ?C0030:
+                                           ; SOURCE LINE # 93
+013C 900000      R     MOV     DPTR,#ch
+013F E0                MOVX    A,@DPTR
+                                           ; SOURCE LINE # 94
+0140 120000      R     LCALL   L?0109
+0143 120000      E     LCALL   ?C?LLDPTR
+0146         ?C0089:
+0146 120000      R     LCALL   L?0103
+                                           ; SOURCE LINE # 95
+                                           ; SOURCE LINE # 96
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 31  
+
+0149         ?C0023:
+                                           ; SOURCE LINE # 98
+0149 120000      R     LCALL   L?0105
+014C EC                MOV     A,R4
+014D 33                RLC     A
+014E 5017              JNC     ?C0033
+0150         ?C0034:
+                                           ; SOURCE LINE # 99
+0150 2000FD      E     JB      RS_Xbusy,?C0034
+0153 75992D            MOV     SBUF,#02DH
+0156 D200        E     SETB    RS_Xbusy
+                                           ; SOURCE LINE # 100
+0158 120000      R     LCALL   L?0105
+015B 74FF              MOV     A,#0FFH
+015D FB                MOV     R3,A
+015E FA                MOV     R2,A
+015F F9                MOV     R1,A
+0160 F8                MOV     R0,A
+0161 120000      E     LCALL   ?C?LMUL
+0164 120000      R     LCALL   L?0103
+                                           ; SOURCE LINE # 101
+0167         ?C0033:
+                                           ; SOURCE LINE # 103
+0167 900000      R     MOV     DPTR,#cnt
+016A E0                MOVX    A,@DPTR
+016B 704D              JNZ     ?C0037
+                                           ; SOURCE LINE # 104
+016D 120000      R     LCALL   L?0106
+0170 EC                MOV     A,R4
+0171 4D                ORL     A,R5
+0172 4E                ORL     A,R6
+0173 4F                ORL     A,R7
+0174 700B              JNZ     ?C0038
+0176         ?C0039:
+0176 2000FD      E     JB      RS_Xbusy,?C0039
+0179 759930            MOV     SBUF,#030H
+017C D200        E     SETB    RS_Xbusy
+017E 020000      R     LJMP    ?C0001
+0181         ?C0038:
+                                           ; SOURCE LINE # 106
+0181 E4                CLR     A
+0182 900000      R     MOV     DPTR,#cnt
+0185 F0                MOVX    @DPTR,A
+0186 A3                INC     DPTR
+0187 120000      E     LCALL   ?C?LSTKXDATA
+018A 00                DB      00H
+018B 00                DB      00H
+018C 00                DB      00H
+018D 01                DB      01H
+018E         ?C0042:
+018E 900000      R     MOV     DPTR,#cnt
+0191 E0                MOVX    A,@DPTR
+0192 C3                CLR     C
+0193 940A              SUBB    A,#0AH
+0195 7480              MOV     A,#080H
+0197 9480              SUBB    A,#080H
+0199 501F              JNC     ?C0037
+                                           ; SOURCE LINE # 107
+019B 120000      R     LCALL   L?0100
+019E 120000      E     LCALL   ?C?ULDIV
+01A1 E4                CLR     A
+01A2 FB                MOV     R3,A
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 32  
+
+01A3 FA                MOV     R2,A
+01A4 F9                MOV     R1,A
+01A5 F8                MOV     R0,A
+01A6 C3                CLR     C
+01A7 120000      E     LCALL   ?C?ULCMP
+01AA 600E              JZ      ?C0037
+                                           ; SOURCE LINE # 108
+01AC 120000      R     LCALL   L?0107
+01AF 120000      R     LCALL   L?0111
+                                           ; SOURCE LINE # 109
+01B2 900000      R     MOV     DPTR,#cnt
+01B5 E0                MOVX    A,@DPTR
+01B6 04                INC     A
+01B7 F0                MOVX    @DPTR,A
+01B8 80D4              SJMP    ?C0042
+                                           ; SOURCE LINE # 110
+01BA         ?C0037:
+                                           ; SOURCE LINE # 112
+01BA E4                CLR     A
+01BB 900000      R     MOV     DPTR,#i
+01BE F0                MOVX    @DPTR,A
+01BF 900000      R     MOV     DPTR,#mask
+01C2 120000      E     LCALL   ?C?LSTKXDATA
+01C5 00                DB      00H
+01C6 00                DB      00H
+01C7 00                DB      00H
+01C8 01                DB      01H
+01C9         ?C0046:
+01C9 900000      R     MOV     DPTR,#cnt
+01CC E0                MOVX    A,@DPTR
+01CD 24FF              ADD     A,#0FFH
+01CF FF                MOV     R7,A
+01D0 E4                CLR     A
+01D1 34FF              ADDC    A,#0FFH
+01D3 FE                MOV     R6,A
+01D4 120000      R     LCALL   L?0113
+01D7 EE                MOV     A,R6
+01D8 6480              XRL     A,#080H
+01DA F8                MOV     R0,A
+01DB EC                MOV     A,R4
+01DC 6480              XRL     A,#080H
+01DE 98                SUBB    A,R0
+01DF 5010              JNC     ?C0049
+01E1 120000      R     LCALL   L?0107
+01E4 FA                MOV     R2,A
+01E5 F9                MOV     R1,A
+01E6 120000      R     LCALL   L?0111
+01E9 900000      R     MOV     DPTR,#i
+01EC E0                MOVX    A,@DPTR
+01ED 04                INC     A
+01EE F0                MOVX    @DPTR,A
+01EF 80D8              SJMP    ?C0046
+01F1         ?C0049:
+                                           ; SOURCE LINE # 114
+                                           ; SOURCE LINE # 115
+01F1 120000      R     LCALL   L?0100
+01F4 120000      E     LCALL   ?C?ULDIV
+01F7 EF                MOV     A,R7
+01F8 2430              ADD     A,#030H
+01FA FF                MOV     R7,A
+01FB 900000      R     MOV     DPTR,#ch
+01FE F0                MOVX    @DPTR,A
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 33  
+
+                                           ; SOURCE LINE # 116
+01FF BF301A            CJNE    R7,#030H,?C0051
+0202 200017      R     JB      fl_zero,?C0051
+0205 E4                CLR     A
+0206 7F01              MOV     R7,#01H
+0208 FE                MOV     R6,A
+0209 FD                MOV     R5,A
+020A FC                MOV     R4,A
+020B 120000      R     LCALL   L?0102
+020E C3                CLR     C
+020F 120000      E     LCALL   ?C?ULCMP
+0212 6008              JZ      ?C0051
+0214 900000      R     MOV     DPTR,#ch
+0217 7420              MOV     A,#020H
+0219 F0                MOVX    @DPTR,A
+021A 8002              SJMP    ?C0053
+021C         ?C0051:
+                                           ; SOURCE LINE # 117
+021C D200        R     SETB    fl_zero
+021E         ?C0053:
+                                           ; SOURCE LINE # 118
+021E 2000FD      E     JB      RS_Xbusy,?C0053
+0221 900000      R     MOV     DPTR,#ch
+0224 E0                MOVX    A,@DPTR
+0225 F599              MOV     SBUF,A
+0227 D200        E     SETB    RS_Xbusy
+                                           ; SOURCE LINE # 120
+0229 120000      R     LCALL   L?0101
+022C 120000      E     LCALL   ?C?ULDIV
+022F AC00              MOV     R4,AR0
+0231 AD01              MOV     R5,AR1
+0233 AE02              MOV     R6,AR2
+0235 AF03              MOV     R7,AR3
+0237 120000      R     LCALL   L?0104
+                                           ; SOURCE LINE # 121
+023A 120000      R     LCALL   L?0108
+023D FA                MOV     R2,A
+023E F9                MOV     R1,A
+023F F8                MOV     R0,A
+0240 120000      E     LCALL   ?C?ULDIV
+0243 120000      R     LCALL   L?0112
+                                           ; SOURCE LINE # 123
+0246 E4                CLR     A
+0247 FF                MOV     R7,A
+0248 FE                MOV     R6,A
+0249 FD                MOV     R5,A
+024A FC                MOV     R4,A
+024B 120000      R     LCALL   L?0102
+024E C3                CLR     C
+024F 120000      E     LCALL   ?C?ULCMP
+0252 709D              JNZ     ?C0049
+                                           ; SOURCE LINE # 124
+0254 020000      R     LJMP    ?C0001
+                                           ; SOURCE LINE # 125
+                                           ; SOURCE LINE # 126
+                                           ; SOURCE LINE # 128
+                                           ; SOURCE LINE # 129
+0257         ?C0058:
+                                           ; SOURCE LINE # 131
+0257 900000      R     MOV     DPTR,#fl_len
+025A E0                MOVX    A,@DPTR
+025B 24FE              ADD     A,#0FEH
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 34  
+
+025D 6015              JZ      ?C0061
+025F 24FE              ADD     A,#0FEH
+0261 6019              JZ      ?C0062
+0263 2403              ADD     A,#03H
+0265 701E              JNZ     ?C0059
+                                           ; SOURCE LINE # 132
+0267         ?C0060:
+0267 900000      R     MOV     DPTR,#ap
+026A 120000      R     LCALL   L?0095
+026D FF                MOV     R7,A
+026E E4                CLR     A
+026F FC                MOV     R4,A
+0270 FD                MOV     R5,A
+0271 FE                MOV     R6,A
+0272 800E              SJMP    ?C0091
+                                           ; SOURCE LINE # 133
+0274         ?C0061:
+0274 120000      R     LCALL   L?0097
+0277 E4                CLR     A
+0278 FC                MOV     R4,A
+0279 FD                MOV     R5,A
+027A         ?C0090:
+027A 8006              SJMP    ?C0091
+                                           ; SOURCE LINE # 134
+027C         ?C0062:
+027C 120000      R     LCALL   L?0109
+027F 120000      E     LCALL   ?C?LLDPTR
+0282         ?C0091:
+0282 120000      R     LCALL   L?0104
+                                           ; SOURCE LINE # 135
+0285         ?C0059:
+                                           ; SOURCE LINE # 137
+0285 900000      R     MOV     DPTR,#cnt
+0288 E0                MOVX    A,@DPTR
+0289 7008              JNZ     ?C0063
+028B 900000      R     MOV     DPTR,#fl_len
+028E E0                MOVX    A,@DPTR
+028F 25E0              ADD     A,ACC
+0291 A3                INC     DPTR
+0292 F0                MOVX    @DPTR,A
+0293         ?C0063:
+                                           ; SOURCE LINE # 139
+0293 E4                CLR     A
+0294 900000      R     MOV     DPTR,#i
+0297 F0                MOVX    @DPTR,A
+0298         ?C0064:
+0298 900000      R     MOV     DPTR,#cnt
+029B E0                MOVX    A,@DPTR
+029C FF                MOV     R7,A
+029D 120000      R     LCALL   L?0113
+02A0 7480              MOV     A,#080H
+02A2 F8                MOV     R0,A
+02A3 6C                XRL     A,R4
+02A4 98                SUBB    A,R0
+02A5 4003              JC      $ + 5H
+02A7 020000      R     LJMP    ?C0001
+02AA         ?C0067:
+                                           ; SOURCE LINE # 140
+02AA 2000FD      E     JB      RS_Xbusy,?C0067
+02AD 900000      R     MOV     DPTR,#i
+02B0 E0                MOVX    A,@DPTR
+02B1 FF                MOV     R7,A
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 35  
+
+02B2 900000      R     MOV     DPTR,#cnt
+02B5 E0                MOVX    A,@DPTR
+02B6 C3                CLR     C
+02B7 9F                SUBB    A,R7
+02B8 14                DEC     A
+02B9 25E0              ADD     A,ACC
+02BB 25E0              ADD     A,ACC
+02BD F9                MOV     R1,A
+02BE 120000      R     LCALL   L?0106
+02C1 A801              MOV     R0,AR1
+02C3 120000      E     LCALL   ?C?SLSHR
+02C6 7E00              MOV     R6,#00H
+02C8 EF                MOV     A,R7
+02C9 540F              ANL     A,#0FH
+02CB 2400        R     ADD     A,#LOW Hex
+02CD F582              MOV     DPL,A
+02CF EE                MOV     A,R6
+02D0 3400        R     ADDC    A,#HIGH Hex
+02D2 F583              MOV     DPH,A
+02D4 E4                CLR     A
+02D5 93                MOVC    A,@A+DPTR
+02D6 F599              MOV     SBUF,A
+02D8 D200        E     SETB    RS_Xbusy
+                                           ; SOURCE LINE # 141
+02DA 900000      R     MOV     DPTR,#i
+02DD E0                MOVX    A,@DPTR
+02DE 04                INC     A
+02DF F0                MOVX    @DPTR,A
+02E0 80B6              SJMP    ?C0064
+                                           ; SOURCE LINE # 142
+                                           ; SOURCE LINE # 144
+02E2         ?C0070:
+                                           ; SOURCE LINE # 155
+02E2 75F003            MOV     B,#03H
+02E5 120000      R     LCALL   L?0110
+02E8 120000      E     LCALL   ?C?PLDPTR
+02EB 900000      R     MOV     DPTR,#ptr
+02EE 120000      E     LCALL   ?C?PSTXDATA
+02F1         ?C0071:
+                                           ; SOURCE LINE # 156
+02F1 900000      R     MOV     DPTR,#ptr
+02F4 120000      R     LCALL   L?0114
+02F7 7003              JNZ     $ + 5H
+02F9 020000      R     LJMP    ?C0001
+02FC         ?C0073:
+                                           ; SOURCE LINE # 157
+02FC 2000FD      E     JB      RS_Xbusy,?C0073
+02FF 900000      R     MOV     DPTR,#ptr
+0302 120000      R     LCALL   L?0095
+0305 F599              MOV     SBUF,A
+0307 D200        E     SETB    RS_Xbusy
+0309 80E6              SJMP    ?C0071
+                                           ; SOURCE LINE # 158
+                                           ; SOURCE LINE # 163
+030B         ?C0076:
+                                           ; SOURCE LINE # 164
+030B 120000      R     LCALL   L?0097
+030E EE                MOV     A,R6
+030F 33                RLC     A
+0310 95E0              SUBB    A,ACC
+0312 FD                MOV     R5,A
+0313 FC                MOV     R4,A
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 36  
+
+0314 120000      R     LCALL   L?0104
+0317         ?C0077:
+                                           ; SOURCE LINE # 165
+0317 2000FD      E     JB      RS_Xbusy,?C0077
+031A 120000      R     LCALL   L?0106
+031D 8F99              MOV     SBUF,R7
+031F D200        E     SETB    RS_Xbusy
+0321 020000      R     LJMP    ?C0001
+                                           ; SOURCE LINE # 166
+                                           ; SOURCE LINE # 168
+0324         ?C0080:
+                                           ; SOURCE LINE # 169
+0324 120000      R     LCALL   L?0098
+0327 E4                CLR     A
+0328 FC                MOV     R4,A
+0329 FD                MOV     R5,A
+032A 120000      R     LCALL   L?0104
+                                           ; SOURCE LINE # 170
+032D 020000      R     LJMP    ?C0001
+                                           ; SOURCE LINE # 171
+                                           ; SOURCE LINE # 172
+                                           ; SOURCE LINE # 173
+0330         ?C0005:
+0330 22                RET     
+             ; FUNCTION _DoPrint (END)
+
+             ; FUNCTION _Printf (BEGIN)
+                                           ; SOURCE LINE # 180
+0000 900000      R     MOV     DPTR,#fmt
+0003 120000      E     LCALL   ?C?PSTXDATA
+                                           ; SOURCE LINE # 181
+                                           ; SOURCE LINE # 184
+0006 7B01              MOV     R3,#01H
+0008 7A00        R     MOV     R2,#HIGH fmt+03H
+000A 7900        R     MOV     R1,#LOW fmt+03H
+000C 900000      R     MOV     DPTR,#ap
+000F 120000      E     LCALL   ?C?PSTXDATA
+                                           ; SOURCE LINE # 185
+0012 900000      R     MOV     DPTR,#ap
+0015 120000      E     LCALL   ?C?PLDXDATA
+0018 900000      R     MOV     DPTR,#?_DoPrint?BYTE+03H
+001B 120000      E     LCALL   ?C?PSTXDATA
+001E 900000      R     MOV     DPTR,#fmt
+0021 120000      E     LCALL   ?C?PLDXDATA
+0024 120000      R     LCALL   _DoPrint
+                                           ; SOURCE LINE # 186
+0027 7B00              MOV     R3,#00H
+0029 7A00              MOV     R2,#00H
+002B 7900              MOV     R1,#00H
+002D 900000      R     MOV     DPTR,#ap
+0030 020000      E     LJMP    ?C?PSTXDATA
+             ; FUNCTION _Printf (END)
+
+             ; FUNCTION _Puts (BEGIN)
+                                           ; SOURCE LINE # 189
+0000 900000      R     MOV     DPTR,#ptr
+0003 120000      E     LCALL   ?C?PSTXDATA
+                                           ; SOURCE LINE # 190
+0006         ?C0082:
+                                           ; SOURCE LINE # 191
+0006 900000      R     MOV     DPTR,#ptr
+0009 120000      R     LCALL   L?0115
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 37  
+
+000C 600C              JZ      ?C0084
+                                           ; SOURCE LINE # 192
+000E 900000      R     MOV     DPTR,#ptr
+0011 120000      R     LCALL   L?0095
+0014 FF                MOV     R7,A
+0015 120000      E     LCALL   _RS_tx
+0018 80EC              SJMP    ?C0082
+                                           ; SOURCE LINE # 193
+001A         ?C0084:
+001A 22                RET     
+             ; FUNCTION _Puts (END)
+
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 38  
+
+NAME                                    CLASS   MSPACE  TYPE    OFFSET  SIZE
+====                                    =====   ======  ====    ======  ====
+
+
+DWORD. . . . . . . . . . . . . . . . .  TYPEDEF  -----  U_LONG   -----  4
+CAM_R. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+P4 . . . . . . . . . . . . . . . . . .  SFR      DATA   U_CHAR   00E8H  1
+TriggerModeType. . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+CAM_BAR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CAR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ACR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CBR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BCR. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+RIGHT_TRIG . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+LAST_TRIG_NON. . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+NORMALL_MODE . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+AVMode . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+SourceModeType . . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+CAM_NUM. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+RS_Xbusy . . . . . . . . . . . . . . .  EXTERN   DATA   BIT      -----  1
+Hex. . . . . . . . . . . . . . . . . .  PUBLIC   CODE   ARRAY    0000H  17
+CAMC_TRIG. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+_Puts. . . . . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  ptr. . . . . . . . . . . . . . . . .  AUTO     XDATA  PTR      0000H  3
+LAST_TRIG_RIGHT. . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_RAB_H. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+SBUF . . . . . . . . . . . . . . . . .  SFR      DATA   U_CHAR   0099H  1
+CAM_BA . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_AB . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+BYTE . . . . . . . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+CAM_CA . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_AC . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+REVERSE_TRIG . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BC . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CB . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+SourceModeTypeEnum . . . . . . . . . .  * TAG *  -----  ENUM     -----  -----
+struct_IdName. . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  17
+  Id . . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0000H  1
+  Name . . . . . . . . . . . . . . . .  MEMBER   -----  ARRAY    0001H  16
+CAM_RAB_T. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_RAC_T. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+WORD . . . . . . . . . . . . . . . . .  TYPEDEF  -----  U_INT    -----  2
+CAM_RBC_T. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+LAST_TRIG_CAMC . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+_DoPrint . . . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  fmt. . . . . . . . . . . . . . . . .  AUTO     XDATA  PTR      0000H  3
+  ap . . . . . . . . . . . . . . . . .  AUTO     XDATA  PTR      0003H  3
+  ch . . . . . . . . . . . . . . . . .  AUTO     XDATA  CHAR     0006H  1
+  i. . . . . . . . . . . . . . . . . .  AUTO     XDATA  CHAR     0007H  1
+  value. . . . . . . . . . . . . . . .  AUTO     XDATA  LONG     0008H  4
+  fl_zero. . . . . . . . . . . . . . .  AUTO     DATA   BIT      0000H  1
+  fl_num . . . . . . . . . . . . . . .  AUTO     DATA   BIT      0001H  1
+  fl_len . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   000CH  1
+  cnt. . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   000DH  1
+  mask . . . . . . . . . . . . . . . .  AUTO     XDATA  U_LONG   000EH  4
+  ptr. . . . . . . . . . . . . . . . .  AUTO     XDATA  PTR      0012H  3
+LEFT_TRIG. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_AR . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BR . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_RB . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+C51 COMPILER V9.60.0.0   PRINTF                                                            06/22/2022 16:23:03 PAGE 39  
+
+NAME                                    CLASS   MSPACE  TYPE    OFFSET  SIZE
+====                                    =====   ======  ====    ======  ====
+
+
+PARK_TRIG. . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CR . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+Register . . . . . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+LAST_TRIG_REVERSE. . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+No_TRIG. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+RegisterInfo . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  6
+  Min. . . . . . . . . . . . . . . . .  MEMBER   -----  INT      0000H  2
+  Max. . . . . . . . . . . . . . . . .  MEMBER   -----  INT      0002H  2
+  Default. . . . . . . . . . . . . . .  MEMBER   -----  INT      0004H  2
+LAST_TRIG_LEFT . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_QUAD . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+TRIGGER_NUM. . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+SEQ. . . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+LongRegisterInfo . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  6
+  Min. . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0000H  2
+  Max. . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0002H  2
+  Default. . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0004H  2
+CAM_RAC_T2 . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABR_T3 . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_RBC_T2 . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABR_T4 . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+_RS_tx . . . . . . . . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+CAM_A. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_B. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_C. . . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+va_list. . . . . . . . . . . . . . . .  TYPEDEF  -----  PTR      -----  3
+_Printf. . . . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  fmt. . . . . . . . . . . . . . . . .  AUTO     XDATA  PTR      0000H  3
+  ellipsis_40. . . . . . . . . . . . .  AUTO     XDATA  ARRAY    0003H  40
+  ap . . . . . . . . . . . . . . . . .  AUTO     XDATA  PTR      002BH  3
+VGA_TRIG . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_CAB. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_BAC. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+CAM_ABC. . . . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+AWT_LAST_TRIGGER . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    998    ----
+   CONSTANT SIZE    =     17    ----
+   XDATA SIZE       =   ----      70
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----       2
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
